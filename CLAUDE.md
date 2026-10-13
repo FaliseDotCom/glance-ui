@@ -4,7 +4,7 @@ A no-code web editor that owns the entire Glance (glanceapp/glance) config. Dash
 data model; `glance.yml` is generated on every explicit Save and is output only. Existing config is imported once.
 
 @docs/handoff.md
-@docs/phases/phase-2-import-writer.md
+@docs/phases/phase-3-server-core.md
 
 ## Roles
 - **PM/QA (repo owner):** merges every PR, approves every release note, decides everything with UX impact.
@@ -51,6 +51,8 @@ data model; `glance.yml` is generated on every explicit Save and is output only.
 | `glance.version` | The pinned Glance image (tag plus digest). The single source for CI and tests |
 | `packages/model` / `generator` / `glance` | Data model + rules (zod) / model → YAML / pinned-binary validation and `config:print` (ADR-0014) |
 | `packages/document` | Import (`importFile`), document-preserving writer (`writeDraft`), report, CLI (ADR-0015) |
+| `packages/server` | `Editor`: drafts, versions, save pipeline, SQLite store (Phase 3) |
+| `docs/api.md` | The editor's HTTP API |
 | `apps/editor` | SvelteKit 3 app (no UI yet); `Dockerfile` builds it with the glance binary |
 | `test/` | Harness scripts and fixtures (`test/fixtures/model/v1/` = model fixtures) |
 | `.github/` | CI, PR template, issue forms |

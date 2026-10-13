@@ -23,6 +23,7 @@
 | `test/glance-cli.sh` | `config:print` keeps placeholders and comments literal and inlines includes; a comment header validates | ~2 s |
 | `test/glance-reload.sh` | Hot-reload, invalid-config handling, atomic rename, includes, file-vs-directory mount | ~15 s |
 | `test/glance-docker.sh` | docker-containers widget: the `containers` map beats a `glance.hide` label (design D-23) | ~5 s |
+| `test/editor-api.sh` | The editor **image** end to end: a Glance container watches the config dir the editor writes; import, edit, save (reload confirmed), versions, restore, `Origin`/JSON checks. Needs `GLANCE_EDITOR_IMAGE` (CI sets it) | ~15 s |
 | `test/glance-smoke.sh [config]` | Starts Glance and fails if it exits or never serves (exit code is ignored, see lessons). Uses `test/fixtures/model/v1/sample.env` and `secrets/` for placeholders | ~6 s |
 
 The Glance image comes from `/glance.version` (tag plus digest). Requirements: Docker, curl, bash 4+.
@@ -42,4 +43,4 @@ Add a fixture whenever a Glance rule or behaviour is relied on. Cite the ADR in 
 ## CI (`.github/workflows/ci.yml`)
 1. **Tests**: `npm ci`, then `scripts/test.sh`.
 2. **Glance accepts generated config** (after Tests): the real generator on `test/fixtures/model/v1/sample.json`, then `test/glance-smoke.sh`.
-3. **Editor image builds and starts** (after Tests): `scripts/build-editor-image.sh`, then `/healthz` must report the glance binary present.
+3. **Editor image builds and starts** (after Tests): `scripts/build-editor-image.sh`, `/healthz` must report the glance binary present, then `test/editor-api.sh` against the image.

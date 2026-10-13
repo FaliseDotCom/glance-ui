@@ -40,6 +40,11 @@ secrets in plain text in its model. If you use Glance `auth`, those fields are s
 2. Do you already run an SSO/IdP?
 3. Session length you'd accept before having to log in again?
 
+## Implementation (Phase 3, 2026-10-13)
+Mutating API requests must carry an `Origin` naming the editor's own host **and** `Content-Type: application/json`
+(`apps/editor/src/lib/server/origin.ts`). A cross-site page can't send a JSON request without a CORS preflight, which
+the editor never answers. Tested end to end against the image (`test/editor-api.sh`).
+
 ## Verified vs assumed
 - Verified: Glance has its own `auth` block (docs v0.8.6, 2026-10-13).
 - Not verified: any auth library. The library is chosen in the auth phase, with its versions cited.

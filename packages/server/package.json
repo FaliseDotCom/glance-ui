@@ -1,0 +1,13 @@
+{
+  "name": "@glance-editor/server",
+  "private": true,
+  "type": "module",
+  "license": "GPL-3.0-only",
+  "exports": { ".": "./src/index.ts" },
+  "dependencies": {
+    "@glance-editor/document": "*",
+    "@glance-editor/generator": "*",
+    "@glance-editor/glance": "*",
+    "@glance-editor/model": "*"
+  }
+}

@@ -1,6 +1,6 @@
 # 0015. Document-preserving YAML writer
 
-- **Status:** proposed (non-UX; it implements approved design decision D-38). Accepted by merging the Phase 2 PR.
+- **Status:** accepted (merged with Phase 2, PR #5)
 - **Date:** 2026-10-13
 - **Decider:** PM
 - **UX impact:** none of its own. It delivers D-38 ("your file should look like yours after a save").
@@ -71,4 +71,4 @@ Throwaway code, not committed: `.spike/` is in `.gitignore`.
   quotes) are marked without changing lengths, so ranges stay valid and both read back as literal `${…}`.
 
 ## Decision record
-_Pending._
+Accepted 2026-10-13 by merging PR #5.

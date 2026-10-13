@@ -53,15 +53,17 @@ export function glanceBinary(explicit?: string): string {
 }
 
 /**
- * Validate generated YAML with `glance config:validate`. If the config sets `server.assets-path`, generate it with
- * `assetsPathOverride: <validationAssetsDir(dir)>`: Glance checks that directory exists.
+ * Validate YAML with `glance config:validate`. Glance checks that `server.assets-path` exists, so for a config that sets
+ * it, pass a function: it receives an existing temporary assets directory and returns the YAML to validate.
  */
-export async function validateConfig(yaml: string, opts: ValidateOptions = {}): Promise<ValidationResult> {
+export async function validateConfig(yaml: string | ((assetsDir: string) => string), opts: ValidateOptions = {}): Promise<ValidationResult> {
   const dir = await mkdtemp(join(tmpdir(), "glance-editor-validate-"));
   try {
-    await mkdir(validationAssetsDir(dir), { recursive: true });
+    const assets = validationAssetsDir(dir);
+    await mkdir(assets, { recursive: true });
     const file = join(dir, "glance.yml");
-    await writeFile(file, substituteForValidation(yaml, opts.hints), "utf8");
+    const text = typeof yaml === "function" ? yaml(assets) : yaml;
+    await writeFile(file, substituteForValidation(text, opts.hints), "utf8");
     return await run(glanceBinary(opts.glanceBin), ["--config", file, "config:validate"], opts.timeoutMs ?? 15_000);
   } finally {
     await rm(dir, { recursive: true, force: true });

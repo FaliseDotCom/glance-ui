@@ -12,7 +12,8 @@
   "dependencies": {
     "@glance-editor/generator": "*",
     "@glance-editor/glance": "*",
-    "@glance-editor/model": "*"
+    "@glance-editor/model": "*",
+    "@glance-editor/server": "*"
   },
   "devDependencies": {
     "@sveltejs/adapter-node": "6.0.0",
@@ -22,5 +23,8 @@
     "svelte-check": "4.7.6",
     "typescript": "6.0.3",
     "vite": "8.3.4"
+  },
+  "imports": {
+    "#lib/*": "./src/lib/*"
   }
 }

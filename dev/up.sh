@@ -36,6 +36,7 @@ if docker image inspect "$EDITOR_IMAGE" >/dev/null 2>&1; then
     -p "$DEV_BIND:$DEV_EDITOR_PORT:3000" \
     -v "$DEV_CONFIG_DIR:/glance-config" \
     -v "$DEV_EDITOR_DATA:/data" \
+    -e GLANCE_URL="http://$DEV_GLANCE:8080/" \
     "$EDITOR_IMAGE" >/dev/null
   log "dev editor:  http://<this-host>:$DEV_EDITOR_PORT/"
 else

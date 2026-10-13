@@ -1,4 +1,4 @@
-# Phase 2: Import + document-preserving writer (current phase)
+# Phase 2: Import + document-preserving writer (done; merged in PR #5)
 
 **Status:** implemented on branch `phase-2/import-writer`. PR open, awaiting PM review. ADR-0015 is accepted by merging it.
 **Depends on:** ADR-0011 (flatten includes = design D-36), ADR-0014, ADR-0015, ADR-0016 (design D-14, D-34–D-38). **No UI.**

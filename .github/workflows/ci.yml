@@ -68,3 +68,6 @@ jobs:
           done
           echo "$out" | grep -q '"glanceBinaryPresent":true'
           docker run --rm --entrypoint glance glance-editor:ci --help | head -1
+          docker rm -f editor-ci
+      - name: API end to end (editor image + a Glance watching the same config dir)
+        run: GLANCE_EDITOR_IMAGE=glance-editor:ci test/editor-api.sh

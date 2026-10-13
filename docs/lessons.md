@@ -14,6 +14,18 @@ The property test passed against my own model of Glance's substitution while the
 that YAML style choices (double quotes, adjacency) change what Glance substitutes. **Do:** keep both kinds of test for
 anything that touches Glance semantics.
 
+### 2026-10-13: SvelteKit 3 changes that bit in Phase 3
+- `$lib` is gone. Declare `"imports": { "#lib/*": "./src/lib/*" }` in package.json and import `#lib/x.ts` with the extension.
+- `Handle` and other hook types moved to `@sveltejs/kit/hooks`.
+- The built-in CSRF check treats a body-less POST as a form submission, and compares it with an app origin adapter-node
+  doesn't know (ORIGIN env was removed). **Do:** every mutating API call sends JSON (`{}` if empty). The editor requires it
+  anyway (ADR-0004).
+
+### 2026-10-13: A draft needs two references, not one
+The text to splice into (the restored version, for its comments) and the text to compare against (the live file, for
+the change list and "nothing to save") differ after Restore. With one reference, Restore showed no changes and Save did
+nothing. Caught by the restore test.
+
 ### 2026-10-13: Generated text that's right on its own can be wrong when spliced
 Phase 1's generator output was correct as a whole file. Spliced into an existing file, two things broke. A keep-chomping
 block literal (`|+`) swallowed the blank line after it. And the escape encoding marked so much that a re-import changed

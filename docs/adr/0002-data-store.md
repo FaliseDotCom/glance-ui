@@ -42,5 +42,12 @@ Plus: **export/import of the model as a JSON file** for portability and manual b
 - Verified: `better-sqlite3` latest version (npm registry, 2026-10-13).
 - Not verified: `node:sqlite` stability; the live host's storage type.
 
+## Implementation (Phase 3, 2026-10-13)
+- **Driver:** Node's built-in `node:sqlite` ("Stability: 1.2 - Release candidate" in the Node v24.21.0 docs, read 2026-10-13;
+  works without a flag; `VACUUM INTO` works). No native module to build. All driver use is in `packages/server/src/db.ts`.
+- **Tables:** `versions` (number, source import/editor/outside, full glance.yml text, sha256, change list, Glance version,
+  applied_at), `draft` (one row: model JSON, base text, base version, base sha256, reference text), `settings` (unused yet).
+- **Versions store Glance's text, not the model**, so only the draft's model JSON ever needs migrating (ADR-0003).
+
 ## Decision record
 **Accepted 2026-10-13 by the PM (via chat)**, as written. The driver choice is still settled in Phase 1.
