@@ -5,7 +5,6 @@ Decisions on ADRs are tracked in [handoff.md](handoff.md#needs-user-decision), n
 
 ## Now
 - [ ] **Review and merge the Phase 0 PR** on GitHub (public repo). Claude opened it from your gh login.
-- [ ] Decide a **license** for this public repo (none yet means all rights reserved). Glance itself is AGPL-3.0.
 - [ ] **Send one small sample "Handoff to Claude Code"** from Claude Design (a single screen is enough), so the delivery path can be
       verified before real designs (ADR-0012).
 

@@ -30,3 +30,4 @@ One file per decision: `NNNN-short-title.md`, copied from [0000-template.md](000
 | [0010](0010-out-of-band-config-edits.md) | Handling hand edits to the generated glance.yml | accepted | **yes** |
 | [0011](0011-import-of-existing-config.md) | One-time import of the existing glance.yml | accepted (flatten) | **yes** |
 | [0012](0012-design-handoff.md) | Design handoff from Claude Design | accepted (mechanism unverified) | **yes** |
+| [0013](0013-license.md) | License: GPL-3.0 | accepted | no |

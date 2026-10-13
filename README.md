@@ -10,3 +10,6 @@ and generates `glance.yml` on every explicit Save.
 - Decisions: [docs/adr/](docs/adr/README.md)
 - Running the tests: [docs/testing.md](docs/testing.md) (`scripts/test.sh`)
 - Supported Glance version: see [glance.version](glance.version)
+
+## License
+GPL-3.0. See [LICENSE](LICENSE). Glance itself is AGPL-3.0. See [docs/adr/0013-license.md](docs/adr/0013-license.md).
