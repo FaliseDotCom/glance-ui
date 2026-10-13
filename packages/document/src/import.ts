@@ -11,9 +11,8 @@ import { readFile } from "node:fs/promises";
 import { dirname, isAbsolute, join } from "node:path";
 import type { z } from "zod";
 import {
-  Auth, AuthUser, BookmarkGroup, BookmarkLink, Branding, ClockTimezone, Column, Dashboard, DockerContainerOverride,
-  Document as DocumentSchema, KNOWN_WIDGET_TYPES, MonitorSite, Page, RssFeed, SearchBang, Server, Theme, ThemePreset,
-  WIDGET_SCHEMAS, checkDashboard, findPlaceholders, type DashboardT, type Issue, type KnownWidgetType,
+  Auth, AuthUser, Branding, Column, Dashboard, Document as DocumentSchema, Page, Server, Theme, ThemePreset, WIDGETS,
+  SCHEMA_VERSION, checkDashboard, findPlaceholders, valueSchema, widgetFields, type DashboardT, type Field, type Issue,
 } from "@glance-editor/model";
 import { glanceParse, textStats } from "./text.ts";
 
@@ -153,7 +152,7 @@ class Ctx {
   }
 
   dashboard(json: Obj): Obj {
-    const out: Obj = { schemaVersion: 1 };
+    const out: Obj = { schemaVersion: SCHEMA_VERSION };
     const extra: Obj = {};
     for (const [k, v] of Object.entries(json)) {
       const p = [k];
@@ -202,26 +201,66 @@ class Ctx {
     const type = v.type;
     this.report.widgets++;
     this.report.widgetsByType[type] = (this.report.widgetsByType[type] ?? 0) + 1;
-    if (!(KNOWN_WIDGET_TYPES as readonly string[]).includes(type)) {
+    if (!WIDGETS[type]) {
       if (!this.report.rawWidgetTypes.includes(type)) this.report.rawWidgetTypes.push(type);
       const { type: _t, ...raw } = v;
       return { _id: idFor(path), type, _raw: raw };
     }
-    const schema = WIDGET_SCHEMAS[type as KnownWidgetType] as unknown as Schema;
-    const children = { widgets: (x: unknown, p: Path) => this.list(x, p, (w, wp) => this.widget(w, wp)) };
-    const listOf = (s: Schema, special: Record<string, (v: unknown, p: Path) => unknown> = {}) =>
-      (x: unknown, p: Path) => this.list(x, p, (i, ip) => this.obj(i, s, ip, special));
-    const special: Record<string, (v: unknown, p: Path) => unknown> = {
-      group: children,
-      "split-column": children,
-      bookmarks: { groups: listOf(BookmarkGroup, { links: listOf(BookmarkLink) }) },
-      clock: { timezones: listOf(ClockTimezone) },
-      "docker-containers": { containers: (x: unknown, p: Path) => this.keyedMap(x, p, "container", DockerContainerOverride) },
-      monitor: { sites: listOf(MonitorSite) },
-      rss: { feeds: listOf(RssFeed) },
-      search: { bangs: listOf(SearchBang) },
-    }[type] ?? {};
-    return this.obj(v, schema, path, special);
+    const { type: _t, ...rest } = v;
+    return { _id: idFor(path), type, ...this.fields(rest, widgetFields(type), path) };
+  }
+
+  /**
+   * Copy an object's keys using field definitions (widgets.ts). A value that doesn't fit its field, and any key
+   * without a field, goes to `extra` and is reported, so nothing is dropped (D-14).
+   */
+  fields(v: Obj, fields: readonly Field[], path: Path): Obj {
+    const out: Obj = {};
+    const extra: Obj = {};
+    for (const [k, value] of Object.entries(v)) {
+      const p = [...path, k];
+      const f = fields.find((x) => x.key === k);
+      if (!f || k === "_id" || k === "extra") {
+        extra[k] = value;
+        this.report.unknownKeys.push(p.join("."));
+        continue;
+      }
+      const converted = this.value(value, f, p);
+      if (converted === undefined) {
+        extra[k] = value;
+        this.report.keptAsIs.push({ path: p.join("."), reason: `${JSON.stringify(value)} isn't a value the editor can edit here` });
+      } else out[k] = converted;
+    }
+    if (Object.keys(extra).length) out.extra = extra;
+    return out;
+  }
+
+  /** One field's value in model form, or undefined when it doesn't fit (the caller keeps it as-is). */
+  value(v: unknown, f: Field, path: Path): unknown {
+    switch (f.kind) {
+      case "widgets":
+        return this.list(v, path, (w, wp) => this.widget(w, wp));
+      case "objectList": {
+        if (v === null) return [];
+        if (!Array.isArray(v) || !v.every(isObj)) return undefined;
+        return v.map((x, i) => ({ _id: idFor([...path, i]), ...this.fields(x, f.item!, [...path, i]) }));
+      }
+      case "keyedList": {
+        if (v === null) return [];
+        if (!isObj(v) || !Object.values(v).every((x) => x === null || isObj(x))) return undefined;
+        return Object.entries(v).map(([k, x]) => ({
+          _id: idFor([...path, k]),
+          [f.keyField!.key]: k,
+          ...this.fields((x ?? {}) as Obj, f.item!, [...path, k]),
+        }));
+      }
+      case "object":
+        return isObj(v) ? this.fields(v, f.item!, path) : undefined;
+      default: {
+        const r = valueSchema(f).safeParse(v);
+        return r.success ? r.data : undefined;
+      }
+    }
   }
 }
 
@@ -260,4 +299,18 @@ export async function listIncludes(mainFile: string, depth = 0, seen = new Set<s
     out.push(file, ...(await listIncludes(file, depth + 1, seen)));
   }
   return out;
+}
+
+/**
+ * A raw widget (`{_id, type, _raw}`) of a type the model now covers, converted as the importer would convert it.
+ * Nested ids follow the widget's own id, so they match a re-import of the same text (writer.ts relies on that).
+ * Used by the schema v1 → v2 draft migration.
+ */
+export function modelFromRaw(w: { _id: string; type: string; _raw: Record<string, unknown> }): Record<string, unknown> {
+  const report: ImportReport = {
+    pages: 0, widgets: 0, widgetsByType: {}, rawWidgetTypes: [], unknownKeys: [], keptAsIs: [], placeholders: [],
+    comments: 0, anchors: 0, aliases: 0, includes: [],
+  };
+  const out = new Ctx(report).widget({ ...w._raw, type: w.type }, w._id.split(".")) ?? {};
+  return { ...out, _id: w._id };
 }

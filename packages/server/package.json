@@ -9,5 +9,6 @@
     "@glance-editor/generator": "*",
     "@glance-editor/glance": "*",
     "@glance-editor/model": "*"
-  }
+  },
+  "devDependencies": { "yaml": "2.9.1" }
 }

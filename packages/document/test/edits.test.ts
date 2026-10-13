@@ -81,7 +81,7 @@ describe("splice edits", () => {
 
   it("adds a bookmark link and changes a theme colour, leaving every comment in place", () => {
     const r = edit((d) => {
-      const bm = col(d, 0, 1)[0] as { groups: { links: object[] }[] };
+      const bm = col(d, 0, 1)[0] as unknown as { groups: { links: object[] }[] };
       bm.groups[0]!.links.push({ _id: "l-new", title: "Docs", url: "https://example.com" });
       d.theme!["background-color"] = "200 10 10";
     });
@@ -107,7 +107,7 @@ describe("splice edits", () => {
   });
 
   it("changes a flow-style list by rewriting only that key, with a warning", () => {
-    const r = edit((d) => { (col(d, 0, 1)[3] as { feeds: { url: string }[] }).feeds[0]!.url = "https://example.org/rss"; });
+    const r = edit((d) => { (col(d, 0, 1)[3] as unknown as { feeds: { url: string }[] }).feeds[0]!.url = "https://example.org/rss"; });
     expect(r.mode).toBe("spliced");
     expect(r.warnings.join(" ")).toMatch(/feeds/);
     expect(r.text).toContain("https://example.org/rss");

@@ -2,16 +2,17 @@
 // Errors: Glance v0.8.6 would reject the config, or an accepted ADR forbids it. Warnings: Glance accepts it, but
 // it probably doesn't do what the user expects.
 
-import { findPlaceholders, isWholePlaceholder } from "./placeholder.ts";
+import { containsPlaceholder, findPlaceholders, isWholePlaceholder } from "./placeholder.ts";
+import { itemKeys, type Field } from "./fields.ts";
 import {
-  Auth, AuthUser, BookmarkGroup, BookmarkLink, Branding, ClockTimezone, Column, Dashboard, DockerContainerOverride,
-  Document, MonitorSite, Page, RssFeed, SearchBang, Server, Theme, ThemePreset, WIDGET_SCHEMAS,
+  Auth, AuthUser, Branding, Column, Dashboard, Document, Page, Server, Theme, ThemePreset,
   GLANCE_WIDGET_TYPES,
   isRawWidget,
   type DashboardT,
   type PageT,
   type WidgetT,
 } from "./schema.ts";
+import { WIDGETS, widgetFields } from "./widgets.ts";
 
 export type Severity = "error" | "warning";
 
@@ -64,24 +65,94 @@ function checkPage(page: PageT, path: Issue["path"], add: Add) {
 
 function checkWidget(w: WidgetT, path: Issue["path"], add: Add, parentType: string | null) {
   // widget-group.go: "nested groups are not supported", "split columns inside of groups are not supported"
-  if (parentType === "group" && (w.type === "group" || w.type === "split-column")) {
-    add("error", "widget.invalid-nesting", path, `A group can't contain a ${w.type} widget.`);
+  if (parentType && WIDGETS[parentType]?.disallowedChildren?.includes(w.type)) {
+    add("error", "widget.invalid-nesting", path, `A ${WIDGETS[parentType]!.label.toLowerCase()} can't contain a ${w.type} widget.`);
   }
   // widget.go newWidget: "unknown widget type"
-  if (isRawWidget(w) && !(GLANCE_WIDGET_TYPES as readonly string[]).includes(w.type)) {
-    add("error", "widget.unknown-type", [...path, "type"], `Glance v0.8.6 has no widget type "${w.type}".`);
+  if (isRawWidget(w)) {
+    if (!GLANCE_WIDGET_TYPES.includes(w.type)) {
+      add("error", "widget.unknown-type", [...path, "type"], `Glance v0.8.6 has no widget type "${w.type}".`);
+    }
+    return;
   }
-  if (w.type === "group" || w.type === "split-column") {
-    if ("widgets" in w) w.widgets.forEach((child: WidgetT, i: number) => checkWidget(child, [...path, "widgets", i], add, w.type));
+  const rec = w as Record<string, unknown>;
+  checkRequired(rec, widgetFields(w.type), path, add);
+  if (Array.isArray(w.widgets)) w.widgets.forEach((child, i) => checkWidget(child, [...path, "widgets", i], add, w.type));
+  checkWidgetRules(rec, path, add);
+}
+
+const isEmpty = (v: unknown) => v === undefined || v === "";
+
+/** `required` fields (Glance v0.8.6 rejects the config without them; packages/glance/test/widget-schema.test.ts). */
+function checkRequired(obj: Record<string, unknown>, fields: readonly Field[], path: Issue["path"], add: Add) {
+  for (const f of fields) {
+    const v = obj[f.key];
+    if (f.required && isEmpty(v)) {
+      add("error", "field.required", [...path, f.key], `${f.label} is required. Glance won't accept the config without it.`);
+    }
+    if (!f.item || v === undefined) continue;
+    if (f.kind === "object") {
+      if (v && typeof v === "object" && !Array.isArray(v)) checkRequired(v as Record<string, unknown>, f.item, [...path, f.key], add);
+    } else if (Array.isArray(v)) {
+      v.forEach((x, i) => {
+        if (x && typeof x === "object") checkRequired(x as Record<string, unknown>, f.item!, [...path, f.key, i], add);
+      });
+    }
   }
-  // widget-clock.go: timezone required (schema enforces presence; empty string is still possible)
-  if (w.type === "clock" && "timezones" in w) {
-    w.timezones?.forEach((tz: { timezone: string }, i: number) => {
-      if (tz.timezone.trim() === "") add("error", "clock.missing-timezone", [...path, "timezones", i, "timezone"], "Timezone is empty.");
-    });
+}
+
+/** Rules that span fields. Each one is checked against the binary in widget-schema.test.ts. */
+function checkWidgetRules(w: Record<string, unknown>, path: Issue["path"], add: Add) {
+  const str = (v: unknown) => (typeof v === "string" ? v : undefined);
+  switch (w.type) {
+    case "reddit": {
+      // widget-reddit.go initialize: "no `{REQUEST-URL}` placeholder specified"
+      const t = str(w["request-url-template"]);
+      // A placeholder may supply it, so only plain text is checked.
+      if (t && !t.includes("{REQUEST-URL}") && !containsPlaceholder(t)) {
+        add("error", "reddit.request-url-template", [...path, "request-url-template"], "The request URL template must contain {REQUEST-URL}.");
+      }
+      // "application name, client ID and client secret are required"
+      const auth = w["app-auth"] as Record<string, unknown> | undefined;
+      if (auth && typeof auth === "object") {
+        const set = ["name", "id", "secret"].filter((k) => !isEmpty(auth[k]));
+        if (set.length > 0 && set.length < 3) {
+          add("error", "reddit.app-auth-incomplete", [...path, "app-auth"], "App authentication needs all three: app name, client ID and client secret.");
+        }
+      }
+      break;
+    }
+    case "releases": {
+      // widget-releases.go releaseRequest.UnmarshalYAML: "repository is required", "invalid source"
+      const repos = w.repositories;
+      if (Array.isArray(repos)) {
+        repos.forEach((r, i) => {
+          if (typeof r !== "string") return;
+          if (r === "") add("error", "releases.empty-repository", [...path, "repositories", i], "A repository line is empty.");
+          else if (r.includes(":") && !/^(github|gitlab|dockerhub|codeberg):/.test(r) && !containsPlaceholder(r)) {
+            add("error", "releases.invalid-source", [...path, "repositories", i],
+              `"${r.split(":")[0]}:" isn't a source Glance knows. Use github:, gitlab:, codeberg: or dockerhub:, or no prefix for GitHub.`);
+          }
+        });
+      }
+      break;
+    }
+    case "custom-api": {
+      // widget-custom-api.go CustomAPIRequest.initialize: "body must be a string when body-type is 'string'"
+      const check = (req: Record<string, unknown>, p: Issue["path"]) => {
+        if (req["body-type"] === "string" && req.body !== undefined && req.body !== null && typeof req.body !== "string") {
+          add("error", "custom-api.body-not-string", [...p, "body"], "The body must be text when the body type is string.");
+        }
+      };
+      check(w, path);
+      const subs = w.subrequests;
+      if (Array.isArray(subs)) subs.forEach((r, i) => r && typeof r === "object" && check(r as Record<string, unknown>, [...path, "subrequests", i]));
+      break;
+    }
   }
-  if (w.type === "monitor" && "sites" in w) {
-    w.sites.forEach((s: { "basic-auth"?: { password: string } | undefined }, i: number) => {
+  // Every widget: monitor-style basic auth passwords in plain text.
+  if (w.type === "monitor" && Array.isArray(w.sites)) {
+    w.sites.forEach((s: { "basic-auth"?: { password?: string } | undefined }, i: number) => {
       const pw = s["basic-auth"]?.password;
       if (pw !== undefined && !isWholePlaceholder(pw)) {
         add("warning", "secret.plaintext", [...path, "sites", i, "basic-auth", "password"],
@@ -157,16 +228,12 @@ function checkPlaceholders(d: DashboardT, add: Add) {
 }
 
 /** Which object an `extra` belongs to, from its path, so a kept-as-is value isn't reported as an unknown key. */
-const LIST_SCHEMAS: Record<string, { shape: object }> = {
-  pages: Page, columns: Column, groups: BookmarkGroup, links: BookmarkLink, feeds: RssFeed, sites: MonitorSite,
-  timezones: ClockTimezone, bangs: SearchBang, presets: ThemePreset, users: AuthUser, containers: DockerContainerOverride,
-};
+const LIST_SCHEMAS: Record<string, { shape: object }> = { pages: Page, columns: Column, presets: ThemePreset, users: AuthUser };
 const SECTION_SCHEMAS: Record<string, { shape: object }> = { theme: Theme, branding: Branding, server: Server, document: Document, auth: Auth };
 
-function knownKeys(owner: Record<string, unknown>, path: (string | number)[]): Set<string> {
+function knownKeys(path: (string | number)[]): Set<string> {
   let schema: { shape: object } | undefined;
   if (path.length === 0) schema = Dashboard;
-  else if (typeof owner.type === "string" && owner.type in WIDGET_SCHEMAS) schema = WIDGET_SCHEMAS[owner.type as keyof typeof WIDGET_SCHEMAS];
   else {
     const last = path[path.length - 1];
     const parent = typeof last === "number" ? path[path.length - 2] : last;
@@ -178,17 +245,22 @@ function knownKeys(owner: Record<string, unknown>, path: (string | number)[]): S
 /**
  * Glance ignores unknown keys silently (yaml.Unmarshal is non-strict in v0.8.6), so flag every unknown key in `extra`.
  * A known key in `extra` holds a value the editor can't edit in a form; it is kept as written (D-14).
+ * Inside widgets the known keys come from the field definitions (`known`), elsewhere from the object's schema.
  */
-function checkExtras(value: unknown, path: (string | number)[], add: Add) {
-  if (Array.isArray(value)) return value.forEach((v, i) => checkExtras(v, [...path, i], add));
+function checkExtras(value: unknown, path: (string | number)[], add: Add, known?: Set<string>, fields?: readonly Field[]) {
+  if (Array.isArray(value)) return value.forEach((v, i) => checkExtras(v, [...path, i], add, known, fields));
   if (!value || typeof value !== "object") return;
   const owner = value as Record<string, unknown>;
+  if (typeof owner.type === "string" && WIDGETS[owner.type] && !("_raw" in owner) && fields === undefined) {
+    fields = widgetFields(owner.type);
+    known = new Set(["_id", "type", ...fields.map((f) => f.key)]);
+  }
   for (const [k, v] of Object.entries(owner)) {
     if (k === "_raw") continue;
     if (k === "extra" && v && typeof v === "object") {
-      const known = knownKeys(owner, path);
+      const keys = known ?? knownKeys(path);
       for (const key of Object.keys(v)) {
-        if (known.has(key)) {
+        if (keys.has(key)) {
           add("warning", "key.kept-as-is", [...path, "extra", key], `"${key}" has a value the editor can't edit in a form; it is kept exactly as written.`);
         } else {
           add("warning", "key.unknown", [...path, "extra", key], `Glance v0.8.6 doesn't use "${key}" here, so it will be ignored.`);
@@ -196,6 +268,10 @@ function checkExtras(value: unknown, path: (string | number)[], add: Add) {
       }
       continue;
     }
-    checkExtras(v, [...path, k], add);
+    const f = fields?.find((x) => x.key === k);
+    if (f?.kind === "widgets") checkExtras(v, [...path, k], add);
+    else if (f?.item) checkExtras(v, [...path, k], add, itemKeys(f), f.item);
+    else if (fields) continue; // a scalar, list of scalars, map or yaml value inside a widget: nothing more to check
+    else checkExtras(v, [...path, k], add);
   }
 }

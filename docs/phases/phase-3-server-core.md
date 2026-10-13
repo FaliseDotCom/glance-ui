@@ -1,6 +1,6 @@
-# Phase 3: Server core (current phase)
+# Phase 3: Server core
 
-**Status:** implemented on branch `phase-3/server-core`. PR open, awaiting PM review. **No UI** (API only).
+**Status:** merged (PR #6). **No UI** (API only).
 **Design:** handoff §2 (draft), §4 (save pipeline), §5 (versions); D-26 to D-35, D-46. ADRs 0002, 0003, 0004, 0008, 0016.
 
 ## Acceptance criteria (plan v2)

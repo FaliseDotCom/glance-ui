@@ -17,8 +17,8 @@ docker rm -f "$name" >/dev/null 2>&1 || true
 
 mkdir -p "$work/cfg"; cp "$config" "$work/cfg/glance.yml"
 log "starting $GLANCE_IMAGE with $(basename "$config")"
-env_file="${GLANCE_SMOKE_ENV_FILE:-$REPO_ROOT/test/fixtures/model/v1/sample.env}"
-secrets="${GLANCE_SMOKE_SECRETS_DIR:-$REPO_ROOT/test/fixtures/model/v1/secrets}"
+env_file="${GLANCE_SMOKE_ENV_FILE:-$REPO_ROOT/test/fixtures/model/v2/sample.env}"
+secrets="${GLANCE_SMOKE_SECRETS_DIR:-$REPO_ROOT/test/fixtures/model/v2/secrets}"
 glance_start smoke "$port" -v "$work/cfg:/app/config:ro" --env-file "$env_file" -v "$secrets:/run/secrets:ro" >/dev/null
 
 served=0

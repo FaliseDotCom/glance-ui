@@ -60,16 +60,16 @@ describe("other rules", () => {
 
 describe("schema", () => {
   it("rejects unknown keys outside `extra`", () => {
-    const r = parseDashboard({ schemaVersion: 1, pages: [{ _id: "p", name: "P", columns: [], typo: true }] });
+    const r = parseDashboard({ schemaVersion: 2, pages: [{ _id: "p", name: "P", columns: [], typo: true }] });
     expect(r.dashboard).toBeUndefined();
   });
   it("accepts a whole placeholder in a number field and rejects other strings", () => {
-    const rss = (limit: unknown) => ({ schemaVersion: 1, pages: [{ _id: "p", name: "P", columns: [{ _id: "c", size: "full", widgets: [{ _id: "w", type: "rss", feeds: [], limit }] }] }] });
+    const rss = (limit: unknown) => ({ schemaVersion: 2, pages: [{ _id: "p", name: "P", columns: [{ _id: "c", size: "full", widgets: [{ _id: "w", type: "rss", feeds: [], limit }] }] }] });
     expect(parseDashboard(rss("${RSS_LIMIT}")).dashboard).toBeDefined();
     expect(parseDashboard(rss("ten")).dashboard).toBeUndefined();
   });
   it("validates HSL colours like Glance (H ≤ 360, S/L ≤ 100)", () => {
-    const theme = (c: string) => parseDashboard({ schemaVersion: 1, pages: [], theme: { "primary-color": c } });
+    const theme = (c: string) => parseDashboard({ schemaVersion: 2, pages: [], theme: { "primary-color": c } });
     expect(theme("240 8 9").dashboard).toBeDefined();
     expect(theme("hsl(240, 8%, 9%)").dashboard).toBeDefined();
     expect(theme("361 8 9").dashboard).toBeUndefined();

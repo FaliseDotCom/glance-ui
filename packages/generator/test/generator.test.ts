@@ -8,14 +8,14 @@ import { generate } from "../src/index.ts";
 const OPTS = { glanceVersion: "v0.8.6" };
 
 async function sample(): Promise<DashboardT> {
-  const json = JSON.parse(await readFile("test/fixtures/model/v1/sample.json", "utf8"));
+  const json = JSON.parse(await readFile("test/fixtures/model/v2/sample.json", "utf8"));
   const { dashboard, issues } = parseDashboard(json);
   if (!dashboard) throw new Error(JSON.stringify(issues));
   return dashboard;
 }
 
 const withHtml = (source: string, title = "t"): DashboardT => ({
-  schemaVersion: 1,
+  schemaVersion: 2,
   pages: [{ _id: "p", name: "P", columns: [{ _id: "c", size: "full", widgets: [{ _id: "w", type: "html", title, source }] }] }],
 });
 
@@ -53,9 +53,16 @@ describe("generate", () => {
     expect(docker.containers.some_container).toEqual({ name: "Some Container", description: "Example override", hide: true });
   });
 
+  it("writes every modelled widget's keys in field order", async () => {
+    const { yaml } = generate(await sample(), OPTS);
+    expect(yaml).toContain("- type: weather\n            location: Berlin, Germany\n            units: ${UNITS}\n            hour-format: 24h\n");
+  });
+
   it("writes raw widgets back unchanged", async () => {
-    const out = parse(generate(await sample(), OPTS).yaml);
-    expect(out.pages[0].columns[0].widgets[2]).toEqual({ type: "weather", location: "Berlin, Germany", units: "metric" });
+    const d = await sample();
+    d.pages[0]!.columns[0]!.widgets.push({ _id: "raw", type: "from-the-future", _raw: { b: 1, a: { c: [2] } } });
+    const out = parse(generate(d, OPTS).yaml);
+    expect(out.pages[0].columns[0].widgets[3]).toEqual({ type: "from-the-future", b: 1, a: { c: [2] } });
   });
 
   it("encodes escapes so Glance sees exactly the intended placeholders", () => {

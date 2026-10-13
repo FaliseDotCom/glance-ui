@@ -33,7 +33,7 @@ describe("random values rendered by the real Glance server", () => {
     const glance = await startGlance(
       (port) => {
         const d: DashboardT = {
-          schemaVersion: 1,
+          schemaVersion: 2,
           server: { host: "127.0.0.1", port },
           pages: [{ _id: "p", name: "P", slug: "p", columns: [{ _id: "c", size: "full",
             widgets: sources.map((source, i) => ({ _id: `w${i}`, type: "html" as const, source })) }] }],

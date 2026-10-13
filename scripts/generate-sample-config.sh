@@ -3,4 +3,4 @@
 set -euo pipefail
 out="${1:?usage: generate-sample-config.sh <output-file>}"
 cd "$(dirname "$0")/.."
-node packages/generator/src/cli.ts test/fixtures/model/v1/sample.json --out "$out"
+node packages/generator/src/cli.ts test/fixtures/model/v2/sample.json --out "$out"

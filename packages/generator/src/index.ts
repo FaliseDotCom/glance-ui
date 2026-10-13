@@ -25,13 +25,18 @@ import {
   VALUE_PATTERN,
   isRawWidget,
   isWholePlaceholder,
+  widgetFields,
   type DashboardT,
+  type Field,
   type PageT,
   type WidgetT,
 } from "@glance-editor/model";
 
-/** What kind of value a placeholder stands for, used to pick a dummy value when validating (packages/glance). */
-export type PlaceholderHint = "number" | "boolean" | "hsl" | "duration" | "string";
+/**
+ * What kind of value a placeholder stands for, used to pick a dummy value when validating (packages/glance).
+ * `value:<text>` gives the exact dummy, for fields Glance checks further (an enum option, a valid time zone).
+ */
+export type PlaceholderHint = "number" | "boolean" | "hsl" | "duration" | "string" | `value:${string}`;
 
 export interface GenerateOptions {
   /** Glance version the output targets, shown in the header. */
@@ -296,112 +301,35 @@ class Converter {
   }
 
   widget(w: WidgetT): Obj {
-    // Exhaustive over KnownWidgetType; raw widgets are handled first.
     if (isRawWidget(w)) return { ...(this.keepIds ? { _id: w._id } : {}), type: w.type, ...w._raw };
-    const base = ["type", "title", "title-url", "hide-header", "css-class", "cache"];
-    const baseConv = { "hide-header": this.b, cache: this.dur };
-    const src = w as unknown as Obj;
-    const children = { widgets: (ws: WidgetT[]) => ws.map((x) => this.widget(x)) };
-    switch (w.type) {
-      case "bookmarks":
-        return this.pick(src, [...base, "groups"], {
-          ...baseConv,
-          groups: (gs: Obj[]) =>
-            gs.map((g) =>
-              this.pick(g, ["title", "color", "same-tab", "hide-arrow", "target", "links"], {
-                color: this.hsl,
-                "same-tab": this.b,
-                "hide-arrow": this.b,
-                links: (ls: Obj[]) =>
-                  ls.map((l) =>
-                    this.pick(l, ["title", "url", "description", "icon", "same-tab", "hide-arrow", "target"], {
-                      "same-tab": this.b,
-                      "hide-arrow": this.b,
-                    }),
-                  ),
-              }),
-            ),
-        });
-      case "calendar":
-        return this.pick(src, [...base, "first-day-of-week"], baseConv);
-      case "clock":
-        return this.pick(src, [...base, "hour-format", "timezones"], {
-          ...baseConv,
-          timezones: (tz: Obj[]) => tz.map((t) => this.pick(t, ["timezone", "label"])),
-        });
-      case "docker-containers":
-        return this.pick(src, [
-          ...base, "hide-by-default", "format-container-names", "sock-path", "category", "running-only", "containers",
-        ], {
-          ...baseConv,
-          "hide-by-default": this.b,
-          "format-container-names": this.b,
-          "running-only": this.b,
-          containers: (cs: Obj[]) => {
-            const map: Obj = {};
-            for (const c of cs) {
-              map[c.container as string] = this.pick(c, [
-                "name", "icon", "url", "description", "same-tab", "hide", "id", "parent", "category",
-              ], { "same-tab": this.b, hide: this.b });
-            }
-            return map;
-          },
-        });
-      case "group":
-        return this.pick(src, [...base, "widgets"], { ...baseConv, ...children });
-      case "split-column":
-        return this.pick(src, [...base, "max-columns", "widgets"], { ...baseConv, "max-columns": this.n, ...children });
-      case "html":
-        return this.pick(src, [...base, "source"], baseConv);
-      case "monitor":
-        return this.pick(src, [...base, "style", "show-failing-only", "sites"], {
-          ...baseConv,
-          "show-failing-only": this.b,
-          sites: (ss: Obj[]) =>
-            ss.map((s) =>
-              this.pick(s, [
-                "title", "url", "check-url", "error-url", "icon", "timeout", "allow-insecure", "same-tab",
-                "alt-status-codes", "basic-auth",
-              ], {
-                timeout: this.dur,
-                "allow-insecure": this.b,
-                "same-tab": this.b,
-                "alt-status-codes": (codes: unknown[]) => codes.map(this.n),
-                "basic-auth": (a: Obj) => this.pick(a, ["username", "password"]),
-              }),
-            ),
-        });
-      case "rss":
-        return this.pick(src, [
-          ...base, "style", "thumbnail-height", "card-height", "limit", "preserve-order", "single-line-titles",
-          "collapse-after", "feeds",
-        ], {
-          ...baseConv,
-          "thumbnail-height": this.n,
-          "card-height": this.n,
-          limit: this.n,
-          "preserve-order": this.b,
-          "single-line-titles": this.b,
-          "collapse-after": this.n,
-          feeds: (fs: Obj[]) =>
-            fs.map((f) =>
-              this.pick(f, [
-                "url", "title", "hide-categories", "hide-description", "limit", "item-link-prefix",
-                "thumbnail-link-prefix", "headers",
-              ], { "hide-categories": this.b, "hide-description": this.b, limit: this.n }),
-            ),
-        });
-      case "search":
-        return this.pick(src, [
-          ...base, "search-engine", "new-tab", "autofocus", "target", "placeholder", "bangs",
-        ], {
-          ...baseConv,
-          "new-tab": this.b,
-          autofocus: this.b,
-          bangs: (bs: Obj[]) => bs.map((x) => this.pick(x, ["title", "shortcut", "url"])),
-        });
+    return this.fields(w as unknown as Obj, [{ key: "type", label: "Type", kind: "text" }, ...widgetFields(w.type)]);
+  }
+
+  /** Keys in field order (canonical, rule 3), each value converted by its field's kind, then `extra`. */
+  private fields(src: Obj, fields: readonly Field[]): Obj {
+    const convert: Record<string, (v: never) => unknown> = {};
+    for (const f of fields) convert[f.key] = (v: unknown) => this.value(v, f);
+    return this.pick(src, fields.map((f) => f.key), convert);
+  }
+
+  private value(v: unknown, f: Field): unknown {
+    switch (f.kind) {
+      case "number": return this.n(v);
+      case "bool": return this.b(v);
+      case "hsl": return this.hsl(v);
+      case "duration": return this.dur(v);
+      case "enum": return this.typed(v, `value:${f.options![0]}`);
+      case "text": case "url": case "icon": return f.dummy ? this.typed(v, `value:${f.dummy}`) : v;
+      case "list": return f.of === "number" && Array.isArray(v) ? v.map(this.n) : v;
+      case "widgets": return (v as WidgetT[]).map((x) => this.widget(x));
+      case "objectList": return (v as Obj[]).map((x) => this.fields(x, f.item!));
+      case "object": return this.fields(v as Obj, f.item!);
+      case "keyedList": {
+        const map: Obj = {};
+        for (const x of v as Obj[]) map[x[f.keyField!.key] as string] = this.fields(x, f.item!);
+        return map;
+      }
+      case "map": case "yaml": return v;
     }
-    const unreachable: never = w;
-    throw new Error(`unhandled widget type: ${(unreachable as { type: string }).type}`);
   }
 }

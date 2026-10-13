@@ -25,7 +25,7 @@ beforeAll(async () => {
   glance = await startGlance(
     (port) => {
       const d: DashboardT = {
-        schemaVersion: 1,
+        schemaVersion: 2,
         server: { host: "127.0.0.1", port },
         pages: [{
           _id: "p", name: "P", slug: "p",

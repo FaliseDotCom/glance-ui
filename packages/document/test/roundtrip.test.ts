@@ -29,7 +29,11 @@ describe("no-edit round trip is byte-identical", () => {
 describe("import report and model", () => {
   const r = importText(read("test/fixtures/import/commented.yml"));
   it("keeps unknown widget types as raw, unknown keys and unrepresentable values in extra (D-14)", () => {
-    expect(r.report.rawWidgetTypes).toEqual(["weather"]);
+    // Every Glance v0.8.6 type is modelled since schema v2 (ADR-0017); only types Glance doesn't have stay raw.
+    expect(r.report.rawWidgetTypes).toEqual([]);
+    const other = importText("pages:\n  - name: P\n    columns:\n      - size: full\n        widgets:\n          - type: from-the-future\n            a: [1]\n");
+    expect(other.report.rawWidgetTypes).toEqual(["from-the-future"]);
+    expect(other.dashboard!.pages[0]!.columns[0]!.widgets[0]).toEqual({ _id: "pages.0.columns.0.widgets.0", type: "from-the-future", _raw: { a: [1] } });
     expect(r.report.unknownKeys).toEqual(expect.arrayContaining(["x-defaults", "pages.0.columns.1.widgets.3.tittle"]));
     expect(r.report.keptAsIs.map((k) => k.path)).toEqual(["pages.0.columns.1.widgets.3.hide-header"]);
     const rss = r.dashboard!.pages[0]!.columns[1]!.widgets[3] as { extra?: Record<string, unknown>; limit?: unknown };

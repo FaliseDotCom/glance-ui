@@ -1,6 +1,6 @@
 # 0014. Data model (schema v1) and YAML generator
 
-- **Status:** accepted (merged with Phase 1); generator role superseded in part by ADR-0015
+- **Status:** accepted (merged with Phase 1); generator role superseded in part by ADR-0015; widget modelling superseded by ADR-0017 (schema v2)
 - **Date:** 2026-10-13
 - **Decider:** PM
 - **UX impact:** no. It is internal structure. It does set *what* the UI can edit, but how is a Phase 4 design question.

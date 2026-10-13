@@ -4,7 +4,7 @@ A no-code web editor that owns the entire Glance (glanceapp/glance) config. Dash
 data model; `glance.yml` is generated on every explicit Save and is output only. Existing config is imported once.
 
 @docs/handoff.md
-@docs/phases/phase-3-server-core.md
+@docs/phases/phase-4-widget-schema.md
 
 ## Roles
 - **PM/QA (repo owner):** merges every PR, approves every release note, decides everything with UX impact.
@@ -50,11 +50,13 @@ data model; `glance.yml` is generated on every explicit Save and is output only.
 | `docs/todo-user.md` / `docs/todo-claude.md` | Open actions for the PM / for Claude |
 | `glance.version` | The pinned Glance image (tag plus digest). The single source for CI and tests |
 | `packages/model` / `generator` / `glance` | Data model + rules (zod) / model → YAML / pinned-binary validation and `config:print` (ADR-0014) |
+| `packages/model/src/widgets.ts` | Widget schemas for every Glance type: fields, labels, defaults, refresh. Drives model, import, output, forms (ADR-0017) |
+| `scripts/glance-source-data.ts` | Extracts widget type names and built-in themes from Glance's source at the pinned commit |
 | `packages/document` | Import (`importFile`), document-preserving writer (`writeDraft`), report, CLI (ADR-0015) |
 | `packages/server` | `Editor`: drafts, versions, save pipeline, SQLite store (Phase 3) |
 | `docs/api.md` | The editor's HTTP API |
 | `apps/editor` | SvelteKit 3 app (no UI yet); `Dockerfile` builds it with the glance binary |
-| `test/` | Harness scripts and fixtures (`test/fixtures/model/v1/` = model fixtures) |
+| `test/` | Harness scripts and fixtures (`test/fixtures/model/v2/` = model fixtures) |
 | `.github/` | CI, PR template, issue forms |
 
 ## Key Glance facts (v0.8.6; details and evidence in ADR-0009)
@@ -67,3 +69,5 @@ data model; `glance.yml` is generated on every explicit Save and is output only.
   `manifest.json?v=<time>` in every page changes only on a successful reload (all tested).
 - Glance ignores unknown keys silently, and substitutes placeholders as text over the whole file, comments included (ADR-0014).
   Never hand-roll YAML for placeholders: use the generator. Edits to an imported file are spliced, not regenerated (ADR-0015).
+- Glance's docs overstate "required" for 17 widget fields and differ from v0.8.6 on some defaults (lessons, ADR-0018).
+  The binary is the reference: `packages/document/test/widget-schema.test.ts`.

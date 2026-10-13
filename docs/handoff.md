@@ -1,19 +1,26 @@
 # Handoff
 
 The single place to see where the project stands. Updated at the end of every work session and every PR.
-Last updated: 2026-10-13 (Phase 3 PR opened).
+Last updated: 2026-10-13 (Phase 4 PR opened).
 
 ## Current state
-- **Phase:** 3 (server core) **PR open**, waiting for your review. Phase 2 merged (PR #5).
+- **Phase:** 4 (widget schema) **PR open**, waiting for your review. Phase 3 merged (PR #6).
 - **Phase plan:** approved 2026-10-13.
 - **Pinned Glance:** v0.8.6, by digest (`/glance.version`).
 - **Dev environment:** dev Glance on :18180 and the editor container on :18190, on the dev machine (`docs/dev-environment.md`).
-- **Feature code:** model, rules, generator, validation (Phase 1); import and edit-in-place writer (Phase 2); server core and JSON API (Phase 3). No UI yet. The dev editor on :18190 has imported the dev config (version 0).
+- **Feature code:**
+  - Phase 1: model, rules, generator, validation.
+  - Phase 2: import and edit-in-place writer.
+  - Phase 3: server core and JSON API.
+  - Phase 4: schemas for every widget type, checked against Glance; built-in themes.
+  - No UI yet. The dev editor on :18190 has imported the dev config (version 0).
 
 ## Needs user decision
 Nothing below may be built on until you decide. ★ = affects user experience.
 
-_No UX decisions open._
+| ADR | Question | Recommendation |
+| --- | -------- | -------------- |
+| ★ [0018](adr/0018-fields-glance-does-not-require.md) | 17 widget fields (e.g. RSS feeds, a monitor site's URL) are "required" in Glance's docs and the prototype, but Glance v0.8.6 runs without them. Block Save, warn, or ignore? | **Warn on Review, don't block.** The form still shows them as needed |
 
 ## Decided on 2026-10-13 (via chat)
 | ADR | Outcome |
@@ -41,6 +48,17 @@ _No UX decisions open._
 - Dev Glance confirmed reachable from another LAN device (by you, 2026-10-13).
 - Correction: the Phase 0 docs called the dev machine's Docker "rootless". It is rootful. Fixed in lessons and ADR-0009.
 
+## Phase 4 findings
+- All 29 widget type names (28 widgets plus `stocks`, an old name for `markets`) now have a schema checked against the real
+  Glance binary: required fields, enum values, and that every key is one Glance reads.
+- Glance's docs and v0.8.6 differ in places:
+  - 17 "required" fields aren't checked (ADR-0018).
+  - DNS stats needs a service even though the docs give a default.
+  - An iframe without a height is 50 px tall, not 300.
+- Refresh (D-58), from the source: Weather and Calendar (legacy) update on the hour. The new Calendar, Clock, Search,
+  Bookmarks, To-do, iframe, HTML, Group and Split column fetch nothing. The rest have a default interval that `cache` overrides.
+- The 14 built-in themes (11 dark, 3 light) are extracted from Glance's docs at the pinned version, ready for the theme screen.
+
 ## Phase 3 findings
 - The save pipeline is complete and tested against real Glance, including "reloaded" vs "not confirmed".
 - Drafts need two references: the text to splice into, and the live text to measure changes against (found by the restore test).
@@ -64,10 +82,12 @@ _No UX decisions open._
 - The real-binary tests caught a validator bug that my own model-based tests missed. Both kinds of test are kept.
 
 ## Next steps
-1. You: review and merge the Phase 3 PR.
-2. Claude: Phase 4, the widget schema for all 27 Glance widget types (form definitions, cache rules D-58, theme swatches).
+1. You: decide ADR-0018, and review and merge the Phase 4 PR.
+2. Claude: Phase 5 (UI 1): design tokens and fonts, layout shell, Save bar and sheets, pages and columns, history, first run.
 
 ## Session log
+- 2026-10-13: Phase 4 implemented (widget schemas for every type, schema v2, themes); PR opened. ADR-0018 proposed.
+- 2026-10-13: PR #6 (Phase 3) merged.
 - 2026-10-13: Phase 3 implemented (server core, API, dev editor wired to dev Glance); PR opened.
 - 2026-10-13: Phase 2 implemented (import, writer, report, CLI); PR opened.
 - 2026-10-13: Plan v2, D-56, D-61 and D-62 decided by the PM (all as recommended).
