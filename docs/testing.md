@@ -16,6 +16,7 @@
 | Command | What it checks | Time |
 | ------- | -------------- | ---- |
 | `scripts/test.sh` | Everything below except the smoke test, plus typecheck, license gate, shellcheck | ~45 s |
+| `npx vitest run packages/document` | Import, round trip (byte-identical), targeted edits, random edit sequences (property, 1,500 per run), spliced output rendered by real Glance. On a property failure, set `GLANCE_EDITOR_PROPERTY_DUMP=<file>` to record the failing op sequences | ~25 s |
 | `npx vitest run` | Model rules, placeholder parser, generator (incl. a 2,000-run property test), validation and render tests against the **real pinned binary** (`GLANCE_BIN`, extracted from the image by `scripts/fetch-glance-binary.sh`) | ~5 s |
 | `test/validate-fixtures.sh` | `glance config:validate` passes every `fixtures/valid/*` and fails every `fixtures/invalid/*` | ~3 s |
 | `test/upstream-example.sh` | Glance's own example config at the pinned commit: download, checksum, `config:validate` | ~2 s |
@@ -31,6 +32,8 @@ The Glance image comes from `/glance.version` (tag plus digest). Requirements: D
   the editor will generate. It avoids network-dependent widgets (e.g. weather fails at startup on an invalid location).
 - `test/fixtures/invalid/`: each file breaks exactly one documented rule. The header comment says which.
 - `test/fixtures/support/`: dummy env/secret files for `placeholders.yml`. They are not secrets.
+- `test/fixtures/import/`: import fixtures. `commented.yml` has comments everywhere, an anchor and merge key, a flow list, a
+  block scalar, an escape in double quotes, a typo key and an unrepresentable value. `includes/` covers `$include`, `!include`, nesting.
 - `test/fixtures/model/v1/`: editor-model fixtures (schema v1). `sample.json` covers every modelled widget, raw widgets,
   typed and untyped placeholders and an escape; kept forever for migration tests (ADR-0003).
 

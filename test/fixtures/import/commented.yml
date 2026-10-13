@@ -1,0 +1,69 @@
+# Hand-written dashboard with comments everywhere (import fixture, ADR-0015).
+# A second header line.
+
+x-defaults: &card-defaults # an anchor in an unknown top-level key (Glance ignores the key)
+  hide-header: false
+  css-class: card
+
+theme:
+  background-color: 240 13 14 # dark background
+  primary-color: 51 33 68
+  presets:
+    paper: # light preset
+      light: true
+      background-color: 0 0 95
+
+branding:
+  app-name: ${DASHBOARD_NAME}
+
+pages:
+  # The main page
+  - name: Home # shown first
+    slug: home
+    head-widgets:
+      - type: search
+        search-engine: duckduckgo
+    columns:
+      - size: small
+        widgets:
+          # the clock
+          - type: clock
+            hour-format: 24h
+          - <<: *card-defaults
+            type: calendar # merged defaults above
+            first-day-of-week: monday
+
+      - size: full
+        widgets:
+          - type: bookmarks
+            title: Tools
+            groups:
+              - title: Dev   # dev links
+                color: 10 70 50
+                links:
+                  - title: Glance
+                    url: https://github.com/glanceapp/glance
+                    icon: si:github
+                  # internal
+                  - title: Router
+                    url: http://${ROUTER_HOST}
+          - type: html
+            title: "Escaped: \${NOT_A_VAR}"
+            source: |
+              <p>Notes</p>
+              <p>${GREETING}</p>
+          # weather below
+          - type: weather
+            location: London, United Kingdom
+            units: metric # alternatively "imperial"
+          - type: rss
+            limit: ${RSS_LIMIT}
+            hide-header: "yes" # a quoted value the form can't represent; Glance v0.8.6 config:validate accepts it
+            tittle: typo key # unknown key, Glance ignores it
+            feeds: [{url: "https://example.com/feed.xml"}] # flow style
+
+  - name: Second
+    columns:
+      - size: full
+        widgets:
+          - type: clock # only widget

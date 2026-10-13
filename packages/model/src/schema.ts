@@ -115,11 +115,13 @@ const Calendar = z.strictObject({
     .optional(),
 });
 
+export const ClockTimezone = z.strictObject({ _id: id, timezone: str, label: str.optional(), extra });
+
 const Clock = z.strictObject({
   ...widgetBase,
   type: z.literal("clock"),
   "hour-format": z.enum(["12h", "24h"]).optional(),
-  timezones: z.array(z.strictObject({ _id: id, timezone: str, label: str.optional(), extra })).optional(),
+  timezones: z.array(ClockTimezone).optional(),
 });
 
 /** One entry of the docker-containers `containers` map. `name` here is the map key: the Docker container name. */
@@ -152,7 +154,7 @@ const DockerContainers = z.strictObject({
 
 const Html = z.strictObject({ ...widgetBase, type: z.literal("html"), source: str.optional() });
 
-const MonitorSite = z.strictObject({
+export const MonitorSite = z.strictObject({
   _id: id,
   title: str,
   url: str,
@@ -175,7 +177,7 @@ const Monitor = z.strictObject({
   sites: z.array(MonitorSite),
 });
 
-const RssFeed = z.strictObject({
+export const RssFeed = z.strictObject({
   _id: id,
   url: str,
   title: str.optional(),
@@ -201,6 +203,8 @@ const Rss = z.strictObject({
   feeds: z.array(RssFeed),
 });
 
+export const SearchBang = z.strictObject({ _id: id, title: str.optional(), shortcut: str.min(1), url: str.min(1), extra });
+
 const Search = z.strictObject({
   ...widgetBase,
   type: z.literal("search"),
@@ -209,7 +213,7 @@ const Search = z.strictObject({
   autofocus: bool.optional(),
   target: str.optional(),
   placeholder: str.optional(),
-  bangs: z.array(z.strictObject({ _id: id, title: str.optional(), shortcut: str.min(1), url: str.min(1), extra })).optional(),
+  bangs: z.array(SearchBang).optional(),
 });
 
 const Group = z.strictObject({
@@ -228,6 +232,12 @@ const SplitColumn = z.strictObject({
     return z.array(Widget);
   },
 });
+
+/** Schema per modelled widget type (used by the importer to check fields one by one). */
+export const WIDGET_SCHEMAS = {
+  bookmarks: Bookmarks, calendar: Calendar, clock: Clock, "docker-containers": DockerContainers, group: Group, html: Html,
+  monitor: Monitor, rss: Rss, search: Search, "split-column": SplitColumn,
+} as const satisfies Record<KnownWidgetType, z.ZodObject>;
 
 const KnownWidget = z.discriminatedUnion("type", [
   Bookmarks, Calendar, Clock, DockerContainers, Group, Html, Monitor, Rss, Search, SplitColumn,
@@ -279,11 +289,13 @@ const themeProperties = {
   "text-saturation-multiplier": num.optional(),
 };
 
+export const ThemePreset = z.strictObject({ _id: id, key: str.min(1), ...themeProperties, extra });
+
 export const Theme = z.strictObject({
   ...themeProperties,
   "custom-css-file": str.optional(),
   "disable-picker": bool.optional(),
-  presets: z.array(z.strictObject({ _id: id, key: str.min(1), ...themeProperties, extra })).optional(),
+  presets: z.array(ThemePreset).optional(),
   extra,
 });
 
@@ -308,12 +320,12 @@ export const Server = z.strictObject({
   extra,
 });
 
+export const AuthUser = z.strictObject({ _id: id, username: str, password: str.optional(), "password-hash": str.optional(), extra });
+
 export const Auth = z.strictObject({
   // ADR-0004: secrets are stored as placeholders only (enforced in rules.ts).
   "secret-key": str,
-  users: z.array(
-    z.strictObject({ _id: id, username: str, password: str.optional(), "password-hash": str.optional(), extra }),
-  ),
+  users: z.array(AuthUser),
   extra,
 });
 

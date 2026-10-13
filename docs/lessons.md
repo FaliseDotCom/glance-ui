@@ -14,6 +14,21 @@ The property test passed against my own model of Glance's substitution while the
 that YAML style choices (double quotes, adjacency) change what Glance substitutes. **Do:** keep both kinds of test for
 anything that touches Glance semantics.
 
+### 2026-10-13: Generated text that's right on its own can be wrong when spliced
+Phase 1's generator output was correct as a whole file. Spliced into an existing file, two things broke. A keep-chomping
+block literal (`|+`) swallowed the blank line after it. And the escape encoding marked so much that a re-import changed
+meaning. **Do:** test every encoder in the context it's used: whole file, inline replacement, and spliced block.
+
+### 2026-10-13: Compare what Glance sees, not how the model spells it
+`\${A}${B}` and `\${A}\${B}` are different model strings with the same meaning for Glance. Equality checks (writer self-check,
+tests) use `glanceView`. **Do:** never compare placeholder-bearing strings byte-wise when the question is "same for Glance?".
+
+### 2026-10-13: Glance details found while importing
+- `config:print` adds exactly one trailing newline (`Println`); on error it prints to stdout and exits 1.
+- `$include` replaces the whole directive line, including a leading `- `: an included list item must contain its own dash
+  (the docs example does). Nested include paths are relative to the *including* file (source), though the docs say "main file".
+- `config:validate` accepted `hide-header: "yes"` (a quoted string for a boolean field). How Glance interprets it is not verified.
+
 ### 2026-10-13: A design package arrives with its own "approved" decisions, so reconcile before building
 Design pass 1 carried 63 owner-approved decisions, and some contradicted ADRs accepted the same day (direct socket vs proxy; keep
 comments vs drop them). Its bundled prompt also asked for things already done (pin, stack). **Do:** list every conflict,

@@ -1,6 +1,6 @@
 # 0015. Document-preserving YAML writer
 
-- **Status:** proposed (non-UX; it implements approved design decision D-38. Accepted on merge of the PR that implements it, per the ADR README convention)
+- **Status:** proposed (non-UX; it implements approved design decision D-38). Accepted by merging the Phase 2 PR.
 - **Date:** 2026-10-13
 - **Decider:** PM
 - **UX impact:** none of its own. It delivers D-38 ("your file should look like yours after a save").
@@ -54,6 +54,21 @@ Throwaway code, not committed: `.spike/` is in `.gitignore`.
   tabs or odd indentation; `$include`-merged input; anchors and aliases. Each gets a fixture. Anything the splicer can't
   handle falls back to regenerating that subtree, with a warning (decision item 4).
 - **Conclusion:** feasible. Proceed with 2b on this design.
+
+## Implementation (Phase 2b, 2026-10-13)
+`packages/document`. Differences from the plan above:
+- **Base text** = `config:print` output minus the single trailing newline Glance's `Println` adds (`internal/glance/main.go:53`).
+  For a file without includes, that is the file byte-for-byte.
+- **Matching** uses path-based ids from import (`pages.0.columns.1.widgets.2`); the writer compares the base model and
+  the draft (both through `toGlanceJson`, with ids) and uses the AST only to locate text.
+- **Blocks** are contiguous partitions (leading comment lines through to the next block), so unchanged blocks
+  concatenate back to the exact original. Items moved into *new* content (e.g. a widget moved into a new page) keep their
+  text: new content is serialised with a token where the moved item goes, then the token is replaced by its block.
+- **Fallbacks**, each with a warning: a pair or item is regenerated for flow collections, block scalars, aliases, merge-key
+  deletions, type changes, and empty ↔ non-empty lists. The whole file is regenerated only if the self-check fails.
+- **Self-check** compares the *Glance view* (`glanceView`): two model strings that Glance treats identically count as equal.
+- **Reading text the way Glance does:** escapes `\${` and YAML-escaped dollars (`\u0024`, `\x24`, `\U00000024` inside double
+  quotes) are marked without changing lengths, so ranges stay valid and both read back as literal `${…}`.
 
 ## Decision record
 _Pending._

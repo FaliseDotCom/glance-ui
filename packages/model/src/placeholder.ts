@@ -95,3 +95,14 @@ export function substitute(text: string, resolve: Resolver, opts: { pattern?: Re
     return prefix + resolve(kind, name, placeholder);
   });
 }
+
+const LIVE = "\uE003";
+
+/**
+ * What Glance ends up with for a model value, with live placeholders marked instead of resolved: escapes become literal
+ * text, literal `${…}` stays, and each placeholder Glance would substitute is wrapped in U+E003. Two model values mean the
+ * same to Glance exactly when their views are equal (e.g. `\${A}${B}` and `\${A}\${B}`: an escape blocks the next one).
+ */
+export function glanceView(value: string): string {
+  return substitute(value, (_k, _n, text) => LIVE + text + LIVE, { pattern: VALUE_PATTERN });
+}

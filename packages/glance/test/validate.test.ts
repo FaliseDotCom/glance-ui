@@ -63,7 +63,12 @@ describe("typed placeholder dummies", () => {
     const r = await validateConfig(yaml); // no hints → string dummy
     expect(r.ok).toBe(false);
   });
+  it("a placeholder freed by substituting the one before it is escaped, as Glance leaves it literal", async () => {
+    expect(substituteForValidation("x ${A}${B}")).toBe("x glance-editor-placeholder\\${B}");
+    const r = await validate(dash([col("full")], { name: "${A_VAR}${A_VAR}" }));
+    expect(r.output).toBe("");
+  });
   it("the validation copy keeps escapes and literals, and replaces substitutable placeholders", () => {
-    expect(substituteForValidation("a \\${X} ${lower} ${foo:B} ${A}${B}")).toBe("a \\${X} ${lower} ${foo:B} glance-editor-placeholder${B}");
+    expect(substituteForValidation("a \\${X} ${lower} ${foo:B} ${A}${B}")).toBe("a \\${X} ${lower} ${foo:B} glance-editor-placeholder\\${B}");
   });
 });

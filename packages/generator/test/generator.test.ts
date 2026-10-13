@@ -20,7 +20,7 @@ const withHtml = (source: string, title = "t"): DashboardT => ({
 });
 
 describe("generate", () => {
-  it.each([" \n", "a\n \nb", "trailing \nx", "\tx\n", "  indented\nfirst", "\n\n", "x\n", "\n \n${A}a", "a\u2028b\u0085c\ufeff"])("multi-line %j survives", (v) => {
+  it.each([" \n", "a\n \nb", "trailing \nx", "\tx\n", "  indented\nfirst", "\n\n", "x\n", "\n \n${A}a", "a\u2028b\u0085c\ufeff", "#\n\n", "x\n\n\n"])("multi-line %j survives", (v) => {
     const { yaml } = generate(withHtml(v, v), OPTS);
     const w = parse(yaml).pages[0].columns[0].widgets[0];
     expect([w.source, w.title]).toEqual([v, v]);

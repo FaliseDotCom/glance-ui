@@ -49,7 +49,8 @@ data model; `glance.yml` is generated on every explicit Save and is output only.
 | `design/handoffs/` | Archived Claude Design handoffs (ADR-0012) |
 | `docs/todo-user.md` / `docs/todo-claude.md` | Open actions for the PM / for Claude |
 | `glance.version` | The pinned Glance image (tag plus digest). The single source for CI and tests |
-| `packages/model` / `generator` / `glance` | Data model + rules (zod) / model → YAML / pinned-binary validation (ADR-0014) |
+| `packages/model` / `generator` / `glance` | Data model + rules (zod) / model → YAML / pinned-binary validation and `config:print` (ADR-0014) |
+| `packages/document` | Import (`importFile`), document-preserving writer (`writeDraft`), report, CLI (ADR-0015) |
 | `apps/editor` | SvelteKit 3 app (no UI yet); `Dockerfile` builds it with the glance binary |
 | `test/` | Harness scripts and fixtures (`test/fixtures/model/v1/` = model fixtures) |
 | `.github/` | CI, PR template, issue forms |

@@ -1,0 +1,5 @@
+- name: Home # from home.yml
+  columns:
+    - size: full
+      widgets:
+        - type: clock
