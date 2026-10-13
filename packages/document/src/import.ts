@@ -187,9 +187,13 @@ class Ctx {
   page(v: unknown, path: Path): Obj | undefined {
     return this.obj(v, Page, path, {
       "head-widgets": (x, p) => this.list(x, p, (w, wp) => this.widget(w, wp)),
-      columns: (x, p) => this.list(x, p, (c, cp) => this.obj(c, Column, cp, {
-        widgets: (ws, wp) => this.list(ws, wp, (w, ip) => this.widget(w, ip)),
-      })),
+      columns: (x, p) => this.list(x, p, (c, cp) => {
+        const col = this.obj(c, Column, cp, {
+          widgets: (ws, wp) => this.list(ws, wp, (w, ip) => this.widget(w, ip)),
+        });
+        // Glance v0.8.6 docs: a column's `widgets` is optional. The model always has the list.
+        return col && !("widgets" in col) ? { ...col, widgets: [] } : col;
+      }),
     });
   }
 

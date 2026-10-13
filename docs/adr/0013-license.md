@@ -17,6 +17,9 @@ The project is licensed under **GPL-3.0** (`/LICENSE`, the text from GitHub's li
   commit in `/glance.version`). Tracked in todo-claude.
 - Every new dependency must have a GPL-3.0-compatible license (MIT/BSD/ISC/Apache-2.0 are fine with GPLv3).
   Phase 1 adds a license check to CI.
+- **Fonts (Phase 5):** Nunito Sans and IBM Plex Mono are bundled from the `@fontsource` packages under the SIL Open Font
+  License 1.1, as design §7 asks (self-hosted, no Google Fonts at runtime). Fonts are separate works the UI uses, not
+  code combined with ours; OFL-1.1 is on the license check's allow list for that reason only.
 
 ## Decision record
 Accepted 2026-10-13 by the PM (via chat).

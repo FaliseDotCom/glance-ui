@@ -1,10 +1,10 @@
 # Handoff
 
 The single place to see where the project stands. Updated at the end of every work session and every PR.
-Last updated: 2026-10-13 (Phase 4 PR opened).
+Last updated: 2026-10-13 (Phase 5 PR opened).
 
 ## Current state
-- **Phase:** 4 (widget schema) **PR open**, waiting for your review. Phase 3 merged (PR #6).
+- **Phase:** 5 (UI 1: first screens) **PR open**, waiting for your review. Phase 4 merged (PR #7).
 - **Phase plan:** approved 2026-10-13.
 - **Pinned Glance:** v0.8.6, by digest (`/glance.version`).
 - **Dev environment:** dev Glance on :18180 and the editor container on :18190, on the dev machine (`docs/dev-environment.md`).
@@ -13,14 +13,14 @@ Last updated: 2026-10-13 (Phase 4 PR opened).
   - Phase 2: import and edit-in-place writer.
   - Phase 3: server core and JSON API.
   - Phase 4: schemas for every widget type, checked against Glance; built-in themes.
-  - No UI yet. The dev editor on :18190 has imported the dev config (version 0).
+  - Phase 5: the first screens. First run (import with checks, Start empty), pages and column layout, Save with
+    Review/Problems/Go to, History with Restore, Discard, undo toasts; desktop and phone.
+  - The dev editor on :18190 runs this UI against the dev Glance.
 
 ## Needs user decision
 Nothing below may be built on until you decide. ★ = affects user experience.
 
-| ADR | Question | Recommendation |
-| --- | -------- | -------------- |
-| ★ [0018](adr/0018-fields-glance-does-not-require.md) | 17 widget fields (e.g. RSS feeds, a monitor site's URL) are "required" in Glance's docs and the prototype, but Glance v0.8.6 runs without them. Block Save, warn, or ignore? | **Warn on Review, don't block.** The form still shows them as needed |
+_No decisions open._
 
 ## Decided on 2026-10-13 (via chat)
 | ADR | Outcome |
@@ -38,6 +38,7 @@ Nothing below may be built on until you decide. ★ = affects user experience.
 | [0013](adr/0013-license.md) | License: GPL-3.0 |
 | Design pass 1 ([ADR-0016](adr/0016-design-pass-1-adopted.md)) | UX source of truth; design wins on UX differences; **proxy overrides D-25**; **D-38 keeps comments** (ADR-0015); archived with the design system's name redacted |
 | Plan v2, D-56, D-61, D-62 | Plan v2 approved. Icon Web tab: Iconify + Openverse (Wikimedia fallback). Pixabay: local pool, refreshed only on request; 1280 px accepted |
+| [0018](adr/0018-fields-glance-does-not-require.md) | Fields the docs call required but Glance accepts empty: **warn on Review, don't block** |
 | Repo / identity | Public GitHub repo. PRs from your gh login, so branch protection has 0 required approvals |
 
 ## Findings you should know about
@@ -47,6 +48,15 @@ Nothing below may be built on until you decide. ★ = affects user experience.
 - The docker label-vs-map precedence is still **untested** (the source suggests the map wins).
 - Dev Glance confirmed reachable from another LAN device (by you, 2026-10-13).
 - Correction: the Phase 0 docs called the dev machine's Docker "rootless". It is rootful. Fixed in lessons and ADR-0009.
+
+## Phase 5 findings
+- Try it: the dev editor at :18190 (`docs/dev-environment.md`). It edits the dev Glance's config only.
+- A page named "Login" (or slug `login`/`logout`) passes Glance's validator, but Glance then refuses to load the config.
+  The editor now blocks it with a clear message.
+- Glance's validation errors name only the widget type. The editor works out which widget it is, so Go to can point at it.
+- A file changed by hand is now recorded as soon as the editor is opened (design 03), not only at the next save.
+- If glance.yml can't be written, nothing is recorded: no version appears in History (design: "Nothing changed").
+- Two saves within the same second can't be told apart by Glance's reload signal ("reload not confirmed"). Rare in use.
 
 ## Phase 4 findings
 - All 29 widget type names (28 widgets plus `stocks`, an old name for `markets`) now have a schema checked against the real
@@ -82,10 +92,13 @@ Nothing below may be built on until you decide. ★ = affects user experience.
 - The real-binary tests caught a validator bug that my own model-based tests missed. Both kinds of test are kept.
 
 ## Next steps
-1. You: decide ADR-0018, and review and merge the Phase 4 PR.
-2. Claude: Phase 5 (UI 1): design tokens and fonts, layout shell, Save bar and sheets, pages and columns, history, first run.
+1. You: review and merge the Phase 5 PR. Try the screens on the dev editor (:18190), on desktop and phone.
+2. Claude: Phase 6 (UI 2): widget cards with grips and drag, the inspector (Settings and YAML tabs) generated from the
+   Phase 4 schemas, Add widget, the Bookmarks section, the Theme screen.
 
 ## Session log
+- 2026-10-13: Phase 5 implemented (first screens, UI tests at two widths); PR opened. ADR-0018 accepted (option B).
+- 2026-10-13: PR #7 (Phase 4) merged.
 - 2026-10-13: Phase 4 implemented (widget schemas for every type, schema v2, themes); PR opened. ADR-0018 proposed.
 - 2026-10-13: PR #6 (Phase 3) merged.
 - 2026-10-13: Phase 3 implemented (server core, API, dev editor wired to dev Glance); PR opened.

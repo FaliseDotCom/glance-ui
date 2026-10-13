@@ -38,7 +38,7 @@ describe("first run (D-34, D-35)", () => {
     d.pages[0]!.columns[0]!.widgets.push({ _id: "w1", type: "calendar" } as WidgetT);
     e.setDraft(d);
     expect(await e.save()).toMatchObject({ status: "saved", version: 1 });
-    expect(e.version(0)).toMatchObject({ source: "import", text: original });
+    expect(await e.version(0)).toMatchObject({ source: "import", text: original });
   });
 
   it("import stores the file as version 0 and a no-edit save writes nothing", async () => {
@@ -71,7 +71,7 @@ describe("save pipeline (handoff §4)", () => {
     expect(s.live()).toBe(before.replace("  - name: Home # shown first", "  - name: Start # shown first"));
     expect(readFileSync(`${s.configPath}.prev`, "utf8")).toBe(before);
     expect(readdirSync(dirname(s.configPath)).filter((f) => f.endsWith(".tmp"))).toEqual([]);
-    expect(e.version(1)).toMatchObject({ source: "editor", live: true, changes: [{ kind: "renamed" }] });
+    expect(await e.version(1)).toMatchObject({ source: "editor", live: true, changes: [{ kind: "renamed" }] });
     expect((await e.state()).changes).toEqual([]);
   });
 
@@ -127,7 +127,7 @@ describe("save pipeline (handoff §4)", () => {
 
     const r1 = await e.save();
     expect(r1).toEqual({ status: "conflict", outsideVersion: 1 });
-    expect(e.version(1)).toMatchObject({ source: "outside", live: true });
+    expect(await e.version(1)).toMatchObject({ source: "outside", live: true });
     expect(s.live()).toContain("Edited by hand");
     expect(await e.save()).toEqual({ status: "conflict", outsideVersion: 1 }); // asking twice doesn't duplicate it
     expect(e.versions()).toHaveLength(2);
@@ -179,7 +179,7 @@ describe("restore and discard (D-31, D-33)", () => {
     const s = setup("test/fixtures/import/includes/");
     const e = await track(s);
     await e.importLive();
-    expect(e.version(0)!.text).toContain("$include: home.yml");
+    expect((await e.version(0))!.text).toContain("$include: home.yml");
     const d = await draftOf(e);
     d.pages[0]!.name = "Changed";
     e.setDraft(d);

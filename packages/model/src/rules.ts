@@ -34,6 +34,7 @@ export function checkDashboard(d: DashboardT): Issue[] {
   if (d.pages.length === 0) add("error", "dashboard.no-pages", ["pages"], "A dashboard needs at least one page.");
 
   d.pages.forEach((page, p) => checkPage(page, ["pages", p], add));
+  checkSlugs(d, add);
 
   checkAuth(d, add);
   checkUniqueIds(d, add);
@@ -46,6 +47,8 @@ type Add = (severity: Severity, code: string, path: Issue["path"], message: stri
 
 function checkPage(page: PageT, path: Issue["path"], add: Add) {
   const n = page.columns.length;
+  // config.go isConfigStateValid: "page N has no name"
+  if (page.name === "") add("error", "page.no-name", [...path, "name"], "Page name is required. Glance won't accept a page without one.");
   // config.go isConfigStateValid (v0.8.6)
   if (n === 0) add("error", "page.no-columns", [...path, "columns"], `Page "${page.name}" has no columns.`);
   if (page.width === "slim" && n > 2) {
@@ -89,6 +92,12 @@ function checkRequired(obj: Record<string, unknown>, fields: readonly Field[], p
     const v = obj[f.key];
     if (f.required && isEmpty(v)) {
       add("error", "field.required", [...path, f.key], `${f.label} is required. Glance won't accept the config without it.`);
+    }
+    // ADR-0018 (option B): Glance's docs call these required, but v0.8.6 runs without them. Warn, never block.
+    // markets: the legacy `stocks` list stands in for `markets` when that is empty (widget-markets.go).
+    const legacy = f.key === "markets" && Array.isArray(obj.stocks) && obj.stocks.length > 0;
+    if (f.docsRequired && !legacy && (isEmpty(v) || (Array.isArray(v) && v.length === 0))) {
+      add("warning", "field.recommended", [...path, f.key], `${f.label} is empty, so this part of the widget will show nothing.`);
     }
     if (!f.item || v === undefined) continue;
     if (f.kind === "object") {
@@ -160,6 +169,32 @@ function checkWidgetRules(w: Record<string, unknown>, path: Issue["path"], add: 
       }
     });
   }
+}
+
+/** Glance v0.8.6 utils.go titleToSlug: lower-case, runs of whitespace (Go `\s`) become "-", then "-" trimmed at both ends. */
+export function pageSlug(page: Pick<PageT, "name" | "slug">): string {
+  if (page.slug) return page.slug;
+  return page.name.toLowerCase().replace(/[\t\n\f\r ]+/g, "-").replace(/^-+|-+$/g, "");
+}
+
+function checkSlugs(d: DashboardT, add: Add) {
+  const seen = new Map<string, number>();
+  d.pages.forEach((page, p) => {
+    const slug = pageSlug(page);
+    const field = page.slug ? "slug" : "name";
+    // glance.go newApplication: `page slug "login" is reserved`. config:validate doesn't run this check, so Glance would
+    // accept the file and then refuse to load it (tested: packages/glance/test/defaults.test.ts).
+    if (slug === "login" || slug === "logout") {
+      add("error", "page.reserved-slug", ["pages", p, field],
+        `The page address "/${slug}" is reserved by Glance. Give the page another ${page.slug ? "slug" : "name or a slug"}.`);
+    }
+    // glance.go: slugToPage[slug] = page, so the later page wins the address.
+    const first = seen.get(slug);
+    if (first !== undefined && slug !== "") {
+      add("warning", "page.duplicate-slug", ["pages", p, field],
+        `Pages ${first + 1} and ${p + 1} both use the address "/${slug}", so Glance opens only page ${p + 1} there.`);
+    } else seen.set(slug, p);
+  });
 }
 
 function checkAuth(d: DashboardT, add: Add) {

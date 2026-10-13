@@ -31,8 +31,8 @@ export interface Field {
   /** Glance v0.8.6 rejects the config when this is missing or empty (tested against the binary). */
   required?: true;
   /**
-   * Glance's docs list it as required, but v0.8.6 accepts the config without it (tested). What the editor does about
-   * that is ADR-0018 (proposed); until it is decided, nothing acts on this flag.
+   * Glance's docs list it as required, but v0.8.6 accepts the config without it (tested). ADR-0018 (accepted): an empty
+   * value is a warning on Review, never a block.
    */
   docsRequired?: true;
   /** Glance's own default, shown as the placeholder text ("Type default" in the prototype). From the v0.8.6 source. */

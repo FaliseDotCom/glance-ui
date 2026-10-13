@@ -1,3 +1,61 @@
-<!-- Placeholder until the UI phase (Phase 4). Intentionally unstyled: the real UI comes from Claude Design (ADR-0012). -->
+<!-- The editor (design pass 1, Phase 5 scope): first run, pages and layout, history, Save. -->
+<script lang="ts">
+  import { onMount } from "svelte";
+  import { App } from "#lib/client/app.svelte.ts";
+  import TopBar from "#lib/components/TopBar.svelte";
+  import Rail from "#lib/components/Rail.svelte";
+  import Tabs from "#lib/components/Tabs.svelte";
+  import Welcome from "#lib/components/Welcome.svelte";
+  import ImportScreen from "#lib/components/ImportScreen.svelte";
+  import LayoutPick from "#lib/components/LayoutPick.svelte";
+  import PageEditor from "#lib/components/PageEditor.svelte";
+  import History from "#lib/components/History.svelte";
+  import Sheets from "#lib/components/Sheets.svelte";
+  import Toast from "#lib/components/Toast.svelte";
+
+  const app = new App();
+  onMount(() => {
+    void app.init();
+    // Glance's status dot: checked on load, after saves, on "Check again", and every minute.
+    const t = setInterval(() => void app.checkGlance(), 60_000);
+    return () => clearInterval(t);
+  });
+  const editing = $derived(app.screen === "pages" || app.screen === "history");
+</script>
+
 <svelte:head><title>Glance Editor</title></svelte:head>
-<p>Glance Editor: no user interface yet. Health check: <a href="/healthz">/healthz</a></p>
+
+<div class="app">
+  <TopBar {app} />
+  {#if app.loadError}
+    <div class="center"><div class="welcome">
+      <span class="lbl">Error</span><h1 class="h1">The editor couldn't load</h1>
+      <p class="note">{app.loadError}</p>
+      <div class="row"><button type="button" class="btn pri" onclick={() => { app.loadError = null; void app.init(); }}>Try again</button></div>
+    </div></div>
+  {:else if app.screen === "loading"}
+    <div class="center"><p class="note pulse">Loading…</p></div>
+  {:else if app.screen === "welcome"}
+    <main><Welcome {app} /></main>
+  {:else if app.screen === "import"}
+    <main><ImportScreen {app} /></main>
+  {:else if app.screen === "layout"}
+    <main><LayoutPick {app} /></main>
+  {:else if editing}
+    <div class="shell">
+      <Rail {app} />
+      <main class="work"><div class="canvas">
+        {#if app.screen === "history"}
+          <History {app} />
+        {:else if app.page}
+          {#key app.page._id}<PageEditor {app} page={app.page} />{/key}
+        {:else}
+          <div class="empty" style="padding: 40px">No pages. Glance needs at least one page before it will start.</div>
+        {/if}
+      </div></main>
+    </div>
+    <Tabs {app} />
+  {/if}
+  <Sheets {app} />
+  <Toast {app} />
+</div>

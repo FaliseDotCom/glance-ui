@@ -4,7 +4,7 @@ A no-code web editor that owns the entire Glance (glanceapp/glance) config. Dash
 data model; `glance.yml` is generated on every explicit Save and is output only. Existing config is imported once.
 
 @docs/handoff.md
-@docs/phases/phase-4-widget-schema.md
+@docs/phases/phase-5-ui-shell.md
 
 ## Roles
 - **PM/QA (repo owner):** merges every PR, approves every release note, decides everything with UX impact.
@@ -30,7 +30,7 @@ data model; `glance.yml` is generated on every explicit Save and is output only.
 ## Workflow per task
 1. Read `docs/handoff.md` and the current phase file (both imported above).
 2. Branch: `phase-N/short-topic`. Conventional Commit messages (ADR-0007).
-3. Run `scripts/test.sh` locally (typecheck, licenses, vitest incl. real-binary tests, shell harness). For anything that changes
+3. Run `scripts/test.sh` locally (typecheck, licenses, vitest incl. real-binary tests, UI end to end, shell harness). For anything that changes
    generated config, also run `scripts/generate-sample-config.sh /tmp/g.yml && test/glance-smoke.sh /tmp/g.yml`.
 4. Open a PR using the template. "UX changes" is required: screenshots, or "none".
 5. Update `docs/handoff.md` (state, decisions needed, next steps) and `docs/lessons.md` if something surprised you.
@@ -55,7 +55,10 @@ data model; `glance.yml` is generated on every explicit Save and is output only.
 | `packages/document` | Import (`importFile`), document-preserving writer (`writeDraft`), report, CLI (ADR-0015) |
 | `packages/server` | `Editor`: drafts, versions, save pipeline, SQLite store (Phase 3) |
 | `docs/api.md` | The editor's HTTP API |
-| `apps/editor` | SvelteKit 3 app (no UI yet); `Dockerfile` builds it with the glance binary |
+| `packages/editing` | Page/column operations, layout rules (D-07–D-10), wording, line diff: UI logic without a DOM, tested in Node |
+| `apps/editor` | SvelteKit 3 app: `src/lib/client` (state, API), `src/lib/components`, `src/lib/styles/app.css` (design tokens + prototype CSS). `Dockerfile` builds it with the glance binary |
+| `test/e2e` | Playwright UI tests: built app + real Glance per test, desktop and 390 px, axe and 44 px checks (`npx playwright test`) |
+| `docs/screenshots/` | Screenshots per phase, captured by the UI tests |
 | `test/` | Harness scripts and fixtures (`test/fixtures/model/v2/` = model fixtures) |
 | `.github/` | CI, PR template, issue forms |
 
@@ -69,5 +72,7 @@ data model; `glance.yml` is generated on every explicit Save and is output only.
   `manifest.json?v=<time>` in every page changes only on a successful reload (all tested).
 - Glance ignores unknown keys silently, and substitutes placeholders as text over the whole file, comments included (ADR-0014).
   Never hand-roll YAML for placeholders: use the generator. Edits to an imported file are spliced, not regenerated (ADR-0015).
+- `config:validate` doesn't run `newApplication`: a page slug `login`/`logout` passes validate but Glance won't load it
+  (rule `page.reserved-slug`). Glance's reload stamp has 1 s resolution.
 - Glance's docs overstate "required" for 17 widget fields and differ from v0.8.6 on some defaults (lessons, ADR-0018).
   The binary is the reference: `packages/document/test/widget-schema.test.ts`.

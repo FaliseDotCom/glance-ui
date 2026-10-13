@@ -29,6 +29,8 @@ jobs:
         run: |
           source glance.version
           docker pull "$GLANCE_IMAGE"
+      - name: Install Chromium for the UI tests (Playwright, version from package-lock)
+        run: npx playwright install --with-deps chromium
       - name: Run tests
         run: scripts/test.sh
 

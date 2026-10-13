@@ -74,7 +74,7 @@ const pageWidth = z.enum(["default", "slim", "wide"]);
 
 export const Page = z.strictObject({
   _id: id,
-  name: str.min(1),
+  name: str, // may be empty in a draft; rules.ts blocks Save (Glance: "page N has no name")
   slug: str.optional(),
   width: pageWidth.optional(),
   "desktop-navigation-width": pageWidth.optional(),
