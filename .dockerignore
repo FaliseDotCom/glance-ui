@@ -1,0 +1,9 @@
+node_modules
+**/node_modules
+apps/editor/build
+apps/editor/.svelte-kit
+.git
+test
+dev
+docs
+design

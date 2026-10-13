@@ -4,7 +4,7 @@ A no-code web editor that owns the entire Glance (glanceapp/glance) config. Dash
 data model; `glance.yml` is generated on every explicit Save and is output only. Existing config is imported once.
 
 @docs/handoff.md
-@docs/phases/phase-0-setup.md
+@docs/phases/phase-1-model-generator.md
 
 ## Roles
 - **PM/QA (repo owner):** merges every PR, approves every release note, decides everything with UX impact.
@@ -29,7 +29,8 @@ data model; `glance.yml` is generated on every explicit Save and is output only.
 ## Workflow per task
 1. Read `docs/handoff.md` and the current phase file (both imported above).
 2. Branch: `phase-N/short-topic`. Conventional Commit messages (ADR-0007).
-3. Run `scripts/test.sh` locally. For anything that changes generated config, also run `test/glance-smoke.sh`.
+3. Run `scripts/test.sh` locally (typecheck, licenses, vitest incl. real-binary tests, shell harness). For anything that changes
+   generated config, also run `scripts/generate-sample-config.sh /tmp/g.yml && test/glance-smoke.sh /tmp/g.yml`.
 4. Open a PR using the template. "UX changes" is required: screenshots, or "none".
 5. Update `docs/handoff.md` (state, decisions needed, next steps) and `docs/lessons.md` if something surprised you.
 
@@ -46,7 +47,9 @@ data model; `glance.yml` is generated on every explicit Save and is output only.
 | `design/handoffs/` | Archived Claude Design handoffs (ADR-0012) |
 | `docs/todo-user.md` / `docs/todo-claude.md` | Open actions for the PM / for Claude |
 | `glance.version` | The pinned Glance image (tag plus digest). The single source for CI and tests |
-| `test/` | Harness scripts and fixtures |
+| `packages/model` / `generator` / `glance` | Data model + rules (zod) / model → YAML / pinned-binary validation (ADR-0014) |
+| `apps/editor` | SvelteKit 3 app (no UI yet); `Dockerfile` builds it with the glance binary |
+| `test/` | Harness scripts and fixtures (`test/fixtures/model/v1/` = model fixtures) |
 | `.github/` | CI, PR template, issue forms |
 
 ## Key Glance facts (v0.8.6; details and evidence in ADR-0009)
@@ -55,3 +58,5 @@ data model; `glance.yml` is generated on every explicit Save and is output only.
 - Atomic writes need the config **directory** to be bind-mounted, not the single file.
 - Use `glance config:validate` (exit 1 on error) before writing. `config:print` inlines includes and keeps placeholders literal.
 - Layout: ≤3 columns, 1–2 `full`; `slim` ≤2 columns; no group/split-column inside a group.
+- Glance ignores unknown keys silently, and substitutes placeholders as text over the whole file, comments included (ADR-0014).
+  Never hand-roll YAML for placeholders: use the generator.

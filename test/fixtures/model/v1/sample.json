@@ -1,0 +1,66 @@
+{
+  "schemaVersion": 1,
+  "theme": {
+    "background-color": "240 13 14",
+    "primary-color": "51 33 68",
+    "contrast-multiplier": 1.2,
+    "presets": [
+      { "_id": "preset-light", "key": "paper", "light": true, "background-color": "0 0 95", "primary-color": "0 0 10" }
+    ]
+  },
+  "branding": { "hide-footer": true, "app-name": "${DASHBOARD_NAME}" },
+  "pages": [
+    {
+      "_id": "page-home",
+      "name": "Home",
+      "slug": "home",
+      "head-widgets": [
+        { "_id": "w-search", "type": "search", "search-engine": "duckduckgo", "bangs": [
+          { "_id": "bang-yt", "title": "YouTube", "shortcut": "!yt", "url": "https://www.youtube.com/results?search_query={QUERY}" }
+        ] }
+      ],
+      "columns": [
+        { "_id": "col-home-1", "size": "small", "widgets": [
+          { "_id": "w-clock", "type": "clock", "hour-format": "24h", "timezones": [
+            { "_id": "tz-1", "timezone": "Europe/Berlin", "label": "Berlin" }
+          ] },
+          { "_id": "w-cal", "type": "calendar", "first-day-of-week": "monday" },
+          { "_id": "w-weather", "type": "weather", "_raw": { "location": "Berlin, Germany", "units": "metric" } }
+        ] },
+        { "_id": "col-home-2", "size": "full", "widgets": [
+          { "_id": "w-group", "type": "group", "widgets": [
+            { "_id": "w-bookmarks", "type": "bookmarks", "title": "Tools", "groups": [
+              { "_id": "bg-dev", "title": "Dev", "color": "10 70 50", "links": [
+                { "_id": "l-glance", "title": "Glance", "url": "https://github.com/glanceapp/glance", "icon": "si:github" },
+                { "_id": "l-env", "title": "From env", "url": "https://${INTERNAL_HOST}/status", "same-tab": "${SAME_TAB}" }
+              ] }
+            ] },
+            { "_id": "w-html", "type": "html", "title": "Notes", "source": "<p data-token=\"${secret:notes_token}\">Hello</p>\n<p>Escaped: \\${NOT_A_VAR}</p>\n" }
+          ] },
+          { "_id": "w-split", "type": "split-column", "max-columns": 2, "widgets": [
+            { "_id": "w-rss", "type": "rss", "limit": "${RSS_LIMIT}", "collapse-after": 3, "feeds": [
+              { "_id": "f-1", "url": "https://example.com/feed.xml", "title": "Example" }
+            ] },
+            { "_id": "w-monitor", "type": "monitor", "cache": "1m", "sites": [
+              { "_id": "s-1", "title": "Router", "url": "http://${ROUTER_HOST}", "timeout": "5s", "alt-status-codes": [403] }
+            ] }
+          ] }
+        ] },
+        { "_id": "col-home-3", "size": "small", "widgets": [
+          { "_id": "w-docker", "type": "docker-containers", "hide-by-default": false, "containers": [
+            { "_id": "dc-1", "container": "some_container", "name": "Some Container", "description": "Example override", "hide": true }
+          ] }
+        ] }
+      ]
+    },
+    {
+      "_id": "page-slim",
+      "name": "Slim",
+      "width": "slim",
+      "columns": [
+        { "_id": "col-slim-1", "size": "full", "widgets": [ { "_id": "w-clock-2", "type": "clock" } ] },
+        { "_id": "col-slim-2", "size": "small", "widgets": [ { "_id": "w-todo", "type": "to-do", "_raw": {} } ] }
+      ]
+    }
+  ]
+}

@@ -20,6 +20,11 @@ jobs:
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24.21.0
+          cache: npm
+      - run: npm ci --no-audit --no-fund
       - name: Pull pinned Glance image
         run: |
           source glance.version
@@ -34,14 +39,32 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - name: Generate sample config
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24.21.0
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - name: Generate sample config (real generator, test/fixtures/model/v1/sample.json)
         run: scripts/generate-sample-config.sh "$RUNNER_TEMP/glance.yml"
-      - name: Validate with pinned Glance
-        run: |
-          source glance.version
-          mkdir -p "$RUNNER_TEMP/cfg" && cp "$RUNNER_TEMP/glance.yml" "$RUNNER_TEMP/cfg/glance.yml"
-          docker run --rm --network none -v "$RUNNER_TEMP/cfg:/app/config:ro" "$GLANCE_IMAGE" config:validate
-      # Glance v0.8.6 exits with code 0 on an invalid startup config (see docs/lessons.md),
-      # so the smoke test treats ANY exit as a failure rather than relying on the exit code.
+      # The sample model uses placeholders; the smoke test starts Glance with test/fixtures/model/v1/sample.env + secrets/.
       - name: Start Glance and fail if it exits
         run: test/glance-smoke.sh "$RUNNER_TEMP/glance.yml"
+
+  editor-image:
+    name: Editor image builds and starts
+    needs: test
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Build
+        run: scripts/build-editor-image.sh glance-editor:ci
+      - name: Start and check /healthz
+        run: |
+          docker run -d --name editor-ci -p 127.0.0.1:3000:3000 glance-editor:ci
+          for i in $(seq 1 30); do
+            if out="$(curl -fsS http://127.0.0.1:3000/healthz)"; then echo "$out"; break; fi
+            sleep 1
+          done
+          echo "$out" | grep -q '"glanceBinaryPresent":true'
+          docker run --rm --entrypoint glance glance-editor:ci --help | head -1

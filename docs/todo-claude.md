@@ -7,17 +7,17 @@ Claude's own backlog. Items that need the PM go in [todo-user.md](todo-user.md) 
 - [ ] Verify the design handoff path with the PM's sample (ADR-0012), and archive it to `design/handoffs/`.
 - [ ] Add the live host details to Phase 7 docs once provided (keep addresses out of the public repo).
 
-## Phase 1 prep (plan + ADR-0001 approved; start after the Phase 0 merge)
-- [ ] Check for a newer Glance release than v0.8.6 (ADR-0006).
-- [ ] Check `node:sqlite` stability for the pinned Node (ADR-0002).
-- [ ] Build the `glance-editor:dev` image so `dev/up.sh` runs the editor on port 18190.
-- [ ] Confirm the SvelteKit 3 / TypeScript 6 peer range still holds at implementation time.
-- [ ] Prove the copied static `glance` binary runs in the Node base image (ADR-0001).
-- [ ] Prove `config:validate` with dummy placeholder values (ADR-0008 step 2).
+## Phase 1 (done in the Phase 1 PR; kept for the record)
+- [x] Check for a newer Glance release than v0.8.6 (ADR-0006).
+- [ ] Phase 3: check `node:sqlite` stability for the pinned Node (ADR-0002).
+- [x] Build the `glance-editor:dev` image so `dev/up.sh` runs the editor on port 18190.
+- [x] Confirm the SvelteKit 3 / TypeScript 6 peer range still holds at implementation time.
+- [x] Prove the copied static `glance` binary runs in the Node base image (ADR-0001).
+- [x] Prove `config:validate` with dummy placeholder values (ADR-0008 step 2).
 - [ ] Get an arm64 digest for the pinned Glance image if the host is ARM.
 
 ## Licensing (ADR-0013)
-- [ ] Phase 1: add a dependency-license check to CI (GPL-3.0-compatible only).
+- [x] Phase 1: add a dependency-license check to CI (GPL-3.0-compatible only): `npm run licenses`.
 - [ ] Phase 7: the published editor image ships Glance's AGPL license text plus a pointer to the pinned source commit.
 
 ## Known gaps in the Phase 0 harness

@@ -1,8 +1,6 @@
 #!/usr/bin/env bash
-# Writes the config used by the CI smoke test to the path given as $1.
-# Phase 0: there is no generator yet, so this copies the hand-written fixture.
-# From Phase 1 this must call the editor's real YAML generator on a seed data model,
-# so CI proves that generated output is accepted by the pinned Glance.
+# Writes the config used by the CI smoke test to the path given as $1, using the real generator on the sample model.
 set -euo pipefail
 out="${1:?usage: generate-sample-config.sh <output-file>}"
-cp "$(dirname "$0")/../test/fixtures/valid/sample.yml" "$out"
+cd "$(dirname "$0")/.."
+node packages/generator/src/cli.ts test/fixtures/model/v1/sample.json --out "$out"

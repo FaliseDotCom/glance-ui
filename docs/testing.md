@@ -13,12 +13,13 @@
 ## Commands (run from the repo root; the scripts are bash, so they work from fish/zsh too)
 | Command | What it checks | Time |
 | ------- | -------------- | ---- |
-| `scripts/test.sh` | All of the below except the smoke test, plus shellcheck | ~30 s |
+| `scripts/test.sh` | Everything below except the smoke test, plus typecheck, license gate, shellcheck | ~45 s |
+| `npx vitest run` | Model rules, placeholder parser, generator (incl. a 2,000-run property test), validation and render tests against the **real pinned binary** (`GLANCE_BIN`, extracted from the image by `scripts/fetch-glance-binary.sh`) | ~5 s |
 | `test/validate-fixtures.sh` | `glance config:validate` passes every `fixtures/valid/*` and fails every `fixtures/invalid/*` | ~3 s |
 | `test/upstream-example.sh` | Glance's own example config at the pinned commit: download, checksum, `config:validate` | ~2 s |
 | `test/glance-cli.sh` | `config:print` keeps placeholders and comments literal and inlines includes; a comment header validates | ~2 s |
 | `test/glance-reload.sh` | Hot-reload, invalid-config handling, atomic rename, includes, file-vs-directory mount | ~15 s |
-| `test/glance-smoke.sh [config]` | Starts Glance and fails if it exits or never serves (exit code is ignored, see lessons) | ~6 s |
+| `test/glance-smoke.sh [config]` | Starts Glance and fails if it exits or never serves (exit code is ignored, see lessons). Uses `test/fixtures/model/v1/sample.env` and `secrets/` for placeholders | ~6 s |
 
 The Glance image comes from `/glance.version` (tag plus digest). Requirements: Docker, curl, bash 4+.
 
@@ -27,11 +28,12 @@ The Glance image comes from `/glance.version` (tag plus digest). Requirements: D
   the editor will generate. It avoids network-dependent widgets (e.g. weather fails at startup on an invalid location).
 - `test/fixtures/invalid/`: each file breaks exactly one documented rule. The header comment says which.
 - `test/fixtures/support/`: dummy env/secret files for `placeholders.yml`. They are not secrets.
+- `test/fixtures/model/v1/`: editor-model fixtures (schema v1). `sample.json` covers every modelled widget, raw widgets,
+  typed and untyped placeholders and an escape; kept forever for migration tests (ADR-0003).
 
 Add a fixture whenever a Glance rule or behaviour is relied on. Cite the ADR in the fixture's header comment.
 
 ## CI (`.github/workflows/ci.yml`)
-1. **Tests**: `scripts/test.sh`.
-2. **Glance accepts generated config** (runs only if Tests passes): `scripts/generate-sample-config.sh` →
-   `config:validate` → `test/glance-smoke.sh`. In Phase 0 the "generator" copies `sample.yml`. From Phase 1 it must
-   call the real generator.
+1. **Tests**: `npm ci`, then `scripts/test.sh`.
+2. **Glance accepts generated config** (after Tests): the real generator on `test/fixtures/model/v1/sample.json`, then `test/glance-smoke.sh`.
+3. **Editor image builds and starts** (after Tests): `scripts/build-editor-image.sh`, then `/healthz` must report the glance binary present.

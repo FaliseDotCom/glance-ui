@@ -3,6 +3,34 @@
 Things learned the hard way or by surprise. Newest first. Each entry: date, what happened, what to do.
 Auto memory is machine-local. This file is the record.
 
+### 2026-10-13: Glance substitutes placeholders as text, everywhere, before YAML parsing
+Comments included; a placeholder at column 0 of a later line is skipped; of `${A}${B}` only A is substituted; `\${X}` drops the
+backslash (all verified, `test/glance-cli.sh`). **Do:** treat generated YAML as text Glance rewrites. Never put `${` in comments.
+Use the generator, not hand-rolled YAML. Two patterns exist for a reason: file text (`GLANCE_FILE_PATTERN`) vs one value (`VALUE_PATTERN`).
+
+### 2026-10-13: Test against the real binary, not only against your model of it
+The property test passed against my own model of Glance's substitution while the validator was wrong: it un-escaped
+`\${X}`, so Glance then substituted it again. Only the real-binary test caught that. And only the property test caught
+that YAML style choices (double quotes, adjacency) change what Glance substitutes. **Do:** keep both kinds of test for
+anything that touches Glance semantics.
+
+### 2026-10-13: Run property tests with many seeds before pushing
+The first property test passed 2,000 runs locally, then failed in CI on a new seed (whitespace-only lines). Ten more local
+seeds found two more bug families: the `yaml` library's multi-line double quotes, and my own `String.replace` treating
+`$&`/`$$` in replacement text as patterns. **Do:** loop property tests over several seeds before pushing, use a replacer
+function with `String.replace` whenever the replacement is data, and check the test can fail.
+
+### 2026-10-13: Glance ignores unknown YAML keys silently
+`yaml.Unmarshal` without `KnownFields` (v0.8.6). A typo passes `config:validate` and does nothing. **Do:** the model is
+strict; unknown keys live in `extra` and are warned about.
+
+### 2026-10-13: SvelteKit 3 is not SvelteKit 2
+No `svelte.config.js` (options go in `sveltekit({...})` in the Vite config); tsconfig extends `$app/tsconfig`; `json()` is deprecated.
+**Do:** read the migration guide for the pinned major version before scaffolding.
+
+### 2026-10-13: Node type stripping needs erasable syntax
+`node file.ts` (Node 24) fails on parameter properties, enums, namespaces. **Do:** keep `erasableSyntaxOnly` on, and run `npm run typecheck`.
+
 ### 2026-10-13: Don't infer daemon mode from `docker info` security options
 Phase 0 docs first called this machine's Docker "rootless". It is rootful (context endpoint `unix:///var/run/docker.sock`).
 **Do:** check `docker context ls` / `docker info --format '{{.SecurityOptions}}'` for `name=rootless` explicitly before writing it down.
