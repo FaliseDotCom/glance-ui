@@ -5,5 +5,5 @@ root="$(cd "$(dirname "$0")/.." && pwd)"
 # shellcheck source=../glance.version
 source "$root/glance.version"
 tag="${1:-glance-editor:dev}"
-docker build --build-arg "GLANCE_IMAGE=$GLANCE_IMAGE" --build-arg "GLANCE_COMMIT=$GLANCE_COMMIT" -t "$tag" "$root"
+docker build --build-arg "GLANCE_IMAGE=$GLANCE_IMAGE" --build-arg "GLANCE_COMMIT=$GLANCE_COMMIT" --build-arg "GLANCE_VERSION=$GLANCE_VERSION" -t "$tag" "$root"
 echo "$tag"

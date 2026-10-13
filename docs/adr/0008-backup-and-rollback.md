@@ -41,6 +41,15 @@ Glance gives no way to read which config it loaded (`/api/healthz` only reports 
 (b) read Glance's logs through the socket proxy (needs log access, a broader permission),
 (c) don't confirm, and rely on pre-validation. **Recommendation: (c) for now, (a) as an opt-in.**
 
+## Implementation (Phase 3, 2026-10-13)
+- Every Save stores a numbered full snapshot before writing. The live file is copied to `glance.yml.prev`, then a temp
+  file in the same directory is fsynced and renamed over it (`packages/server/src/live.ts`).
+- Version 0 is the original file, kept at import or at the first save over an existing file (D-35).
+- Changes made outside the editor are stored as "outside" versions at start and at Save (D-32).
+- Daily `VACUUM INTO` snapshots keep 14; pre-migration snapshots keep 5 (tested).
+- Post-save confirmation uses the `?v=` reload signal when `GLANCE_URL` is set (D-29, tested against real Glance).
+- Not built: an export/import of everything (planned for a UI phase).
+
 ## Verified vs assumed
 - Verified: atomic replace with a directory mount reloads Glance; invalid config keeps the old one (tests, ADR-0009).
 - Verified in Phase 1: validation with dummy placeholder values (ADR-0014; real binary, typed dummies, escapes left to Glance).

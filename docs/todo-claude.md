@@ -20,6 +20,10 @@ Claude's own backlog. Items that need the PM go in [todo-user.md](todo-user.md) 
 - [x] Phase 1: add a dependency-license check to CI (GPL-3.0-compatible only): `npm run licenses`.
 - [ ] Phase 7: the published editor image ships Glance's AGPL license text plus a pointer to the pinned source commit.
 
+## Phase 11 (deployment) notes from Phase 3
+- [ ] The editor runs as uid 1000 (`node`); on Unraid the config dir and data dir ownership (often 99:100) must allow it to write. Decide user/permissions in the deployment ADR.
+- [ ] `GLANCE_URL` must point at Glance as reachable from the editor container (same Docker network).
+
 ## Known gaps in the Phase 0 harness
 - [ ] The docker-containers precedence test needs a socket proxy plus labelled throwaway containers (Phase 6).
 - [ ] The "reload clears cache" and "env-var change needs restart" claims are not tested (docs only).

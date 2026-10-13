@@ -4,7 +4,7 @@ Things only you can do or decide. Claude adds items here and never ticks them. Y
 Decisions on ADRs are tracked in [handoff.md](handoff.md#needs-user-decision), not here.
 
 ## Now
-- [ ] **Review and merge the Phase 2 PR** (import + edit-in-place writer).
+- [ ] **Review and merge the Phase 3 PR** (server core and API).
 - [ ] Add `Editor image builds and starts` to the required checks; set the repo to squash-merge only (ADR-0007), or tell Claude you prefer merge commits.
 - [ ] Optional: try Claude Design's "Handoff to Claude Code" once, so we know whether it works better than the zip (ADR-0012).
 

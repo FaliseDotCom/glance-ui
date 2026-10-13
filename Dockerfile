@@ -19,6 +19,7 @@ RUN npm -w apps/editor run build
 
 FROM ${NODE_IMAGE}
 ARG GLANCE_COMMIT
+ARG GLANCE_VERSION
 LABEL org.opencontainers.image.title="Glance Editor" \
       org.opencontainers.image.licenses="GPL-3.0-only" \
       org.glance-editor.glance-commit="${GLANCE_COMMIT}"
@@ -28,7 +29,8 @@ COPY --from=glance /app/glance /usr/local/bin/glance
 WORKDIR /app
 COPY --from=build /src/apps/editor/build build
 RUN echo '{"type":"module"}' > package.json
-ENV NODE_ENV=production PORT=3000 GLANCE_BIN=/usr/local/bin/glance
+ENV NODE_ENV=production PORT=3000 GLANCE_BIN=/usr/local/bin/glance GLANCE_VERSION=${GLANCE_VERSION} \
+    GLANCE_CONFIG=/glance-config/glance.yml EDITOR_DATA_DIR=/data
 USER node
 EXPOSE 3000
 HEALTHCHECK --interval=30s --timeout=3s CMD node -e "fetch('http://127.0.0.1:3000/healthz').then(r=>process.exit(r.ok?0:1),()=>process.exit(1))"

@@ -1,19 +1,19 @@
 # Handoff
 
 The single place to see where the project stands. Updated at the end of every work session and every PR.
-Last updated: 2026-10-13 (Phase 2 PR opened).
+Last updated: 2026-10-13 (Phase 3 PR opened).
 
 ## Current state
-- **Phase:** 2 (import + document-preserving writer) **PR open**, waiting for your review. Design PR #4 merged.
+- **Phase:** 3 (server core) **PR open**, waiting for your review. Phase 2 merged (PR #5).
 - **Phase plan:** approved 2026-10-13.
 - **Pinned Glance:** v0.8.6, by digest (`/glance.version`).
 - **Dev environment:** dev Glance on :18180 and the editor container on :18190, on the dev machine (`docs/dev-environment.md`).
-- **Feature code:** model, rules, generator, validation (Phase 1); import and the edit-in-place writer (Phase 2). No UI yet. The editor container (no UI) runs in the dev environment on :18190.
+- **Feature code:** model, rules, generator, validation (Phase 1); import and edit-in-place writer (Phase 2); server core and JSON API (Phase 3). No UI yet. The dev editor on :18190 has imported the dev config (version 0).
 
 ## Needs user decision
 Nothing below may be built on until you decide. ★ = affects user experience.
 
-_No UX decisions open._ ADR-0015 (how D-38 is built, non-UX) is accepted by merging the Phase 2 PR.
+_No UX decisions open._
 
 ## Decided on 2026-10-13 (via chat)
 | ADR | Outcome |
@@ -41,6 +41,11 @@ _No UX decisions open._ ADR-0015 (how D-38 is built, non-UX) is accepted by merg
 - Dev Glance confirmed reachable from another LAN device (by you, 2026-10-13).
 - Correction: the Phase 0 docs called the dev machine's Docker "rootless". It is rootful. Fixed in lessons and ADR-0009.
 
+## Phase 3 findings
+- The save pipeline is complete and tested against real Glance, including "reloaded" vs "not confirmed".
+- Drafts need two references: the text to splice into, and the live text to measure changes against (found by the restore test).
+- SvelteKit 3: `$lib` became `#lib`, and its built-in CSRF check misfires on body-less POSTs. Mutations now must be JSON, which is also a stronger CSRF defence (ADR-0004 note).
+
 ## Phase 2 findings
 - "Keep your file" works: no-edit saves are byte-identical; random edits keep comments and pass Glance (6 fixes along the way, see lessons).
 - One value pattern can't be kept exactly (an escape directly followed by two chained placeholders). It's blocked with a clear message rather than risking silent changes.
@@ -59,10 +64,11 @@ _No UX decisions open._ ADR-0015 (how D-38 is built, non-UX) is accepted by merg
 - The real-binary tests caught a validator bug that my own model-based tests missed. Both kinds of test are kept.
 
 ## Next steps
-1. You: review and merge the Phase 2 PR.
-2. Claude: Phase 3, the server core (SQLite store, drafts, versions, save pipeline, API). No UI.
+1. You: review and merge the Phase 3 PR.
+2. Claude: Phase 4, the widget schema for all 27 Glance widget types (form definitions, cache rules D-58, theme swatches).
 
 ## Session log
+- 2026-10-13: Phase 3 implemented (server core, API, dev editor wired to dev Glance); PR opened.
 - 2026-10-13: Phase 2 implemented (import, writer, report, CLI); PR opened.
 - 2026-10-13: Plan v2, D-56, D-61 and D-62 decided by the PM (all as recommended).
 - 2026-10-13: Design pass 1 received (zip). Archived; conflicts resolved with the PM; §1 verified against v0.8.6; research done (D-29, D-56, D-61/62); plan v2 proposed.

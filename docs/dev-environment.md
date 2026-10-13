@@ -21,6 +21,17 @@ It is **not** the test harness (`docs/testing.md`) and **not** the live dashboar
 
 Overrides via env: `DEV_BIND`, `DEV_GLANCE_PORT`, `DEV_EDITOR_PORT`, `DEV_STATE`, `EDITOR_IMAGE`.
 
+## Editor configuration (environment)
+| Variable | Default in the image | Dev environment |
+| -------- | -------------------- | --------------- |
+| `GLANCE_CONFIG` | `/glance-config/glance.yml` | the dev config dir, mounted at `/glance-config` |
+| `EDITOR_DATA_DIR` | `/data` | `~/.local/share/glance-editor-dev/editor-data` |
+| `GLANCE_URL` | unset (reload not checked) | `http://glance-editor-dev-glance:8080/` (same Docker network) |
+| `GLANCE_BIN` | `/usr/local/bin/glance` (bundled, pinned) | same |
+| `GLANCE_VERSION` | set at build from `/glance.version` | same |
+
+The API is described in `docs/api.md`. Until the UI exists, you can try it with curl (mutations need `-H "Origin: http://<host>:18190" -H "Content-Type: application/json"`).
+
 ## Notes
 - The dev machine's address is deliberately not in the repo (the repo is public). Open `http://<dev-host>:18180/`.
 - No authentication by design (ADR-0004). Keep these ports off the internet: no port-forwarding on the router.

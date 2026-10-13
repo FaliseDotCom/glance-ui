@@ -38,5 +38,11 @@ YAML diff (PR template, "Generated config impact").
 ## Verified vs assumed
 - Nothing here depends on an external library's behaviour yet. zod is chosen in ADR-0001.
 
+## Implementation (Phase 3, 2026-10-13)
+- Database schema: forward-only SQL migrations tracked with `PRAGMA user_version`; a `pre-migration` snapshot first; a newer
+  database is refused with a clear message (`packages/server/src/db.ts`, tested).
+- Draft model: `migrateModel` runs a chain of pure functions `vN → vN+1`; a newer model is refused (`migrations.ts`, tested
+  with a synthetic v0). The chain is empty while only v1 exists.
+
 ## Decision record
 **Accepted 2026-10-13 by the PM (via chat)**, as written.
