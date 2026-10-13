@@ -3,6 +3,21 @@
 Things learned the hard way or by surprise. Newest first. Each entry: date, what happened, what to do.
 Auto memory is machine-local. This file is the record.
 
+### 2026-10-13: Glance's docs and its v0.8.6 behaviour disagree; the binary decides
+Found while checking every widget schema against the binary (Phase 4):
+- 17 fields the docs call "required" are not checked at all (ADR-0018). Glance runs the widget without them.
+- dns-stats `service`: the docs say it defaults to `pihole`; v0.8.6 rejects the config without it.
+- iframe `height`: the docs say 300; unset renders 50 px (and an explicit 50 renders 300). Seen on a real server.
+- Many documented enums are soft: Glance silently falls back to the default for any other value. Only some reject.
+- `config:validate` runs every widget's `initialize()`, so required fields and strict enums do show as validation errors.
+- Unknown keys are ignored, so "Glance accepts it" proves nothing about a key's name. **Do:** prove a key is real by
+  giving it a value of the wrong YAML type; only a real key makes Glance fail.
+
+### 2026-10-13: A validation stand-in can change the YAML's meaning
+A placeholder in a plain scalar is replaced by its stand-in before Glance parses the YAML. The stand-in `{REQUEST-URL}`
+parsed as a map, so validation failed on a valid draft. **Do:** stand-ins must be plain, single-line text that doesn't
+start with a YAML indicator (`{ [ & * ! | > ' " % @ #`). The test in widget-schema.test.ts covers each one.
+
 ### 2026-10-13: Glance substitutes placeholders as text, everywhere, before YAML parsing
 Comments included; a placeholder at column 0 of a later line is skipped; of `${A}${B}` only A is substituted; `\${X}` drops the
 backslash (all verified, `test/glance-cli.sh`). **Do:** treat generated YAML as text Glance rewrites. Never put `${` in comments.

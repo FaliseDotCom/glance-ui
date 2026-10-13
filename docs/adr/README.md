@@ -32,6 +32,8 @@ One file per decision: `NNNN-short-title.md`, copied from [0000-template.md](000
 | [0011](0011-import-of-existing-config.md) | One-time import of the existing glance.yml | accepted (flatten); item 4 superseded (0015) | **yes** |
 | [0012](0012-design-handoff.md) | Design handoff from Claude Design | accepted (first delivery by zip) | **yes** |
 | [0013](0013-license.md) | License: GPL-3.0 | accepted | no |
-| [0014](0014-data-model-and-generator.md) | Data model (schema v1) and YAML generator | accepted; superseded in part (0015) | no |
+| [0014](0014-data-model-and-generator.md) | Data model (schema v1) and YAML generator | accepted; superseded in part (0015, 0017) | no |
 | [0015](0015-document-preserving-writer.md) | Document-preserving YAML writer (design D-38) | accepted | no |
 | [0016](0016-design-pass-1-adopted.md) | Design pass 1 is the UX source of truth | accepted | **yes** |
+| [0017](0017-widget-schema-registry.md) | Widget schemas drive the model (schema v2) | accepted on merge | no |
+| [0018](0018-fields-glance-does-not-require.md) | Fields the docs call required but Glance accepts empty | **proposed** | **yes** |

@@ -10,9 +10,10 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { substitute } from "@glance-editor/model";
 
-export type PlaceholderHint = "number" | "boolean" | "hsl" | "duration" | "string";
+/** `value:<text>`: use exactly that text (an enum option, a valid time zone). See the generator. */
+export type PlaceholderHint = "number" | "boolean" | "hsl" | "duration" | "string" | `value:${string}`;
 
-const DUMMY: Record<PlaceholderHint, string> = {
+const DUMMY: Record<string, string> = {
   number: "1",
   boolean: "false",
   hsl: "0 0 50",
@@ -30,8 +31,13 @@ export function substituteForValidation(yaml: string, hints: ReadonlyMap<string,
   // Mark each substitution's end, so a placeholder that directly followed it (which Glance leaves literal, because the
   // first match consumed the character it needed) can be found and escaped: otherwise Glance's own pass over this copy
   // would substitute it (found by the Phase 2 property test).
-  const marked = substitute(yaml, (_kind, _name, text) => DUMMY[hints.get(text) ?? "string"] + SEP, { keepEscapes: true });
+  const marked = substitute(yaml, (_kind, _name, text) => dummyFor(hints.get(text)) + SEP, { keepEscapes: true });
   return marked.replaceAll(SEP + "${", "\\${").replaceAll(SEP, "");
+}
+
+function dummyFor(hint: PlaceholderHint | undefined): string {
+  if (hint?.startsWith("value:")) return hint.slice("value:".length);
+  return DUMMY[hint ?? "string"]!;
 }
 
 export interface ValidationResult {

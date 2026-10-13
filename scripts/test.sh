@@ -8,6 +8,7 @@ cd "$(dirname "$0")/.."
 SHELLCHECK_IMAGE="koalaman/shellcheck:v0.11.0@sha256:61862eba1fcf09a484ebcc6feea46f1782532571a34ed51fedf90dd25f925a8d"
 echo "== typecheck";                npm run --silent typecheck
 echo "== dependency licenses";      npm run --silent licenses > /dev/null
+echo "== Glance source data";       node scripts/glance-source-data.ts --check
 echo "== unit + Glance tests";      npx vitest run
 echo "== shellcheck"
 docker run --rm --network none -v "$PWD:/mnt:ro" -w /mnt "$SHELLCHECK_IMAGE" -x scripts/*.sh test/*.sh dev/*.sh

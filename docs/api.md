@@ -6,7 +6,7 @@ JSON in, JSON out. **Mutating requests** (anything but GET) need `Origin` naming
 | Method | Path | Body | Returns |
 | ------ | ---- | ---- | ------- |
 | GET | `/api/state` | | `{ firstRun, liveExists, draft, baseVersion, changes, problems, changedOutside }` |
-| PUT | `/api/draft` | the whole model (schema v1) | `{ ok, changes, problems }`; a malformed model is refused and the previous draft kept |
+| PUT | `/api/draft` | the whole model (schema v2; an older stored draft is migrated on start) | `{ ok, changes, problems }`; a malformed model is refused and the previous draft kept |
 | POST | `/api/import` | `{}` | `{ ok, report, reportText, issues }`: imports the live glance.yml (stores it as version 0) |
 | POST | `/api/start-empty` | `{ pageName, layout }` | state; `layout` ∈ `one-full`, `small-full`, `full-small`, `two-full`, `small-full-small`, `small-full-full` (D-34) |
 | POST | `/api/save` | `{}` or `{ acceptOutside: n }` | `nothing` · `problems` · `conflict` (`outsideVersion`) · `saved` (`version`, `reload`, `warnings`, `draft`) · `error` |

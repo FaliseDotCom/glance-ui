@@ -44,9 +44,9 @@ jobs:
           node-version: 24.21.0
           cache: npm
       - run: npm ci --no-audit --no-fund
-      - name: Generate sample config (real generator, test/fixtures/model/v1/sample.json)
+      - name: Generate sample config (real generator, test/fixtures/model/v2/sample.json)
         run: scripts/generate-sample-config.sh "$RUNNER_TEMP/glance.yml"
-      # The sample model uses placeholders; the smoke test starts Glance with test/fixtures/model/v1/sample.env + secrets/.
+      # The sample model uses placeholders; the smoke test starts Glance with test/fixtures/model/v2/sample.env + secrets/.
       - name: Start Glance and fail if it exits
         run: test/glance-smoke.sh "$RUNNER_TEMP/glance.yml"
 

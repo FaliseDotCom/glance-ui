@@ -1,7 +1,7 @@
 import { printConfig } from "@glance-editor/glance";
 import { importText, listIncludes, type ImportResult } from "./import.ts";
 
-export { importText, listIncludes, idFor, type ImportReport, type ImportResult, type KeptAsIs } from "./import.ts";
+export { importText, listIncludes, idFor, modelFromRaw, type ImportReport, type ImportResult, type KeptAsIs } from "./import.ts";
 export { writeDraft, deepEqual, stripIds, viewOf, type WriteResult } from "./writer.ts";
 export { glanceParse, textStats } from "./text.ts";
 export { formatReport } from "./report.ts";

@@ -17,6 +17,8 @@
 | ------- | -------------- | ---- |
 | `scripts/test.sh` | Everything below except the smoke test, plus typecheck, license gate, shellcheck | ~45 s |
 | `npx vitest run packages/document` | Import, round trip (byte-identical), targeted edits, random edit sequences (property, 1,500 per run), spliced output rendered by real Glance. On a property failure, set `GLANCE_EDITOR_PROPERTY_DUMP=<file>` to record the failing op sequences | ~25 s |
+| `npx vitest run packages/document/test/widget-schema.test.ts` | Every widget schema against the real binary: required and docs-required fields, enum options (strict vs soft), every key's existence (wrong-typed value must fail), cross-field rules, import → generate of each sample, built-in themes | ~3 s |
+| `node scripts/glance-source-data.ts --check` | The checked-in widget type list and themes match Glance's source at the pinned commit (needs network; part of `scripts/test.sh`) | ~1 s |
 | `npx vitest run` | Model rules, placeholder parser, generator (incl. a 2,000-run property test), validation and render tests against the **real pinned binary** (`GLANCE_BIN`, extracted from the image by `scripts/fetch-glance-binary.sh`) | ~5 s |
 | `test/validate-fixtures.sh` | `glance config:validate` passes every `fixtures/valid/*` and fails every `fixtures/invalid/*` | ~3 s |
 | `test/upstream-example.sh` | Glance's own example config at the pinned commit: download, checksum, `config:validate` | ~2 s |
@@ -24,7 +26,7 @@
 | `test/glance-reload.sh` | Hot-reload, invalid-config handling, atomic rename, includes, file-vs-directory mount | ~15 s |
 | `test/glance-docker.sh` | docker-containers widget: the `containers` map beats a `glance.hide` label (design D-23) | ~5 s |
 | `test/editor-api.sh` | The editor **image** end to end: a Glance container watches the config dir the editor writes; import, edit, save (reload confirmed), versions, restore, `Origin`/JSON checks. Needs `GLANCE_EDITOR_IMAGE` (CI sets it) | ~15 s |
-| `test/glance-smoke.sh [config]` | Starts Glance and fails if it exits or never serves (exit code is ignored, see lessons). Uses `test/fixtures/model/v1/sample.env` and `secrets/` for placeholders | ~6 s |
+| `test/glance-smoke.sh [config]` | Starts Glance and fails if it exits or never serves (exit code is ignored, see lessons). Uses `test/fixtures/model/v2/sample.env` and `secrets/` for placeholders | ~6 s |
 
 The Glance image comes from `/glance.version` (tag plus digest). Requirements: Docker, curl, bash 4+.
 
@@ -35,12 +37,12 @@ The Glance image comes from `/glance.version` (tag plus digest). Requirements: D
 - `test/fixtures/support/`: dummy env/secret files for `placeholders.yml`. They are not secrets.
 - `test/fixtures/import/`: import fixtures. `commented.yml` has comments everywhere, an anchor and merge key, a flow list, a
   block scalar, an escape in double quotes, a typo key and an unrepresentable value. `includes/` covers `$include`, `!include`, nesting.
-- `test/fixtures/model/v1/`: editor-model fixtures (schema v1). `sample.json` covers every modelled widget, raw widgets,
-  typed and untyped placeholders and an escape; kept forever for migration tests (ADR-0003).
+- `test/fixtures/model/v1/`, `v2/`: editor-model fixtures, one folder per schema version, kept forever for migration
+  tests (ADR-0003). `v2/sample.json` (current) covers a range of widget types, typed and untyped placeholders and an escape.
 
 Add a fixture whenever a Glance rule or behaviour is relied on. Cite the ADR in the fixture's header comment.
 
 ## CI (`.github/workflows/ci.yml`)
 1. **Tests**: `npm ci`, then `scripts/test.sh`.
-2. **Glance accepts generated config** (after Tests): the real generator on `test/fixtures/model/v1/sample.json`, then `test/glance-smoke.sh`.
+2. **Glance accepts generated config** (after Tests): the real generator on `test/fixtures/model/v2/sample.json`, then `test/glance-smoke.sh`.
 3. **Editor image builds and starts** (after Tests): `scripts/build-editor-image.sh`, `/healthz` must report the glance binary present, then `test/editor-api.sh` against the image.

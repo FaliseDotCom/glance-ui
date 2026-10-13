@@ -220,7 +220,7 @@ describe("drafts", () => {
     const s = setup(COMMENTED);
     const e = await track(s);
     await e.importLive();
-    const r = e.setDraft({ schemaVersion: 1, pages: [{ name: "no id" }] });
+    const r = e.setDraft({ schemaVersion: 2, pages: [{ name: "no id" }] });
     expect(r.ok).toBe(false);
     expect((await e.state()).draft!.pages[0]!.name).toBe("Home");
   });

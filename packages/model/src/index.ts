@@ -3,6 +3,9 @@ import { checkDashboard, type Issue } from "./rules.ts";
 
 export * from "./placeholder.ts";
 export * from "./schema.ts";
+export * from "./fields.ts";
+export * from "./widgets.ts";
+export * from "./glance-source.generated.ts";
 export * from "./rules.ts";
 
 export interface ParseResult {

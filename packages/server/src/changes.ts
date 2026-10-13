@@ -22,7 +22,7 @@ function widgets(d: DashboardT): Map<string, Placed> {
   const visit = (list: WidgetT[], where: string) =>
     list.forEach((w, index) => {
       out.set(w._id, { w, where, index });
-      if (!isRawWidget(w) && (w.type === "group" || w.type === "split-column")) visit(w.widgets, `${where}/${w._id}`);
+      if (!isRawWidget(w) && (w.type === "group" || w.type === "split-column")) visit(w.widgets ?? [], `${where}/${w._id}`);
     });
   for (const p of d.pages) {
     visit(p["head-widgets"] ?? [], `${p._id}/head`);

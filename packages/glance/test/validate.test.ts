@@ -14,13 +14,13 @@ const validate = async (d: DashboardT) => {
 let n = 0;
 const col = (size: "small" | "full", widgets: ColumnT["widgets"] = [{ _id: `w${++n}`, type: "clock" }]): ColumnT => ({ _id: `c${++n}`, size, widgets });
 const dash = (columns: ColumnT[], page: Partial<PageT> = {}): DashboardT => ({
-  schemaVersion: 1,
+  schemaVersion: 2,
   pages: [{ _id: `p${++n}`, name: "P", columns, ...page }],
 });
 
 describe("Glance accepts generated config", () => {
   it("sample model (all modelled widgets, raw widgets, typed and untyped placeholders, escapes)", async () => {
-    const { dashboard } = parseDashboard(JSON.parse(await readFile("test/fixtures/model/v1/sample.json", "utf8")));
+    const { dashboard } = parseDashboard(JSON.parse(await readFile("test/fixtures/model/v2/sample.json", "utf8")));
     const r = await validate(dashboard!);
     expect(r.output).toBe("");
     expect(r.ok).toBe(true);
@@ -44,7 +44,7 @@ describe("Glance rejects what the model rules reject", () => {
     ["group in group", dash([col("full", [{ _id: "g1", type: "group", widgets: [{ _id: "g2", type: "group", widgets: [] }] }])]), "nested groups"],
     ["split-column in group", dash([col("full", [{ _id: "g3", type: "group", widgets: [{ _id: "s1", type: "split-column", widgets: [] }] }])]), "split columns inside of groups"],
     ["unknown widget type", dash([col("full", [{ _id: "x1", type: "nope", _raw: {} }])]), "unknown widget type"],
-    ["no pages", { schemaVersion: 1, pages: [] }, "no pages configured"],
+    ["no pages", { schemaVersion: 2, pages: [] }, "no pages configured"],
   ];
   it.each(cases)("%s", async (_name, d, message) => {
     const r = await validate(d);

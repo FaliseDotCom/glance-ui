@@ -1,258 +1,65 @@
-// The editor's data model, schema version 1 (ADR-0014).
+// The editor's data model, schema version 2 (ADR-0014; v2: every widget type modelled, ADR-0017).
 //
 // Shape: mirrors Glance's YAML keys (kebab-case) so import and generation are mechanical. Additions:
 //   - `_id`: a stable identity for every list item the UI can reorder (pages, columns, widgets, links…).
 //     Glance has no keys starting with `_`, and the generator strips `_id`.
 //   - `extra`: keys Glance v0.8.6 doesn't define for that object. They are preserved and written back after the
 //     known keys. Glance ignores unknown keys silently (yaml.Unmarshal, non-strict), so rules.ts warns about them.
-//   - raw widgets: any widget type not in KNOWN_WIDGET_TYPES is stored as `{ _id, type, _raw: {…} }` and written
-//     back unchanged (ADR-0011).
+//   - widgets are derived from the field definitions in widgets.ts (ADR-0017). A widget type Glance doesn't have is
+//     stored as a raw widget `{ _id, type, _raw: {…} }` and written back unchanged (ADR-0011).
 //   - Maps whose order matters to the UI (auth users, theme presets, docker container overrides) are arrays with a key field.
 //
 // Keys and formats: Glance v0.8.6 source (`config.go`, `config-fields.go`, `theme.go`, `widget-*.go`), read 2026-10-13.
 // Every object is strict: an unknown key must go into `extra`, so nothing is silently dropped.
 
 import { z } from "zod";
-import { isWholePlaceholder } from "./placeholder.ts";
+import { bool, duration, extra, hsl, id, int, num, shapeOf, str } from "./fields.ts";
+import { WIDGET_TYPES, widgetFields } from "./widgets.ts";
 
-export const SCHEMA_VERSION = 1;
-
-// ---- scalar helpers -------------------------------------------------------------------------------------------
-
-const placeholderOnly = z
-  .string()
-  .refine(isWholePlaceholder, { message: "must be a single placeholder such as ${NAME}" });
-
-/** A number, or a whole-value placeholder (Glance substitutes text before parsing, e.g. `limit: ${RSS_LIMIT}`). */
-const int = z.union([z.number().int(), placeholderOnly]);
-const num = z.union([z.number(), placeholderOnly]);
-const bool = z.union([z.boolean(), placeholderOnly]);
-const str = z.string();
-
-// config-fields.go: `^(?:hsla?\()?([\d\.]+)(?: |,)+([\d\.]+)%?(?: |,)+([\d\.]+)%?\)?$`, H ≤ 360, S ≤ 100, L ≤ 100.
-const HSL_PATTERN = /^(?:hsla?\()?([\d.]+)(?: |,)+([\d.]+)%?(?: |,)+([\d.]+)%?\)?$/;
-const hsl = z.union([
-  z.string().refine(
-    (v) => {
-      const m = HSL_PATTERN.exec(v);
-      if (!m) return false;
-      const [h, s, l] = [Number(m[1]), Number(m[2]), Number(m[3])];
-      return h <= 360 && s <= 100 && l <= 100;
-    },
-    { message: 'must be an HSL colour like "240 8 9" (hue ≤ 360, saturation ≤ 100, lightness ≤ 100)' },
-  ),
-  placeholderOnly,
-]);
-
-// config-fields.go: `^(\d+)(s|m|h|d)$`
-const duration = z.union([
-  z.string().regex(/^\d+(s|m|h|d)$/, { message: 'must be a duration like "30s", "5m", "2h" or "1d"' }),
-  placeholderOnly,
-]);
-
-const id = z.string().min(1);
-const extra = z.record(z.string(), z.unknown()).optional();
+export const SCHEMA_VERSION = 2;
 
 // ---- widgets --------------------------------------------------------------------------------------------------
+// Derived from the field definitions in widgets.ts (ADR-0017). Every type Glance v0.8.6 accepts is modelled.
 
 /** Widget types Glance v0.8.6 accepts (widget.go `newWidget`). */
-export const GLANCE_WIDGET_TYPES = [
-  "calendar", "calendar-legacy", "clock", "weather", "bookmarks", "iframe", "html", "hacker-news", "releases",
-  "videos", "markets", "stocks", "reddit", "rss", "monitor", "twitch-top-games", "twitch-channels", "lobsters",
-  "change-detection", "repository", "search", "extension", "group", "dns-stats", "split-column", "custom-api",
-  "docker-containers", "server-stats", "to-do",
-] as const;
+export const GLANCE_WIDGET_TYPES = WIDGET_TYPES;
 
-/** Widget types the editor models field by field. Everything else is a raw widget. */
-export const KNOWN_WIDGET_TYPES = [
-  "bookmarks", "calendar", "clock", "docker-containers", "group", "html", "monitor", "rss", "search", "split-column",
-] as const;
-export type KnownWidgetType = (typeof KNOWN_WIDGET_TYPES)[number];
+/** Widget types the editor models field by field: all of them since schema v2. Anything else is a raw widget. */
+export const KNOWN_WIDGET_TYPES = WIDGET_TYPES;
+export type KnownWidgetType = string;
 
-// widget.go widgetBase
-const widgetBase = {
-  _id: id,
-  title: str.optional(),
-  "title-url": str.optional(),
-  "hide-header": bool.optional(),
-  "css-class": str.optional(),
-  cache: duration.optional(),
-  extra,
-};
+function widgetSchema(type: string) {
+  return z.strictObject({
+    _id: id,
+    type: z.literal(type),
+    ...shapeOf(widgetFields(type), () => Widget),
+    extra,
+  });
+}
 
-const linkTarget = str.optional();
+/** Schema per modelled widget type (used by rules and the importer). */
+export const WIDGET_SCHEMAS: Readonly<Record<string, z.ZodObject>> = Object.fromEntries(
+  WIDGET_TYPES.map((t) => [t, widgetSchema(t)]),
+);
 
-export const BookmarkLink = z.strictObject({
-  _id: id,
-  title: str,
-  url: str,
-  description: str.optional(),
-  icon: str.optional(),
-  "same-tab": bool.optional(),
-  "hide-arrow": bool.optional(),
-  target: linkTarget,
-  extra,
-});
+const KnownWidget = z.discriminatedUnion(
+  "type",
+  Object.values(WIDGET_SCHEMAS) as unknown as [z.ZodObject<{ type: z.ZodLiteral<string> }>, ...z.ZodObject<{ type: z.ZodLiteral<string> }>[]],
+);
 
-export const BookmarkGroup = z.strictObject({
-  _id: id,
-  title: str.optional(),
-  color: hsl.optional(),
-  "same-tab": bool.optional(),
-  "hide-arrow": bool.optional(),
-  target: linkTarget,
-  links: z.array(BookmarkLink),
-  extra,
-});
-
-const Bookmarks = z.strictObject({ ...widgetBase, type: z.literal("bookmarks"), groups: z.array(BookmarkGroup) });
-
-const Calendar = z.strictObject({
-  ...widgetBase,
-  type: z.literal("calendar"),
-  "first-day-of-week": z
-    .enum(["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"])
-    .optional(),
-});
-
-export const ClockTimezone = z.strictObject({ _id: id, timezone: str, label: str.optional(), extra });
-
-const Clock = z.strictObject({
-  ...widgetBase,
-  type: z.literal("clock"),
-  "hour-format": z.enum(["12h", "24h"]).optional(),
-  timezones: z.array(ClockTimezone).optional(),
-});
-
-/** One entry of the docker-containers `containers` map. `name` here is the map key: the Docker container name. */
-export const DockerContainerOverride = z.strictObject({
-  _id: id,
-  container: str.min(1),
-  // Values are the glance.* labels without the prefix (docs v0.8.6, "Docker Containers").
-  name: str.optional(),
-  icon: str.optional(),
-  url: str.optional(),
-  description: str.optional(),
-  "same-tab": bool.optional(),
-  hide: bool.optional(),
-  id: str.optional(),
-  parent: str.optional(),
-  category: str.optional(),
-  extra,
-});
-
-const DockerContainers = z.strictObject({
-  ...widgetBase,
-  type: z.literal("docker-containers"),
-  "hide-by-default": bool.optional(),
-  "format-container-names": bool.optional(),
-  "sock-path": str.optional(),
-  category: str.optional(),
-  "running-only": bool.optional(),
-  containers: z.array(DockerContainerOverride).optional(),
-});
-
-const Html = z.strictObject({ ...widgetBase, type: z.literal("html"), source: str.optional() });
-
-export const MonitorSite = z.strictObject({
-  _id: id,
-  title: str,
-  url: str,
-  "check-url": str.optional(),
-  "error-url": str.optional(),
-  icon: str.optional(),
-  timeout: duration.optional(),
-  "allow-insecure": bool.optional(),
-  "same-tab": bool.optional(),
-  "alt-status-codes": z.array(int).optional(),
-  "basic-auth": z.strictObject({ username: str, password: str, extra }).optional(),
-  extra,
-});
-
-const Monitor = z.strictObject({
-  ...widgetBase,
-  type: z.literal("monitor"),
-  style: z.enum(["compact"]).optional(),
-  "show-failing-only": bool.optional(),
-  sites: z.array(MonitorSite),
-});
-
-export const RssFeed = z.strictObject({
-  _id: id,
-  url: str,
-  title: str.optional(),
-  "hide-categories": bool.optional(),
-  "hide-description": bool.optional(),
-  limit: int.optional(),
-  "item-link-prefix": str.optional(),
-  "thumbnail-link-prefix": str.optional(),
-  headers: z.record(z.string(), str).optional(),
-  extra,
-});
-
-const Rss = z.strictObject({
-  ...widgetBase,
-  type: z.literal("rss"),
-  style: z.enum(["vertical-list", "detailed-list", "horizontal-cards", "horizontal-cards-2"]).optional(),
-  "thumbnail-height": num.optional(),
-  "card-height": num.optional(),
-  limit: int.optional(),
-  "preserve-order": bool.optional(),
-  "single-line-titles": bool.optional(),
-  "collapse-after": int.optional(),
-  feeds: z.array(RssFeed),
-});
-
-export const SearchBang = z.strictObject({ _id: id, title: str.optional(), shortcut: str.min(1), url: str.min(1), extra });
-
-const Search = z.strictObject({
-  ...widgetBase,
-  type: z.literal("search"),
-  "search-engine": str.optional(),
-  "new-tab": bool.optional(),
-  autofocus: bool.optional(),
-  target: str.optional(),
-  placeholder: str.optional(),
-  bangs: z.array(SearchBang).optional(),
-});
-
-const Group = z.strictObject({
-  ...widgetBase,
-  type: z.literal("group"),
-  get widgets() {
-    return z.array(Widget);
-  },
-});
-
-const SplitColumn = z.strictObject({
-  ...widgetBase,
-  type: z.literal("split-column"),
-  "max-columns": int.optional(),
-  get widgets() {
-    return z.array(Widget);
-  },
-});
-
-/** Schema per modelled widget type (used by the importer to check fields one by one). */
-export const WIDGET_SCHEMAS = {
-  bookmarks: Bookmarks, calendar: Calendar, clock: Clock, "docker-containers": DockerContainers, group: Group, html: Html,
-  monitor: Monitor, rss: Rss, search: Search, "split-column": SplitColumn,
-} as const satisfies Record<KnownWidgetType, z.ZodObject>;
-
-const KnownWidget = z.discriminatedUnion("type", [
-  Bookmarks, Calendar, Clock, DockerContainers, Group, Html, Monitor, Rss, Search, SplitColumn,
-]);
-
-/** Any widget type the editor doesn't model yet. `_raw` holds every key except `type`, written back unchanged. */
+/**
+ * A widget type Glance v0.8.6 doesn't have (a config written for another version). `_raw` holds every key except
+ * `type`, written back unchanged. rules.ts reports it as an error.
+ */
 export const RawWidget = z.strictObject({
   _id: id,
-  type: z.string().min(1).refine((t) => !(KNOWN_WIDGET_TYPES as readonly string[]).includes(t), {
+  type: z.string().min(1).refine((t) => !WIDGET_TYPES.includes(t), {
     message: "known widget types must not be stored as raw",
   }),
   _raw: z.record(z.string(), z.unknown()),
 });
 
-export const Widget: z.ZodType<WidgetT> = z.union([KnownWidget, RawWidget]);
+export const Widget: z.ZodType<WidgetT> = z.union([KnownWidget, RawWidget]) as unknown as z.ZodType<WidgetT>;
 
 // ---- page, column, top level ----------------------------------------------------------------------------------
 
@@ -344,38 +151,22 @@ export const Dashboard = z.strictObject({
 
 // ---- types ----------------------------------------------------------------------------------------------------
 
-interface WidgetBaseT {
+/** A modelled widget. Field values follow widgets.ts; their exact types are checked at runtime by zod. */
+export interface ModelWidgetT {
   _id: string;
+  type: string;
   title?: string | undefined;
   "title-url"?: string | undefined;
   "hide-header"?: boolean | string | undefined;
   "css-class"?: string | undefined;
   cache?: string | undefined;
+  /** Child widgets (group, split-column). */
+  widgets?: WidgetT[] | undefined;
   extra?: Record<string, unknown> | undefined;
-}
-// Interfaces (not type aliases) so the recursion through `widgets` is allowed.
-export interface GroupWidgetT extends WidgetBaseT {
-  type: "group";
-  widgets: WidgetT[];
-}
-export interface SplitColumnWidgetT extends WidgetBaseT {
-  type: "split-column";
-  "max-columns"?: number | string | undefined;
-  widgets: WidgetT[];
+  [key: string]: unknown;
 }
 export type RawWidgetT = z.infer<typeof RawWidget>;
-export type WidgetT =
-  | z.infer<typeof Bookmarks>
-  | z.infer<typeof Calendar>
-  | z.infer<typeof Clock>
-  | z.infer<typeof DockerContainers>
-  | z.infer<typeof Html>
-  | z.infer<typeof Monitor>
-  | z.infer<typeof Rss>
-  | z.infer<typeof Search>
-  | GroupWidgetT
-  | SplitColumnWidgetT
-  | RawWidgetT;
+export type WidgetT = ModelWidgetT | RawWidgetT;
 
 export type DashboardT = z.infer<typeof Dashboard>;
 export type PageT = z.infer<typeof Page>;
@@ -383,4 +174,8 @@ export type ColumnT = z.infer<typeof Column>;
 
 export function isRawWidget(w: WidgetT): w is RawWidgetT {
   return "_raw" in w;
+}
+
+export function isModelWidget(w: WidgetT): w is ModelWidgetT {
+  return !("_raw" in w);
 }
