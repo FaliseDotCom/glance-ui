@@ -72,6 +72,15 @@ The editor keeps the license and attribution of each downloaded file next to it 
 
 Name indexes for search (si/sh/di/mdi) are published as JSON on jsDelivr (simple-icons `data/simple-icons.json`, selfh.st `index.json`, dashboard-icons `tree.json` + `metadata.json`, MDI `meta.json`).
 
+### Decisions (PM, 2026-10-13, via chat)
+- **D-56:** Iconify search API + Openverse; Wikimedia Commons as fallback. No paid service.
+- **D-62:** the rotating set rotates through a **local pool**. "Get new images" downloads the pool only when you press it; the
+  daily/weekly/monthly schedule only swaps between local files (no automatic downloading). This keeps clear of Pixabay's ban on
+  automated collection. Search results are cached 24 h.
+- **D-61:** accept `largeImageURL` (≤1280 px). The picker shows "Images from Pixabay" with a link when results are displayed. Category chips map as listed above.
+- **D-29:** reload confirmation uses the `?v=` signal as proposed (no objection raised).
+- **Plan v2:** approved.
+
 ## 4. What changes in the code and plan
 - **Generator → document-preserving writer** (ADR-0015): the imported YAML document becomes the base. Edits are applied
   to it, and unchanged nodes and their comments are left byte-for-byte. Phase 1's encoding rules still apply to every new or changed value.

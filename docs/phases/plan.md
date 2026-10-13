@@ -1,7 +1,7 @@
-# Phase plan v2: PROPOSED, awaiting PM approval
+# Phase plan v2: approved by the PM, 2026-10-13
 
 v1 (approved 2026-10-13, in git history) covered Phases 0–7. v2 (2026-10-13) folds in design pass 1 (ADR-0016) and the
-PM's resolutions (`docs/design/reconciliation.md`). Phases 0 and 1 are done. Nothing from Phase 2 onwards starts until v2 is approved.
+PM's resolutions (`docs/design/reconciliation.md`). Phases 0 and 1 are done. **Approved by the PM via chat on 2026-10-13**, together with D-56, D-61 and D-62 (see reconciliation §3).
 
 Every phase ends with an open PR (never merged by Claude), CI green, `handoff.md` updated, and a status report split into
 tested / concluded / not checked. **Nothing writes to the live Glance before the go-live phase.**
@@ -19,8 +19,8 @@ Glance v0.8.6, on desktop and at 390 px.
 | 6 | UI 2: widgets, inspector and forms, YAML override, bookmarks, theme | D-11–D-20, D-50, D-51, D-57, D-63 | |
 | 7 | Preview Glance | D-39, D-47–D-49 | |
 | 8 | Docker containers section (via the proxy) | D-22–D-24, ADR-0005 | |
-| 9 | Icon finder | D-21, D-54–D-56 | needs D-56 approval |
-| 10 | Backgrounds, server folders, Pixabay | D-52, D-53, D-59–D-62 | needs Pixabay decisions |
+| 9 | Icon finder | D-21, D-54–D-56 | D-56 decided: Iconify + Openverse |
+| 10 | Backgrounds, server folders, Pixabay | D-52, D-53, D-59–D-62 | D-61/D-62 decided (1280 px; local pool) |
 | 11 | Packaging, Unraid deployment, cutover, v1.0.0 | ADR-0006/0007/0008, deployment ADR | |
 
 ---
@@ -108,14 +108,16 @@ Writes go only to the test and dev Glance.
 - Tabs: Suggested, All libraries, si/sh/di/mdi, Web, URL (D-21, D-54).
 - Name indexes cached on the server.
 - Site icon fetch and web image download into `/assets/icons/`, with license and attribution stored (D-55).
-- Web search provider per the approved D-56 proposal.
+- Web tab: Iconify search API and Openverse, with Wikimedia Commons as fallback (D-56, decided 2026-10-13).
 
 **Acceptance:** icon search for bookmark and monitor fields. No third-party URLs end up in glance.yml from the Web tab.
 
 ## Phase 10: Backgrounds, server folders, Pixabay
 **Scope:**
 - Editor-owned CSS in assets referenced by `theme.custom-css-file` (D-52); slideshow, with the shuffle script via `document.head` only when Shuffle is chosen (D-53).
-- Image sources: device, server folder (D-59, D-60), Pixabay (D-61, D-62, as decided).
+- Image sources: device, server folder (D-59, D-60), Pixabay (D-61, D-62 as decided: "Get new images" downloads a pool only when
+  you press it; the schedule only rotates through local files; API results cached 24 h; largeImageURL (≤1280 px); the picker
+  credits Pixabay when showing results).
 
 **Acceptance:** background and slideshow render in Preview and live (dev Glance). API keys never reach the browser or glance.yml.
 

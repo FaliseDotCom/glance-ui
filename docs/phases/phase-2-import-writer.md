@@ -1,6 +1,6 @@
 # Phase 2: Import + document-preserving writer (current phase)
 
-**Status:** not started. Waiting for PM approval of phase plan v2 (`docs/phases/plan.md`). ADR-0015 is proposed (spike first).
+**Status:** plan v2 approved 2026-10-13. Starting with the 2a spike for ADR-0015 (proposed).
 **Depends on:** ADR-0011 (flatten includes, = design D-36), ADR-0014 (model, encoding rules), ADR-0015, ADR-0016 (design D-14, D-34–D-38).
 **No UI.**
 

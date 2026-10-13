@@ -4,7 +4,7 @@ The single place to see where the project stands. Updated at the end of every wo
 Last updated: 2026-10-13 (design pass 1 received and reconciled).
 
 ## Current state
-- **Phase:** 1 merged (PR #3). Design pass 1 received, archived and reconciled (design PR open). **Phase 2 waits for your approval of plan v2.**
+- **Phase:** 1 merged (PR #3). Design pass 1 reconciled (PR #4 open). Plan v2 **approved**; Phase 2 starts with the ADR-0015 spike.
 - **Phase plan:** approved 2026-10-13.
 - **Pinned Glance:** v0.8.6, by digest (`/glance.version`).
 - **Dev environment:** dev Glance on :18180 and the editor container on :18190, on the dev machine (`docs/dev-environment.md`).
@@ -13,13 +13,7 @@ Last updated: 2026-10-13 (design pass 1 received and reconciled).
 ## Needs user decision
 Nothing below may be built on until you decide. ★ = affects user experience.
 
-| Item | Decision | Claude's recommendation | Blocks |
-| ---- | -------- | ----------------------- | ------ |
-| ★ [Plan v2](phases/plan.md) | New phase order with the design's scope (12 phases) | Approve | Phase 2 onwards |
-| ★ D-56 | Web image-search service for the icon finder | Iconify search + Openverse; Wikimedia Commons as fallback; Brave optional (bring your own key) ([reconciliation §3](design/reconciliation.md)) | Phase 9 |
-| ★ D-62 | Pixabay rotating set vs Pixabay's ban on automated or systematic downloading | Refresh the pool only when you press a button; the schedule only rotates through local files | Phase 10 |
-| ★ D-61 | Pixabay images are at most 1280 px without Pixabay's approval | Accept (soft on large screens), or apply for full API access | Phase 10 |
-| [0015](adr/0015-document-preserving-writer.md) | How D-38 is built (non-UX) | Splice edits into the file text; spike first | Phase 2 |
+_No UX decisions open._ ADR-0015 (how D-38 is built, non-UX) is accepted with the PR that implements it, after the Phase 2a spike.
 
 ## Decided on 2026-10-13 (via chat)
 | ADR | Outcome |
@@ -36,6 +30,7 @@ Nothing below may be built on until you decide. ★ = affects user experience.
 | Project scope | The new stack (Glance + editor) **replaces** the current Unraid Glance at cutover. The current one is never modified |
 | [0013](adr/0013-license.md) | License: GPL-3.0 |
 | Design pass 1 ([ADR-0016](adr/0016-design-pass-1-adopted.md)) | UX source of truth; design wins on UX differences; **proxy overrides D-25**; **D-38 keeps comments** (ADR-0015); archived with the design system's name redacted |
+| Plan v2, D-56, D-61, D-62 | Plan v2 approved. Icon Web tab: Iconify + Openverse (Wikimedia fallback). Pixabay: local pool, refreshed only on request; 1280 px accepted |
 | Repo / identity | Public GitHub repo. PRs from your gh login, so branch protection has 0 required approvals |
 
 ## Findings you should know about
@@ -59,10 +54,11 @@ Nothing below may be built on until you decide. ★ = affects user experience.
 - The real-binary tests caught a validator bug that my own model-based tests missed. Both kinds of test are kept.
 
 ## Next steps
-1. You: review the design PR; decide plan v2, D-56, D-62 and D-61 (above).
-2. Claude: after approval, Phase 2a spike (ADR-0015).
+1. You: review and merge PR #4.
+2. Claude: Phase 2a spike (ADR-0015), then report before building 2b.
 
 ## Session log
+- 2026-10-13: Plan v2, D-56, D-61 and D-62 decided by the PM (all as recommended).
 - 2026-10-13: Design pass 1 received (zip). Archived; conflicts resolved with the PM; §1 verified against v0.8.6; research done (D-29, D-56, D-61/62); plan v2 proposed.
 - 2026-10-13: PR #2 (license) merged. PR #3 rebased onto it.
 - 2026-10-13: Phase 1 implemented; PR opened.

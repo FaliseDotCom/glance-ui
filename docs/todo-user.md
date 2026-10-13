@@ -4,8 +4,7 @@ Things only you can do or decide. Claude adds items here and never ticks them. Y
 Decisions on ADRs are tracked in [handoff.md](handoff.md#needs-user-decision), not here.
 
 ## Now
-- [ ] **Review the design PR** (archive of design pass 1, reconciliation, plan v2).
-- [ ] Decide plan v2, D-56, D-62 and D-61 (see handoff "Needs user decision").
+- [ ] **Review and merge PR #4** (design archive, reconciliation, plan v2).
 - [ ] Add `Editor image builds and starts` to the required checks; set the repo to squash-merge only (ADR-0007), or tell Claude you prefer merge commits.
 - [ ] Optional: try Claude Design's "Handoff to Claude Code" once, so we know whether it works better than the zip (ADR-0012).
 
