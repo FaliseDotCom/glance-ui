@@ -1,20 +1,20 @@
 # Handoff
 
 The single place to see where the project stands. Updated at the end of every work session and every PR.
-Last updated: 2026-10-13 (Phase 1 start).
+Last updated: 2026-10-13 (Phase 1 PR opened).
 
 ## Current state
-- **Phase:** 0 (Setup) merged (PR #1). **Phase 1 (model + generator) in progress.** The license PR (#2) is open.
+- **Phase:** 1 (model + generator) **PR #3 open**, waiting for your review. Phase 0 (PR #1) and the license (PR #2) are merged.
 - **Phase plan:** approved 2026-10-13.
 - **Pinned Glance:** v0.8.6, by digest (`/glance.version`).
-- **Dev environment:** the dev Glance runs on the dev machine, reachable on the LAN at port 18180 (`docs/dev-environment.md`). The editor slot
-  (port 18190) comes online with the first Phase 1 build.
-- **Feature code:** none.
+- **Dev environment:** dev Glance on :18180 and the editor container on :18190, on the dev machine (`docs/dev-environment.md`).
+- **Feature code:** data model, rules, generator, validation against the pinned binary; editor container (no UI) running in the dev environment on :18190.
 
 ## Needs user decision
 Nothing below may be built on until you mark it accepted. ★ = affects user experience.
 
-_None open._
+_No UX decisions open._ ADR-0014 (data model and generator, non-UX) is accepted by merging the Phase 1 PR, under a new
+convention in `docs/adr/README.md`: non-UX ADRs may ship in the PR that introduces them.
 
 ## Decided on 2026-10-13 (via chat)
 | ADR | Outcome |
@@ -40,11 +40,17 @@ _None open._
 - Dev Glance confirmed reachable from another LAN device (by you, 2026-10-13).
 - Correction: the Phase 0 docs called the dev machine's Docker "rootless". It is rootful. Fixed in lessons and ADR-0009.
 
+## Phase 1 findings
+- Glance ignores unknown YAML keys silently, so the model is strict and warns about anything it keeps in `extra`.
+- Glance substitutes placeholders as raw text before parsing (comments included). Edge cases are verified and covered by tests.
+- The real-binary tests caught a validator bug that my own model-based tests missed. Both kinds of test are kept.
+
 ## Next steps
-1. You: [todo-user.md](todo-user.md) "Now" and branch protection.
-2. Phase 2's import fixture is Glance's own example config (`test/upstream-example.sh`), not your real config.
-3. Claude, after the merge: create `docs/phases/phase-1-model-generator.md`, switch the CLAUDE.md import to it, and start Phase 1.
+1. You: review and merge PR #3. Add `Editor image builds and starts` to the required checks.
+2. Claude, after the merge: Phase 2 (import), using Glance's upstream example config as the fixture.
 
 ## Session log
+- 2026-10-13: PR #2 (license) merged. PR #3 rebased onto it.
+- 2026-10-13: Phase 1 implemented; PR opened.
 - 2026-10-13: PR #1 merged (as a merge commit; the squash-only repo setting isn't applied yet). License PR #2 opened.
 - 2026-10-13: Phase 0 built. Then your decisions were applied, the repo was created, the PR opened, and the dev Glance deployed on the dev machine.

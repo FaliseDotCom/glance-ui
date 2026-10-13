@@ -1,4 +1,4 @@
-# Phase 0: Setup (current phase)
+# Phase 0: Setup (done; merged in PR #1)
 
 **Status:** complete. PR open on GitHub, awaiting PM review and merge.
 **Rule for this phase:** no feature code.

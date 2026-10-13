@@ -1,0 +1,27 @@
+{
+  "name": "glance-editor",
+  "private": true,
+  "type": "module",
+  "license": "GPL-3.0-only",
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "engines": {
+    "node": ">=24 <25"
+  },
+  "scripts": {
+    "test": "vitest run",
+    "typecheck": "tsc -p tsconfig.json && npm -w apps/editor run check",
+    "licenses": "license-checker-rseidelsohn --excludePrivatePackages --onlyAllow 'MIT;ISC;Apache-2.0;BSD-2-Clause;BSD-3-Clause;0BSD;BlueOak-1.0.0;MPL-2.0;CC0-1.0;CC-BY-3.0;MIT AND CC-BY-3.0'",
+    "build": "npm -w apps/editor run build",
+    "generate-sample": "node packages/generator/src/cli.ts test/fixtures/model/v1/sample.json"
+  },
+  "devDependencies": {
+    "@types/node": "24.19.2",
+    "fast-check": "4.10.2",
+    "license-checker-rseidelsohn": "5.0.1",
+    "typescript": "6.0.3",
+    "vitest": "5.0.4"
+  }
+}

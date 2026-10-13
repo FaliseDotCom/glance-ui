@@ -9,3 +9,5 @@ data/
 *.sqlite
 *.sqlite3
 /glance.yml
+.svelte-kit/
+build/

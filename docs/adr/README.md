@@ -13,7 +13,8 @@ One file per decision: `NNNN-short-title.md`, copied from [0000-template.md](000
   "Needs user decision" in [../handoff.md](../handoff.md). No work builds on it until it is accepted.
 - Claims about Glance or a library cite the version and the date the source was read. Write "not verified"
   where that is true.
-- Only the PM changes the status from `proposed`.
+- Only the PM changes the status from `proposed`. Exception: a **non-UX** ADR may be implemented in the PR that
+  introduces it; merging that PR accepts it (the PM sees it in review). UX-impacting ADRs always wait for explicit approval.
 
 ## Index
 | ADR | Title | Status | UX impact |
@@ -31,3 +32,4 @@ One file per decision: `NNNN-short-title.md`, copied from [0000-template.md](000
 | [0011](0011-import-of-existing-config.md) | One-time import of the existing glance.yml | accepted (flatten) | **yes** |
 | [0012](0012-design-handoff.md) | Design handoff from Claude Design | accepted (mechanism unverified) | **yes** |
 | [0013](0013-license.md) | License: GPL-3.0 | accepted | no |
+| [0014](0014-data-model-and-generator.md) | Data model (schema v1) and YAML generator | proposed (accepted on merge of Phase 1) | no |

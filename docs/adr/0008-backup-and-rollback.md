@@ -43,7 +43,8 @@ Glance gives no way to read which config it loaded (`/api/healthz` only reports 
 
 ## Verified vs assumed
 - Verified: atomic replace with a directory mount reloads Glance; invalid config keeps the old one (tests, ADR-0009).
-- Not verified: validation with dummy placeholder values; SQLite `VACUUM INTO` under the chosen driver; retention numbers.
+- Verified in Phase 1: validation with dummy placeholder values (ADR-0014; real binary, typed dummies, escapes left to Glance).
+- Not verified: SQLite `VACUUM INTO` under the chosen driver; retention numbers.
 
 ## Decision record
 **Accepted 2026-10-13 by the PM (via chat)**, as written, including the history/restore screen and retention of 14 daily plus 5 pre-migration snapshots. Post-save confirmation: option (c) now, (a) opt-in later.

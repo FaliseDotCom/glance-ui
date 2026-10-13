@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 # Starts the pinned Glance image with a config and fails if Glance exits or never serves.
 # Usage: test/glance-smoke.sh [config-file]   (default: test/fixtures/valid/sample.yml)
+# Optional: GLANCE_SMOKE_ENV_FILE (docker --env-file) and GLANCE_SMOKE_SECRETS_DIR (mounted at /run/secrets) for configs
+# with placeholders. Defaults: the sample model's dummy env and secrets.
 source "$(dirname "$0")/lib.sh"
 guard_docker_host
 
@@ -15,7 +17,9 @@ docker rm -f "$name" >/dev/null 2>&1 || true
 
 mkdir -p "$work/cfg"; cp "$config" "$work/cfg/glance.yml"
 log "starting $GLANCE_IMAGE with $(basename "$config")"
-glance_start smoke "$port" -v "$work/cfg:/app/config:ro" >/dev/null
+env_file="${GLANCE_SMOKE_ENV_FILE:-$REPO_ROOT/test/fixtures/model/v1/sample.env}"
+secrets="${GLANCE_SMOKE_SECRETS_DIR:-$REPO_ROOT/test/fixtures/model/v1/secrets}"
+glance_start smoke "$port" -v "$work/cfg:/app/config:ro" --env-file "$env_file" -v "$secrets:/run/secrets:ro" >/dev/null
 
 served=0
 for ((i = 0; i < 60; i++)); do

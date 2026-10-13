@@ -66,3 +66,6 @@ Resulting stack (versions from the npm registry, 2026-10-13):
 - Layout (confirmed in the Phase 1 PR): `packages/model`, `packages/generator`, `apps/editor` (SvelteKit).
 - The pinned `glance` binary is still copied into the image for `config:validate`.
 - Risk accepted: a smaller drag-and-drop ecosystem, and the Claude Design handoff (ADR-0012) may need translating to Svelte.
+- Phase 1 note (SvelteKit 3 migration guide, read 2026-10-13): `svelte.config.js` is no longer supported, so options go in
+  `sveltekit({...})` in `vite.config.ts`; the tsconfig extends `$app/tsconfig`; `json()` is deprecated in favour of `Response.json`.
+  Node runs the packages' TypeScript directly (type stripping, Node 24), so `erasableSyntaxOnly` is on.
