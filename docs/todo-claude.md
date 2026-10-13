@@ -16,6 +16,10 @@ Claude's own backlog. Items that need the PM go in [todo-user.md](todo-user.md) 
 - [ ] Prove `config:validate` with dummy placeholder values (ADR-0008 step 2).
 - [ ] Get an arm64 digest for the pinned Glance image if the host is ARM.
 
+## Licensing (ADR-0013)
+- [ ] Phase 1: add a dependency-license check to CI (GPL-3.0-compatible only).
+- [ ] Phase 7: the published editor image ships Glance's AGPL license text plus a pointer to the pinned source commit.
+
 ## Known gaps in the Phase 0 harness
 - [ ] The docker-containers precedence test needs a socket proxy plus labelled throwaway containers (Phase 6).
 - [ ] The "reload clears cache" and "env-var change needs restart" claims are not tested (docs only).

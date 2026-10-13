@@ -1,10 +1,10 @@
 # Handoff
 
 The single place to see where the project stands. Updated at the end of every work session and every PR.
-Last updated: 2026-10-13 (end of Phase 0).
+Last updated: 2026-10-13 (Phase 1 start).
 
 ## Current state
-- **Phase:** 0 (Setup) is done. **PR open** on GitHub (public repo), waiting for your review. Phase 1 starts after the merge.
+- **Phase:** 0 (Setup) merged (PR #1). **Phase 1 (model + generator) in progress.** The license PR (#2) is open.
 - **Phase plan:** approved 2026-10-13.
 - **Pinned Glance:** v0.8.6, by digest (`/glance.version`).
 - **Dev environment:** the dev Glance runs on the dev machine, reachable on the LAN at port 18180 (`docs/dev-environment.md`). The editor slot
@@ -29,6 +29,7 @@ _None open._
 | [0009](adr/0009-glance-behaviour-baseline.md) | Accepted: explicit Save, validate before write, our Glance mounts the config folder |
 | [0006](adr/0006-glance-version-pinning.md) | Pin v0.8.6 in **our** stack. The current Unraid Glance is untouched |
 | Project scope | The new stack (Glance + editor) **replaces** the current Unraid Glance at cutover. The current one is never modified |
+| [0013](adr/0013-license.md) | License: GPL-3.0 |
 | Repo / identity | Public GitHub repo. PRs from your gh login, so branch protection has 0 required approvals |
 
 ## Findings you should know about
@@ -45,4 +46,5 @@ _None open._
 3. Claude, after the merge: create `docs/phases/phase-1-model-generator.md`, switch the CLAUDE.md import to it, and start Phase 1.
 
 ## Session log
+- 2026-10-13: PR #1 merged (as a merge commit; the squash-only repo setting isn't applied yet). License PR #2 opened.
 - 2026-10-13: Phase 0 built. Then your decisions were applied, the repo was created, the PR opened, and the dev Glance deployed on the dev machine.
