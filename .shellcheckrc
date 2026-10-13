@@ -1,0 +1,5 @@
+# Resolve `source "$(dirname "$0")/lib.sh"` relative to the script.
+source-path=SCRIPTDIR
+external-sources=true
+# Literal "${VAR}" strings are intentional throughout: they are Glance placeholders, not shell expansions.
+disable=SC2016

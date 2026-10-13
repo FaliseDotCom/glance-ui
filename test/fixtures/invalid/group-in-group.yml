@@ -1,0 +1,11 @@
+# Docs: a group cannot contain a group.
+pages:
+  - name: Nested
+    columns:
+      - size: full
+        widgets:
+          - type: group
+            widgets:
+              - type: group
+                widgets:
+                  - type: clock

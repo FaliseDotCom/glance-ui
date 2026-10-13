@@ -1,0 +1,5 @@
+# Docs: referencing an env var that does not exist is an error.
+pages:
+  - name: ${GLANCE_EDITOR_TEST_DOES_NOT_EXIST}
+    columns:
+      - size: full

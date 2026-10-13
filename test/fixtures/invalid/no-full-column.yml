@@ -1,0 +1,6 @@
+# Docs: a page must have 1 or 2 full columns.
+pages:
+  - name: NoFull
+    columns:
+      - size: small
+      - size: small

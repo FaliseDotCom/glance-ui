@@ -1,0 +1,11 @@
+# Docs: a group cannot contain a split-column.
+pages:
+  - name: Nested
+    columns:
+      - size: full
+        widgets:
+          - type: group
+            widgets:
+              - type: split-column
+                widgets:
+                  - type: clock

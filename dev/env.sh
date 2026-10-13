@@ -1,0 +1,27 @@
+# shellcheck shell=bash
+# shellcheck disable=SC2034 # variables are used by the scripts that source this file
+# Shared settings for the LAN dev environment. Source this file; do not execute it.
+# Everything is labelled glance-editor-dev=1. The test harness (label glance-editor-test=1) never touches it,
+# and these scripts never touch anything without this label.
+set -euo pipefail
+
+DEV_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+# shellcheck source=../glance.version
+source "$DEV_ROOT/glance.version"
+
+DEV_LABEL="glance-editor-dev=1"
+DEV_NETWORK="glance-editor-dev"
+DEV_GLANCE="glance-editor-dev-glance"
+DEV_EDITOR="glance-editor-dev-editor"
+
+# Bind address: 0.0.0.0 makes the services reachable from the LAN (the PM's choice). Set DEV_BIND=127.0.0.1 to keep them local.
+DEV_BIND="${DEV_BIND:-0.0.0.0}"
+DEV_GLANCE_PORT="${DEV_GLANCE_PORT:-18180}"
+DEV_EDITOR_PORT="${DEV_EDITOR_PORT:-18190}"
+
+# State lives outside the repo, so it is never committed (the repo is public).
+DEV_STATE="${DEV_STATE:-${XDG_DATA_HOME:-$HOME/.local/share}/glance-editor-dev}"
+DEV_CONFIG_DIR="$DEV_STATE/glance-config"   # mounted as a DIRECTORY (ADR-0009: required for atomic saves)
+DEV_EDITOR_DATA="$DEV_STATE/editor-data"
+
+log() { printf '[dev] %s\n' "$*" >&2; }
