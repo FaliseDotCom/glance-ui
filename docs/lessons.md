@@ -14,6 +14,12 @@ The property test passed against my own model of Glance's substitution while the
 that YAML style choices (double quotes, adjacency) change what Glance substitutes. **Do:** keep both kinds of test for
 anything that touches Glance semantics.
 
+### 2026-10-13: Run property tests with many seeds before pushing
+The first property test passed 2,000 runs locally, then failed in CI on a new seed (whitespace-only lines). Ten more local
+seeds found two more bug families: the `yaml` library's multi-line double quotes, and my own `String.replace` treating
+`$&`/`$$` in replacement text as patterns. **Do:** loop property tests over several seeds before pushing, use a replacer
+function with `String.replace` whenever the replacement is data, and check the test can fail.
+
 ### 2026-10-13: Glance ignores unknown YAML keys silently
 `yaml.Unmarshal` without `KnownFields` (v0.8.6). A typo passes `config:validate` and does nothing. **Do:** the model is
 strict; unknown keys live in `extra` and are warned about.

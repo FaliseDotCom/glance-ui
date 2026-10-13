@@ -20,6 +20,12 @@ const withHtml = (source: string, title = "t"): DashboardT => ({
 });
 
 describe("generate", () => {
+  it.each([" \n", "a\n \nb", "trailing \nx", "\tx\n", "  indented\nfirst", "\n\n", "x\n", "\n \n${A}a", "a\u2028b\u0085c\ufeff"])("multi-line %j survives", (v) => {
+    const { yaml } = generate(withHtml(v, v), OPTS);
+    const w = parse(yaml).pages[0].columns[0].widgets[0];
+    expect([w.source, w.title]).toEqual([v, v]);
+  });
+
   it("is deterministic", async () => {
     const d = await sample();
     expect(generate(d, OPTS).yaml).toBe(generate(structuredClone(d), OPTS).yaml);
@@ -65,6 +71,8 @@ describe("placeholder round trip (property)", () => {
   const DUMMY = "glance-editor-placeholder";
   const token = fc.oneof(
     fc.constantFrom("${A_VAR}", "${secret:my_secret}", "${readFileFromEnv:TOKEN_FILE}", "\\${ESCAPED}", "${lower}", "${foo:BAR}"),
+    fc.string({ unit: "binary", maxLength: 4 }),
+    fc.constantFrom("$&", "$$", "$`", "$'", "\u2028", "\u0085", "\ufeff", "\r\n", "\t", "---", "...", "? ", "- "),
     fc.string({ unit: fc.constantFrom("a", " ", ":", "#", "'", '"', "\\", "\n", "-", "{", "}", "$", "[", "&", "*", "!", "%", "@", "`", "|", ">") , maxLength: 6 }),
   );
   const text = fc.array(token, { minLength: 1, maxLength: 8 }).map((parts) => parts.join(""));
@@ -85,7 +93,7 @@ describe("placeholder round trip (property)", () => {
         expect(w.title).toBe(expected(title));
         expect(yaml).not.toContain(DUMMY);
       }),
-      { numRuns: 2000 },
+      { numRuns: 5000 },
     );
   });
 });

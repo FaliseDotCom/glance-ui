@@ -11,9 +11,14 @@
 //      and YAML decodes the rest to what Glance would have produced. Simpler styles fail (property test): the yaml
 //      library falls back to double quotes, where `\\${` becomes an invalid `\$` escape once Glance removes one
 //      backslash; and `\${A}${B}` must leave B unsubstituted, as Glance does.
+// 1b. Multi-line strings use a block literal only when unambiguous (no trailing whitespace on any line). Otherwise
+//     they are written as a single-line JSON string (valid YAML double-quoted). The yaml library got both
+//     alternatives wrong for whitespace-only lines: `" \n"` as a block literal parses back as `"\n"`, and its
+//     multi-line double-quoted output for `"\n \n…"` doesn't parse back either (property test, CI and local seeds).
 // 2. The header comment never contains `${`: Glance substitutes inside comments too.
 // 3. Key order is canonical (Glance docs order), so the same model always produces the same bytes.
 
+import { randomUUID } from "node:crypto";
 import { Document, Scalar, isScalar, visit, type DocumentOptions, type ToStringOptions } from "yaml";
 import {
   VALUE_PATTERN,
@@ -51,9 +56,10 @@ export function generate(d: DashboardT, opts: GenerateOptions): GenerateResult {
 
   const doc = new Document(glance, { version: "1.2" } satisfies DocumentOptions);
   doc.commentBefore = header(opts);
-  const raw = replaceEscapedScalars(doc);
+  const raw = replaceSpecialScalars(doc);
   let yaml = doc.toString(TO_STRING);
-  for (const [token, text] of raw) yaml = yaml.replace(token, text);
+  // A replacer function: a replacement string would interpret `$&`, `$$` and `` $` `` in the text (property test).
+  for (const [token, text] of raw) yaml = yaml.replace(token, () => text);
   if (/\$\{/.test(header(opts))) throw new Error("header comment must not contain ${");
   return { yaml, placeholderHints: hints };
 }
@@ -76,6 +82,11 @@ function header(opts: GenerateOptions): string {
   ].join("\n");
 }
 
+/** Rule 1b. */
+export function isBlockLiteralSafe(value: string): boolean {
+  return value.split("\n").every((line) => !/[ \t]$/.test(line));
+}
+
 const SENTINEL = "\uE000";
 
 /** Rule 1, third point. Returns the JSON-encoded text for a string containing `\${`. Exported for tests. */
@@ -96,20 +107,38 @@ export function encodeWithEscapes(value: string): string {
     last = start + m[0].length;
   }
   out += mark(value.slice(last));
-  return JSON.stringify(out).replaceAll(SENTINEL, "\\u0024");
+  return jsonForYaml(out).replaceAll(SENTINEL, "\\u0024");
 }
 
-/** Swap every scalar containing `\${` for a unique token, to be replaced by its encoded text after stringifying. */
-function replaceEscapedScalars(doc: Document): Map<string, string> {
+/**
+ * A JSON string literal is a valid YAML double-quoted scalar (JSON's escapes are a subset of YAML's). Additionally escape
+ * characters YAML 1.1 parsers treat as line breaks or YAML forbids unescaped (C1 controls, U+2028/9, BOM, U+FFFE/F).
+ */
+export function jsonForYaml(value: string): string {
+  return JSON.stringify(value).replace(/[\u007F-\u009F\u2028\u2029\uFEFF\uFFFE\uFFFF]/g,
+    (c) => `\\u${c.charCodeAt(0).toString(16).padStart(4, "0")}`);
+}
+
+/**
+ * Swap scalars the yaml library can't be trusted with (rules 1 and 1b) for unique tokens, replaced by their
+ * encoded text after stringifying.
+ */
+function replaceSpecialScalars(doc: Document): Map<string, string> {
   const raw = new Map<string, string>();
+  const nonce = randomUUID().replaceAll("-", ""); // a user's text can't contain the token by accident
   visit(doc, {
     Scalar(_key, node) {
-      if (isScalar(node) && typeof node.value === "string" && node.value.includes("\\${")) {
-        const token = `__glance_editor_raw_${raw.size}__`;
-        raw.set(token, encodeWithEscapes(node.value));
-        node.value = token;
-        node.type = Scalar.PLAIN;
-      }
+      if (!isScalar(node) || typeof node.value !== "string") return;
+      const v = node.value;
+      let encoded: string | undefined;
+      if (v.includes("\\${")) encoded = encodeWithEscapes(v);
+      else if (v.includes("\n") && !isBlockLiteralSafe(v)) encoded = jsonForYaml(v);
+      else if (/[\u007F-\u009F\u2028\u2029\uFEFF\uFFFE\uFFFF]/.test(v)) encoded = jsonForYaml(v);
+      if (encoded === undefined) return;
+      const token = `__glance_editor_raw_${nonce}_${raw.size}__`;
+      raw.set(token, encoded);
+      node.value = token;
+      node.type = Scalar.PLAIN;
     },
   });
   return raw;

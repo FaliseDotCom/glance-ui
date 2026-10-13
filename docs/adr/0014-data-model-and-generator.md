@@ -31,6 +31,10 @@ Glance v0.8.6 facts this design rests on (source read 2026-10-13, and test-verif
 **Generator (`packages/generator`):**
 - Canonical key order (docs order), so the same model gives the same bytes. Header comment per ADR-0010, never containing `${`.
 - No line folding. Typed placeholders are written as plain scalars, so after substitution they parse as numbers or booleans.
+- Multi-line strings are written as a block literal only when unambiguous (no trailing whitespace on any line). Otherwise
+  they are a single-line JSON string. The `yaml` library (2.9.1) mis-wrote whitespace-only lines both as a block literal
+  and as multi-line double quotes (property test, found in CI). The same encoding is used for strings containing
+  characters older YAML treats as line breaks (U+0085, U+2028/9).
 - Strings containing the escape `\${` are written as JSON strings (valid YAML double-quoted). Only the placeholders Glance
   would substitute stay as `${…}`, and every other `$` becomes `$`. This is the one encoding that survived the property
   test (2,000 random strings) and the real-Glance render test. The output is less readable in those rare cases, which is fine
@@ -46,8 +50,10 @@ No real env vars or secrets are needed. This proves the approach ADR-0008 step 2
 - The model allows placeholders only as whole values in typed fields. `limit: 1${X}` is rejected (Glance would need the substituted text to parse as a number anyway).
 
 ## Verified vs assumed
-- Verified by test: every claim marked above; generator output accepted by Glance (sample model, real binary); placeholders rendered
-  correctly by a running Glance server (7 cases, `packages/glance/test/render.test.ts`).
+- Verified by test: every claim marked above; generator output accepted by Glance (sample model, real binary); placeholders and
+  whitespace rendered correctly by a running Glance server (10 fixed cases, plus 300 random values per run parsed by Glance's own
+  go-yaml, `render-property.test.ts`, confirmed able to fail); a 5,000-run property test against the `yaml` library's parser.
+- Not covered by the go-yaml property test: `${secret:…}` (needs /run/secrets, i.e. root). It is covered by the yaml-parser property test.
 - Not verified: `custom-css-file` and other paths that Glance may check at startup but not in `config:validate`; widgets beyond the modelled ten.
 
 ## Decision record
