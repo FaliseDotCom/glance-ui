@@ -1,0 +1,8 @@
+# Docs: width slim allows at most 2 columns.
+pages:
+  - name: Slim
+    width: slim
+    columns:
+      - size: small
+      - size: full
+      - size: small

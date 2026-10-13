@@ -1,0 +1,8 @@
+# Docs: up to 3 columns per page.
+pages:
+  - name: Four
+    columns:
+      - size: small
+      - size: full
+      - size: small
+      - size: small

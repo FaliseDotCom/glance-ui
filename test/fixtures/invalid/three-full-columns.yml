@@ -1,0 +1,7 @@
+# Docs: a page must have 1 or 2 full columns.
+pages:
+  - name: ThreeFull
+    columns:
+      - size: full
+      - size: full
+      - size: full

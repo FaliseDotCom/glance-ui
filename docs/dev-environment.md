@@ -1,0 +1,28 @@
+# Dev environment (LAN)
+
+A long-running Glance plus the editor, on the dev machine, reachable from the LAN, for clicking through work in progress.
+It is **not** the test harness (`docs/testing.md`) and **not** the live dashboard.
+
+| | Dev environment | Test harness |
+|-|-----------------|--------------|
+| Purpose | Manual QA by the PM; long-running | Automated tests; seconds-long |
+| Label | `glance-editor-dev=1` | `glance-editor-test=1` |
+| Binding | `0.0.0.0` (LAN), configurable | `127.0.0.1` only |
+| Ports | Glance `18180`, editor `18190` | `18080`, `18081` |
+| Config | `~/.local/share/glance-editor-dev/glance-config/` (directory mount) | temp dirs |
+| Docker socket | Glance: host socket `:ro` (mirrors a standard install). Editor: via socket proxy (Phase 6, ADR-0005) | none |
+
+## Commands
+- `dev/up.sh`: validates the dev config with the pinned Glance, then (re)creates the containers. Seeds the config
+  from `test/fixtures/valid/sample.yml` on first run only. Starts the editor if an image `glance-editor:dev` exists
+  (from Phase 1).
+- `dev/status.sh`: shows the containers and the config path.
+- `dev/down.sh`: removes the containers and network. Keeps the state directory.
+
+Overrides via env: `DEV_BIND`, `DEV_GLANCE_PORT`, `DEV_EDITOR_PORT`, `DEV_STATE`, `EDITOR_IMAGE`.
+
+## Notes
+- The dev machine's address is deliberately not in the repo (the repo is public). Open `http://<dev-host>:18180/`.
+- No authentication by design (ADR-0004). Keep these ports off the internet: no port-forwarding on the router.
+- The dev Glance shows **this host's** containers in the docker-containers widget, because it has the socket.
+- Resetting: `dev/down.sh && rm -rf ~/.local/share/glance-editor-dev && dev/up.sh`.

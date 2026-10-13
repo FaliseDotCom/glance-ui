@@ -1,0 +1,42 @@
+name: Change request
+description: Ask for new behaviour or a change to existing behaviour.
+labels: [change-request, triage]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What you are trying to do and why the current editor makes it hard.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed change
+      description: What you want to happen. Sketches and screenshots are welcome.
+    validations:
+      required: true
+  - type: dropdown
+    id: ux-impact
+    attributes:
+      label: Does this change what users see or do?
+      description: If yes, it needs an ADR approved by the PM before implementation.
+      options:
+        - "Yes"
+        - "No"
+        - Not sure
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria
+      placeholder: |
+        - [ ] ...
+    validations:
+      required: true
+  - type: dropdown
+    id: priority
+    attributes:
+      label: Priority
+      options: [Low, Medium, High]

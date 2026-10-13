@@ -1,0 +1,52 @@
+name: Bug report
+description: Something in the editor or the generated Glance config is wrong.
+labels: [bug, triage]
+body:
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened
+      description: What you did, what you expected, and what happened instead.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Open dashboard "Home"
+        2. ...
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - Editor UI
+        - Generated glance.yml
+        - Import of existing glance.yml
+        - Docker container visibility
+        - Save / backup / rollback
+        - Authentication
+        - Other
+    validations:
+      required: true
+  - type: input
+    id: versions
+    attributes:
+      label: Versions
+      description: Editor version (from the footer or release) and Glance version.
+      placeholder: "editor v0.1.0, glance v0.8.6"
+    validations:
+      required: true
+  - type: textarea
+    id: glance-log
+    attributes:
+      label: Glance log output and generated YAML (if relevant)
+      description: Remove tokens, passwords, and private URLs before pasting.
+      render: text
+  - type: textarea
+    id: screenshots
+    attributes:
+      label: Screenshots

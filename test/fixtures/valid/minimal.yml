@@ -1,0 +1,7 @@
+# Smallest config Glance accepts: one page, one full column.
+pages:
+  - name: Minimal
+    columns:
+      - size: full
+        widgets:
+          - type: clock

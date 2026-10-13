@@ -1,0 +1,73 @@
+# CI smoke-test config. Covers the structures the editor must generate:
+# pages, page widths, all column layouts, groups, split-columns, bookmarks,
+# the docker-containers `containers` map, theme and branding.
+# Widgets are chosen so that Glance does not need network access to start.
+theme:
+  background-color: 240 13 14
+  primary-color: 51 33 68
+  contrast-multiplier: 1.2
+
+branding:
+  hide-footer: true
+
+pages:
+  - name: Home
+    slug: home
+    columns:
+      - size: small
+        widgets:
+          - type: clock
+            hour-format: 24h
+          - type: calendar
+            first-day-of-week: monday
+      - size: full
+        widgets:
+          - type: group
+            widgets:
+              - type: bookmarks
+                title: Tools
+                groups:
+                  - title: Dev
+                    links:
+                      - title: Glance
+                        url: https://github.com/glanceapp/glance
+                        icon: si:github
+              - type: html
+                title: Notes
+                source: <p>Hello from the sample config.</p>
+          - type: split-column
+            max-columns: 2
+            widgets:
+              - type: html
+                source: <p>left</p>
+              - type: html
+                source: <p>right</p>
+      - size: small
+        widgets:
+          - type: docker-containers
+            hide-by-default: false
+            containers:
+              some_container:
+                name: Some Container
+                description: Example override
+                hide: true
+
+  - name: Slim
+    width: slim
+    columns:
+      - size: full
+        widgets:
+          - type: clock
+      - size: small
+        widgets:
+          - type: to-do
+
+  - name: Two Full
+    width: wide
+    columns:
+      - size: full
+        widgets:
+          - type: clock
+      - size: full
+        widgets:
+          - type: clock

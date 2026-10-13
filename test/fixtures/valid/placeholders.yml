@@ -1,0 +1,19 @@
+# Placeholders the editor must store and write back literally, never resolve.
+# Needs the env vars and files set up by placeholder_run_args in test/lib.sh.
+pages:
+  - name: ${GLANCE_EDITOR_TEST_TITLE}
+    columns:
+      - size: full
+        widgets:
+          - type: bookmarks
+            groups:
+              - title: Placeholders
+                links:
+                  - title: From env
+                    url: ${GLANCE_EDITOR_TEST_URL}
+          - type: html
+            title: Secret and file-from-env
+            source: <p data-secret="${secret:test_secret}" data-file="${readFileFromEnv:GLANCE_EDITOR_TEST_TOKEN_FILE}">ok</p>
+          - type: html
+            title: Escaped
+            source: <p>\${NOT_AN_ENV_VAR}</p>
