@@ -1,0 +1,4 @@
+# Main file with includes (both directive spellings Glance accepts).
+pages:
+  - $include: home.yml
+  - !include: pages/other.yml

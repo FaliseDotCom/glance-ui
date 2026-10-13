@@ -11,7 +11,8 @@
 //      and YAML decodes the rest to what Glance would have produced. Simpler styles fail (property test): the yaml
 //      library falls back to double quotes, where `\\${` becomes an invalid `\$` escape once Glance removes one
 //      backslash; and `\${A}${B}` must leave B unsubstituted, as Glance does.
-// 1b. Multi-line strings use a block literal only when unambiguous (no trailing whitespace on any line). Otherwise
+// 1b. Multi-line strings use a block literal only when unambiguous (no trailing whitespace on any line, not ending in
+//     two newlines; see isBlockLiteralSafe). Otherwise
 //     they are written as a single-line JSON string (valid YAML double-quoted). The yaml library got both
 //     alternatives wrong for whitespace-only lines: `" \n"` as a block literal parses back as `"\n"`, and its
 //     multi-line double-quoted output for `"\n \n…"` doesn't parse back either (property test, CI and local seeds).
@@ -22,7 +23,6 @@ import { randomUUID } from "node:crypto";
 import { Document, Scalar, isScalar, visit, type DocumentOptions, type ToStringOptions } from "yaml";
 import {
   VALUE_PATTERN,
-  findPlaceholders,
   isRawWidget,
   isWholePlaceholder,
   type DashboardT,
@@ -50,18 +50,52 @@ export interface GenerateResult {
 type Obj = Record<string, unknown>;
 
 export function generate(d: DashboardT, opts: GenerateOptions): GenerateResult {
-  const hints = new Map<string, PlaceholderHint>();
-  const c = new Converter(hints);
-  const glance = c.dashboard(d, opts);
-
-  const doc = new Document(glance, { version: "1.2" } satisfies DocumentOptions);
+  const { json, placeholderHints } = toGlanceJson(d, opts);
+  const doc = new Document(json, { version: "1.2" } satisfies DocumentOptions);
   doc.commentBefore = header(opts);
+  if (/\$\{/.test(header(opts))) throw new Error("header comment must not contain ${");
+  return { yaml: stringify(doc), placeholderHints };
+}
+
+/**
+ * The model as the plain object Glance reads (keys, maps and raw widgets as in glance.yml), in canonical key order.
+ * With `keepIds`, every object that has an `_id` in the model keeps it as an `_id` key, so the document-preserving
+ * writer (packages/document) can match list items across edits. `_id` is never written to YAML.
+ */
+export function toGlanceJson(
+  d: DashboardT,
+  opts: { keepIds?: boolean; assetsPathOverride?: string } = {},
+): { json: Obj; placeholderHints: Map<string, PlaceholderHint> } {
+  const placeholderHints = new Map<string, PlaceholderHint>();
+  const json = new Converter(placeholderHints, opts.keepIds ?? false).dashboard(d, opts);
+  return { json, placeholderHints };
+}
+
+/** Serialise a Glance JSON value (no `_id` keys) as block YAML at column 0, with every encoding rule above. */
+export function serializeYaml(value: unknown): string {
+  return stringify(new Document(value, { version: "1.2" }));
+}
+
+/**
+ * A scalar written in place of an existing one, on the same line (packages/document). Multi-line strings become a
+ * single-line JSON string, so the replacement never changes the line structure around it.
+ */
+export function encodeInlineScalar(value: unknown): string {
+  if (typeof value !== "string") return value === null || value === undefined ? "null" : String(value);
+  if (value.includes("\\${")) return encodeWithEscapes(value);
+  if (value.includes("\n") || /[\u007F-\u009F\u2028\u2029\uFEFF\uFFFE\uFFFF]/.test(value)) return jsonForYaml(value);
+  // The yaml library writes some single-line strings as a block literal at the document root (e.g. "---a", which
+  // could read as a document marker). Inline replacement must stay on one line, so fall back to a JSON string.
+  const text = stringify(new Document(value, { version: "1.2" })).trimEnd();
+  return text.includes("\n") ? jsonForYaml(value) : text;
+}
+
+function stringify(doc: Document): string {
   const raw = replaceSpecialScalars(doc);
   let yaml = doc.toString(TO_STRING);
   // A replacer function: a replacement string would interpret `$&`, `$$` and `` $` `` in the text (property test).
   for (const [token, text] of raw) yaml = yaml.replace(token, () => text);
-  if (/\$\{/.test(header(opts))) throw new Error("header comment must not contain ${");
-  return { yaml, placeholderHints: hints };
+  return yaml;
 }
 
 const TO_STRING: ToStringOptions = {
@@ -82,31 +116,42 @@ function header(opts: GenerateOptions): string {
   ].join("\n");
 }
 
-/** Rule 1b. */
+/**
+ * Rule 1b. Also: a value ending in two or more newlines needs keep-chomping (`|+`), which absorbs any blank lines that
+ * follow it in the file. Harmless at the end of a generated file, wrong when spliced into the middle of one (Phase 2
+ * property test), so those values use the JSON form too.
+ */
 export function isBlockLiteralSafe(value: string): boolean {
-  return value.split("\n").every((line) => !/[ \t]$/.test(line));
+  return !/\n\n$/.test(value) && value.split("\n").every((line) => !/[ \t]$/.test(line));
 }
 
 const SENTINEL = "\uE000";
 
-/** Rule 1, third point. Returns the JSON-encoded text for a string containing `\${`. Exported for tests. */
+/**
+ * Rule 1, third point. Returns the JSON-encoded text for a string containing `\${`. Exported for tests.
+ * Each escape becomes `\u0024{…}` (literal for Glance, and no backslash). Everything else is kept as written, except
+ * a placeholder directly after an escape: Glance leaves it literal because the escape's match consumed the character
+ * it needed, and without that match it would become live, so its `$` is encoded too. Marking more than that (Phase 1
+ * marked every non-live `$`) produced files the importer can't represent (Phase 2 property test).
+ */
 export function encodeWithEscapes(value: string): string {
   if (value.includes(SENTINEL)) throw new Error("unsupported character U+E000 in value");
-  const mark = (t: string) => t.replaceAll("$", SENTINEL);
+  const blockedAfterEscape = /^\$\{(?:[a-zA-Z]+:)?[a-zA-Z0-9_-]+\}/;
+  const gap = (t: string, atEscapeEnd: boolean) => (atEscapeEnd && blockedAfterEscape.test(t) ? SENTINEL + t.slice(1) : t);
   let out = "";
   let last = 0;
+  let escapeEnd = -1;
   for (const m of value.matchAll(VALUE_PATTERN)) {
     const prefix = m[1] ?? "";
     const start = m.index ?? 0;
-    const p = findPlaceholders(value.slice(start, start + m[0].length))[0];
     const escaped = prefix === "\\";
-    out += mark(value.slice(last, start) + (escaped ? "" : prefix));
+    out += gap(value.slice(last, start) + (escaped ? "" : prefix), last === escapeEnd);
     const text = m[0].slice(prefix.length);
-    const live = !escaped && p !== undefined && p.kind !== "literal" && p.kind !== "escaped";
-    out += live ? text : mark(text);
+    out += escaped ? SENTINEL + text.slice(1) : text;
     last = start + m[0].length;
+    if (escaped) escapeEnd = last;
   }
-  out += mark(value.slice(last));
+  out += gap(value.slice(last), last === escapeEnd);
   return jsonForYaml(out).replaceAll(SENTINEL, "\\u0024");
 }
 
@@ -146,8 +191,10 @@ function replaceSpecialScalars(doc: Document): Map<string, string> {
 
 class Converter {
   private hints: Map<string, PlaceholderHint>;
-  constructor(hints: Map<string, PlaceholderHint>) {
+  private keepIds: boolean;
+  constructor(hints: Map<string, PlaceholderHint>, keepIds: boolean) {
     this.hints = hints;
+    this.keepIds = keepIds;
   }
 
   /** Record a typed placeholder and return the value unchanged. */
@@ -162,6 +209,7 @@ class Converter {
    */
   private pick(src: Obj, keys: string[], convert: Record<string, (v: never) => unknown> = {}): Obj {
     const out: Obj = {};
+    if (this.keepIds && typeof src._id === "string") out._id = src._id;
     for (const k of keys) {
       const v = src[k];
       if (v === undefined) continue;
@@ -178,7 +226,7 @@ class Converter {
   private hsl = (v: unknown) => this.typed(v, "hsl");
   private dur = (v: unknown) => this.typed(v, "duration");
 
-  dashboard(d: DashboardT, opts: GenerateOptions): Obj {
+  dashboard(d: DashboardT, opts: { assetsPathOverride?: string | undefined }): Obj {
     const out: Obj = {};
     if (d.server) {
       const server = { ...d.server };
@@ -249,7 +297,7 @@ class Converter {
 
   widget(w: WidgetT): Obj {
     // Exhaustive over KnownWidgetType; raw widgets are handled first.
-    if (isRawWidget(w)) return { type: w.type, ...w._raw };
+    if (isRawWidget(w)) return { ...(this.keepIds ? { _id: w._id } : {}), type: w.type, ...w._raw };
     const base = ["type", "title", "title-url", "hide-header", "css-class", "cache"];
     const baseConv = { "hide-header": this.b, cache: this.dur };
     const src = w as unknown as Obj;

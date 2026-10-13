@@ -1,0 +1,8 @@
+- name: Other
+  columns:
+    - size: full
+      widgets:
+        # included comment
+        - type: html
+          source: <p>${OTHER_TEXT}</p>
+        - !include: ../widget.yml

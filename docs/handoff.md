@@ -1,19 +1,19 @@
 # Handoff
 
 The single place to see where the project stands. Updated at the end of every work session and every PR.
-Last updated: 2026-10-13 (design pass 1 received and reconciled).
+Last updated: 2026-10-13 (Phase 2 PR opened).
 
 ## Current state
-- **Phase:** 1 merged (PR #3). Design pass 1 reconciled (PR #4 open). Plan v2 **approved**; Phase 2 starts with the ADR-0015 spike.
+- **Phase:** 2 (import + document-preserving writer) **PR open**, waiting for your review. Design PR #4 merged.
 - **Phase plan:** approved 2026-10-13.
 - **Pinned Glance:** v0.8.6, by digest (`/glance.version`).
 - **Dev environment:** dev Glance on :18180 and the editor container on :18190, on the dev machine (`docs/dev-environment.md`).
-- **Feature code:** data model, rules, generator, validation against the pinned binary; editor container (no UI) running in the dev environment on :18190.
+- **Feature code:** model, rules, generator, validation (Phase 1); import and the edit-in-place writer (Phase 2). No UI yet. The editor container (no UI) runs in the dev environment on :18190.
 
 ## Needs user decision
 Nothing below may be built on until you decide. ★ = affects user experience.
 
-_No UX decisions open._ ADR-0015 (how D-38 is built, non-UX) is accepted with the PR that implements it, after the Phase 2a spike.
+_No UX decisions open._ ADR-0015 (how D-38 is built, non-UX) is accepted by merging the Phase 2 PR.
 
 ## Decided on 2026-10-13 (via chat)
 | ADR | Outcome |
@@ -41,6 +41,11 @@ _No UX decisions open._ ADR-0015 (how D-38 is built, non-UX) is accepted with th
 - Dev Glance confirmed reachable from another LAN device (by you, 2026-10-13).
 - Correction: the Phase 0 docs called the dev machine's Docker "rootless". It is rootful. Fixed in lessons and ADR-0009.
 
+## Phase 2 findings
+- "Keep your file" works: no-edit saves are byte-identical; random edits keep comments and pass Glance (6 fixes along the way, see lessons).
+- One value pattern can't be kept exactly (an escape directly followed by two chained placeholders). It's blocked with a clear message rather than risking silent changes.
+- Glance details: `config:print` adds one trailing newline; `$include` swallows the line's `- `; nested include paths are relative to the including file.
+
 ## Design verification (Glance v0.8.6, tested)
 - The `containers` map beats a `glance.hide` label. Your D-23 choice (read-only "Label") stands as decided.
 - There are no framing headers, so in-editor preview is possible (D-48).
@@ -54,10 +59,11 @@ _No UX decisions open._ ADR-0015 (how D-38 is built, non-UX) is accepted with th
 - The real-binary tests caught a validator bug that my own model-based tests missed. Both kinds of test are kept.
 
 ## Next steps
-1. You: review and merge PR #4.
-2. Claude: Phase 2a spike (ADR-0015), then report before building 2b.
+1. You: review and merge the Phase 2 PR.
+2. Claude: Phase 3, the server core (SQLite store, drafts, versions, save pipeline, API). No UI.
 
 ## Session log
+- 2026-10-13: Phase 2 implemented (import, writer, report, CLI); PR opened.
 - 2026-10-13: Plan v2, D-56, D-61 and D-62 decided by the PM (all as recommended).
 - 2026-10-13: Design pass 1 received (zip). Archived; conflicts resolved with the PM; §1 verified against v0.8.6; research done (D-29, D-56, D-61/62); plan v2 proposed.
 - 2026-10-13: PR #2 (license) merged. PR #3 rebased onto it.

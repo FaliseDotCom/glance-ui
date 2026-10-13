@@ -4,6 +4,8 @@
 
 import { findPlaceholders, isWholePlaceholder } from "./placeholder.ts";
 import {
+  Auth, AuthUser, BookmarkGroup, BookmarkLink, Branding, ClockTimezone, Column, Dashboard, DockerContainerOverride,
+  Document, MonitorSite, Page, RssFeed, SearchBang, Server, Theme, ThemePreset, WIDGET_SCHEMAS,
   GLANCE_WIDGET_TYPES,
   isRawWidget,
   type DashboardT,
@@ -138,6 +140,12 @@ function checkPlaceholders(d: DashboardT, add: Add) {
             `"${p.text}" looks like a placeholder, but Glance won't substitute it (names must be upper-case A–Z, 0–9, _).`);
         }
       }
+      // An escape directly followed by two or more placeholders: Glance leaves the first literal but substitutes the next.
+      // The file can say that, but the model can't keep it after a reload, so a later save would change it (Phase 2
+      // property test). Blocked until a character separates them.
+      if (/\\\$\{[^}]*\}\$\{[^}]*\}\$\{/.test(value)) {
+        add("error", "placeholder.ambiguous", path, "An escaped placeholder directly followed by two placeholders can't be stored reliably. Put a character between them.");
+      }
       // Two placeholders back to back: Glance only substitutes the first (test/glance-cli.sh).
       if (/\$\{[^}]*\}\$\{/.test(value)) {
         add("warning", "placeholder.adjacent", path, "Glance doesn't substitute a placeholder that directly follows another one. Put a character between them.");
@@ -148,15 +156,43 @@ function checkPlaceholders(d: DashboardT, add: Add) {
   visit(d, []);
 }
 
-/** Glance ignores unknown keys silently (yaml.Unmarshal is non-strict in v0.8.6), so flag every `extra`. */
+/** Which object an `extra` belongs to, from its path, so a kept-as-is value isn't reported as an unknown key. */
+const LIST_SCHEMAS: Record<string, { shape: object }> = {
+  pages: Page, columns: Column, groups: BookmarkGroup, links: BookmarkLink, feeds: RssFeed, sites: MonitorSite,
+  timezones: ClockTimezone, bangs: SearchBang, presets: ThemePreset, users: AuthUser, containers: DockerContainerOverride,
+};
+const SECTION_SCHEMAS: Record<string, { shape: object }> = { theme: Theme, branding: Branding, server: Server, document: Document, auth: Auth };
+
+function knownKeys(owner: Record<string, unknown>, path: (string | number)[]): Set<string> {
+  let schema: { shape: object } | undefined;
+  if (path.length === 0) schema = Dashboard;
+  else if (typeof owner.type === "string" && owner.type in WIDGET_SCHEMAS) schema = WIDGET_SCHEMAS[owner.type as keyof typeof WIDGET_SCHEMAS];
+  else {
+    const last = path[path.length - 1];
+    const parent = typeof last === "number" ? path[path.length - 2] : last;
+    schema = typeof parent === "string" ? (LIST_SCHEMAS[parent] ?? SECTION_SCHEMAS[parent]) : undefined;
+  }
+  return new Set(schema ? Object.keys(schema.shape) : []);
+}
+
+/**
+ * Glance ignores unknown keys silently (yaml.Unmarshal is non-strict in v0.8.6), so flag every unknown key in `extra`.
+ * A known key in `extra` holds a value the editor can't edit in a form; it is kept as written (D-14).
+ */
 function checkExtras(value: unknown, path: (string | number)[], add: Add) {
   if (Array.isArray(value)) return value.forEach((v, i) => checkExtras(v, [...path, i], add));
   if (!value || typeof value !== "object") return;
-  for (const [k, v] of Object.entries(value as Record<string, unknown>)) {
+  const owner = value as Record<string, unknown>;
+  for (const [k, v] of Object.entries(owner)) {
     if (k === "_raw") continue;
     if (k === "extra" && v && typeof v === "object") {
+      const known = knownKeys(owner, path);
       for (const key of Object.keys(v)) {
-        add("warning", "key.unknown", [...path, "extra", key], `Glance v0.8.6 doesn't use "${key}" here, so it will be ignored.`);
+        if (known.has(key)) {
+          add("warning", "key.kept-as-is", [...path, "extra", key], `"${key}" has a value the editor can't edit in a form; it is kept exactly as written.`);
+        } else {
+          add("warning", "key.unknown", [...path, "extra", key], `Glance v0.8.6 doesn't use "${key}" here, so it will be ignored.`);
+        }
       }
       continue;
     }

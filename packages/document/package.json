@@ -1,0 +1,16 @@
+{
+  "name": "@glance-editor/document",
+  "private": true,
+  "type": "module",
+  "license": "GPL-3.0-only",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "@glance-editor/generator": "*",
+    "@glance-editor/glance": "*",
+    "@glance-editor/model": "*",
+    "yaml": "2.9.1",
+    "zod": "4.6.7"
+  }
+}

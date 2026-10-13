@@ -56,6 +56,16 @@ No real env vars or secrets are needed. This proves the approach ADR-0008 step 2
 - Not covered by the go-yaml property test: `${secret:…}` (needs /run/secrets, i.e. root). It is covered by the yaml-parser property test.
 - Not verified: `custom-css-file` and other paths that Glance may check at startup but not in `config:validate`; widgets beyond the modelled ten.
 
+## Fixes found in Phase 2 (2026-10-13)
+- **Escape encoding narrowed:** only escapes, and a placeholder directly after an escape, get `\u0024`. Phase 1 marked every non-live
+  `$`, which produced text the importer couldn't represent exactly.
+- **Block literal rule:** values ending in two or more newlines are written as JSON strings. Keep-chomping (`|+`) absorbs blank
+  lines that follow it when spliced into a file.
+- **Validation copy:** a placeholder Glance leaves literal because of adjacency could become live after its neighbour was
+  replaced by a dummy; it is now escaped in the copy.
+- **New error `placeholder.ambiguous`:** an escape directly followed by two or more chained placeholders can be written, but the
+  model can't keep it across a reload. Saving is blocked until a character separates them; the importer reports such values too.
+
 ## Superseded in part (2026-10-13)
 The model, rules, validation and encoding rules stand. Writing a *whole new file* from the model is now limited to Start empty and to new content; edits to an imported file are spliced into its text (ADR-0015, design D-38).
 
