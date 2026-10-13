@@ -1,20 +1,19 @@
 # Handoff
 
 The single place to see where the project stands. Updated at the end of every work session and every PR.
-Last updated: 2026-10-13 (Phase 1 PR opened).
+Last updated: 2026-10-13 (design pass 1 received and reconciled).
 
 ## Current state
-- **Phase:** 1 (model + generator) **PR #3 open**, waiting for your review. Phase 0 (PR #1) and the license (PR #2) are merged.
+- **Phase:** 1 merged (PR #3). Design pass 1 reconciled (PR #4 open). Plan v2 **approved**; Phase 2 starts with the ADR-0015 spike.
 - **Phase plan:** approved 2026-10-13.
 - **Pinned Glance:** v0.8.6, by digest (`/glance.version`).
 - **Dev environment:** dev Glance on :18180 and the editor container on :18190, on the dev machine (`docs/dev-environment.md`).
 - **Feature code:** data model, rules, generator, validation against the pinned binary; editor container (no UI) running in the dev environment on :18190.
 
 ## Needs user decision
-Nothing below may be built on until you mark it accepted. ★ = affects user experience.
+Nothing below may be built on until you decide. ★ = affects user experience.
 
-_No UX decisions open._ ADR-0014 (data model and generator, non-UX) is accepted by merging the Phase 1 PR, under a new
-convention in `docs/adr/README.md`: non-UX ADRs may ship in the PR that introduces them.
+_No UX decisions open._ ADR-0015 (how D-38 is built, non-UX) is accepted with the PR that implements it, after the Phase 2a spike.
 
 ## Decided on 2026-10-13 (via chat)
 | ADR | Outcome |
@@ -30,6 +29,8 @@ convention in `docs/adr/README.md`: non-UX ADRs may ship in the PR that introduc
 | [0006](adr/0006-glance-version-pinning.md) | Pin v0.8.6 in **our** stack. The current Unraid Glance is untouched |
 | Project scope | The new stack (Glance + editor) **replaces** the current Unraid Glance at cutover. The current one is never modified |
 | [0013](adr/0013-license.md) | License: GPL-3.0 |
+| Design pass 1 ([ADR-0016](adr/0016-design-pass-1-adopted.md)) | UX source of truth; design wins on UX differences; **proxy overrides D-25**; **D-38 keeps comments** (ADR-0015); archived with the design system's name redacted |
+| Plan v2, D-56, D-61, D-62 | Plan v2 approved. Icon Web tab: Iconify + Openverse (Wikimedia fallback). Pixabay: local pool, refreshed only on request; 1280 px accepted |
 | Repo / identity | Public GitHub repo. PRs from your gh login, so branch protection has 0 required approvals |
 
 ## Findings you should know about
@@ -40,16 +41,25 @@ convention in `docs/adr/README.md`: non-UX ADRs may ship in the PR that introduc
 - Dev Glance confirmed reachable from another LAN device (by you, 2026-10-13).
 - Correction: the Phase 0 docs called the dev machine's Docker "rootless". It is rootful. Fixed in lessons and ADR-0009.
 
+## Design verification (Glance v0.8.6, tested)
+- The `containers` map beats a `glance.hide` label. Your D-23 choice (read-only "Label") stands as decided.
+- There are no framing headers, so in-editor preview is possible (D-48).
+- `/assets/` is cached for 2 h, so swapped images can show stale for up to 2 h (D-62).
+- Reload signal found (D-29): `manifest.json?v=<time>` changes only on a successful reload.
+- In v0.8.6 the new `calendar` widget is static; only `calendar-legacy` and `weather` are hourly (D-58 wording).
+
 ## Phase 1 findings
 - Glance ignores unknown YAML keys silently, so the model is strict and warns about anything it keeps in `extra`.
 - Glance substitutes placeholders as raw text before parsing (comments included). Edge cases are verified and covered by tests.
 - The real-binary tests caught a validator bug that my own model-based tests missed. Both kinds of test are kept.
 
 ## Next steps
-1. You: review and merge PR #3. Add `Editor image builds and starts` to the required checks.
-2. Claude, after the merge: Phase 2 (import), using Glance's upstream example config as the fixture.
+1. You: review and merge PR #4.
+2. Claude: Phase 2a spike (ADR-0015), then report before building 2b.
 
 ## Session log
+- 2026-10-13: Plan v2, D-56, D-61 and D-62 decided by the PM (all as recommended).
+- 2026-10-13: Design pass 1 received (zip). Archived; conflicts resolved with the PM; §1 verified against v0.8.6; research done (D-29, D-56, D-61/62); plan v2 proposed.
 - 2026-10-13: PR #2 (license) merged. PR #3 rebased onto it.
 - 2026-10-13: Phase 1 implemented; PR opened.
 - 2026-10-13: PR #1 merged (as a merge commit; the squash-only repo setting isn't applied yet). License PR #2 opened.

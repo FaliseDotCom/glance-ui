@@ -1,0 +1,25 @@
+/* Elevation — shadows, rings and glow, all measured from the designs.
+
+   Two separate jobs. A ring (inset) separates a surface from what is behind
+   it; a drop shadow says a surface floats above the screen. Cards get a ring,
+   modals get a shadow, the artwork gets both. */
+
+:root {
+  /* rings */
+  --ring:        inset 0 0 0 1px rgba(255, 255, 255, 0.08);  /* @kind shadow */
+  --ring-strong: inset 0 0 0 1px rgba(255, 255, 255, 0.14);  /* @kind shadow */
+  --ring-ink:    inset 0 0 0 1px rgba(233, 238, 242, 0.12);  /* @kind shadow */
+
+  /* drop shadows, by what they lift */
+  --lift-sm:    0 4px 14px rgba(0, 0, 0, 0.45);
+  --lift-art:   0 28px 64px rgba(0, 0, 0, 0.50);
+  --lift-strip: 0 18px 50px rgba(0, 0, 0, 0.50);
+  --lift-modal: 0 30px 70px rgba(0, 0, 0, 0.50);
+  --lift-sheet: 0 34px 90px rgba(0, 0, 0, 0.60);
+  --lift-rail:  -30px 0 80px rgba(0, 0, 0, 0.50);
+
+  /* The play button's glow, in the active renderer's accent. The one place
+     the design uses light rather than shadow. */
+  --glow-play: 0 0 22px rgba(242, 164, 143, 0.22),
+               0 12px 30px rgba(242, 164, 143, 0.35);
+}

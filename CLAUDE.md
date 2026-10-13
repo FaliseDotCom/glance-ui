@@ -4,11 +4,12 @@ A no-code web editor that owns the entire Glance (glanceapp/glance) config. Dash
 data model; `glance.yml` is generated on every explicit Save and is output only. Existing config is imported once.
 
 @docs/handoff.md
-@docs/phases/phase-1-model-generator.md
+@docs/phases/phase-2-import-writer.md
 
 ## Roles
 - **PM/QA (repo owner):** merges every PR, approves every release note, decides everything with UX impact.
-- **Claude Design:** UX and visual design, delivered via "Handoff to Claude Code" and archived in `design/handoffs/` (ADR-0012).
+- **Claude Design:** UX and visual design, archived in `design/handoffs/` (ADR-0012). Design pass 1 is the UX source of truth
+  (ADR-0016); its decision IDs (D-01…D-63) are cited in code, tests and PRs. Read `docs/design/reconciliation.md` first.
 - **Claude (you):** implementation and all project documentation.
 
 ## Hard rules
@@ -42,6 +43,7 @@ data model; `glance.yml` is generated on every explicit Save and is output only.
 | `docs/phases/phase-*.md` | Per-phase scope and acceptance criteria |
 | `docs/adr/` | Decisions. See its README for the status rules and index |
 | `docs/lessons.md` | Lessons learned. Read before touching Glance integration |
+| `docs/design/reconciliation.md` | Design vs ADRs, PM resolutions, design assumptions verified against Glance v0.8.6 |
 | `docs/testing.md` | Test harness, safety rules, commands |
 | `docs/dev-environment.md` | The LAN dev Glance and editor on the dev machine (`dev/up.sh`) |
 | `design/handoffs/` | Archived Claude Design handoffs (ADR-0012) |
@@ -58,5 +60,7 @@ data model; `glance.yml` is generated on every explicit Save and is output only.
 - Atomic writes need the config **directory** to be bind-mounted, not the single file.
 - Use `glance config:validate` (exit 1 on error) before writing. `config:print` inlines includes and keeps placeholders literal.
 - Layout: ≤3 columns, 1–2 `full`; `slim` ≤2 columns; no group/split-column inside a group.
+- docker-containers `containers` map beats `glance.hide` labels. No framing headers. `/assets/` is cached 2 h. Reload signal:
+  `manifest.json?v=<time>` in every page changes only on a successful reload (all tested).
 - Glance ignores unknown keys silently, and substitutes placeholders as text over the whole file, comments included (ADR-0014).
-  Never hand-roll YAML for placeholders: use the generator.
+  Never hand-roll YAML for placeholders: use the generator. Edits to an imported file are spliced, not regenerated (ADR-0015).

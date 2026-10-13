@@ -4,7 +4,9 @@
 - Every container the harness starts is named `glance-editor-test-*` and labelled `glance-editor-test=1`.
   Cleanup only removes containers with that label.
 - Ports are `127.0.0.1:18080` (smoke) and `127.0.0.1:18081` (reload). They are never published on other interfaces.
-- No Docker socket is mounted into test containers. CLI checks run with `--network none`.
+- No Docker socket is mounted into test containers, except in `test/glance-docker.sh`: there the socket is mounted
+  read-only into a test Glance that only lists containers, and the throwaway containers it lists carry the test label.
+  CLI checks run with `--network none`.
 - Configs come only from `test/fixtures/`, copied to a fresh `mktemp -d`. Nothing reads or writes the live config path.
 - If `DOCKER_HOST` is set, the harness refuses to run (so it can't be pointed at the Glance host by accident).
   Override only for a disposable daemon: `GLANCE_EDITOR_TEST_ALLOW_DOCKER_HOST=1`.
@@ -19,6 +21,7 @@
 | `test/upstream-example.sh` | Glance's own example config at the pinned commit: download, checksum, `config:validate` | ~2 s |
 | `test/glance-cli.sh` | `config:print` keeps placeholders and comments literal and inlines includes; a comment header validates | ~2 s |
 | `test/glance-reload.sh` | Hot-reload, invalid-config handling, atomic rename, includes, file-vs-directory mount | ~15 s |
+| `test/glance-docker.sh` | docker-containers widget: the `containers` map beats a `glance.hide` label (design D-23) | ~5 s |
 | `test/glance-smoke.sh [config]` | Starts Glance and fails if it exits or never serves (exit code is ignored, see lessons). Uses `test/fixtures/model/v1/sample.env` and `secrets/` for placeholders | ~6 s |
 
 The Glance image comes from `/glance.version` (tag plus digest). Requirements: Docker, curl, bash 4+.

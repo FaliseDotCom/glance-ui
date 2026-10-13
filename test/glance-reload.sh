@@ -19,14 +19,21 @@ mkdir -p "$work/dir"; page Alpha > "$work/dir/glance.yml"
 c="$(glance_start reload-dir "$port" -v "$work/dir:/app/config")"
 desc="dir mount: initial config served";               check wait_for_text "$url" Alpha 30
 
+# Reload signal (design D-29): every page carries manifest.json?v=<app CreatedAt>, which changes only on a
+# successful reload (glance.go:50, 440-443 at v0.8.6).
+stamp() { curl -fsS "$url" | grep -oE 'manifest\.json\?v=[0-9]+' | head -1; }
+s1="$(stamp)"; sleep 1.1
 page Bravo > "$work/dir/glance.yml"
 desc="dir mount: in-place write reloads";              check wait_for_text "$url" Bravo
+s2="$(stamp)"
+desc="reload signal: ?v= stamp changes after a successful reload"; check test "$s1" != "$s2"
 
 printf 'pages:\n  - name: Broken\n    columns:\n      - size: small\n' > "$work/dir/glance.yml"
 sleep 3
 desc="dir mount: invalid config keeps Glance running"; check container_running "$c"
 desc="dir mount: invalid config keeps old config";     check wait_for_text "$url" Bravo 2
 desc="dir mount: invalid config is logged";            check bash -c "docker logs '$c' 2>&1 | grep -qi 'full width columns'"
+desc="reload signal: ?v= stamp unchanged after an invalid edit"; check test "$(stamp)" = "$s2"
 
 page Charlie > "$work/dir/.glance.yml.tmp"; mv "$work/dir/.glance.yml.tmp" "$work/dir/glance.yml"
 desc="dir mount: atomic rename reloads";               check wait_for_text "$url" Charlie

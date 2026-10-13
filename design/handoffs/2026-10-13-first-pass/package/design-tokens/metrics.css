@@ -1,0 +1,51 @@
+/* Metrics — control sizes, radii and the touch floor.
+
+   Sizes are measured from the designs. The three transport sizes are a
+   deliberate hierarchy: you should be able to hit play without looking. */
+
+:root {
+  /* ── touch ─────────────────────────────────────────────────────────────
+     A hard floor, audited across all 93 interactive elements on the panel.
+     Several controls reach it via padding plus a negative margin, so the
+     target grows without moving the ink. If you restructure one, re-measure. */
+  --touch-min:  44px;
+
+  /* ── controls ──────────────────────────────────────────────────────── */
+  --ctl-row:     40px;  /* the icon in a revealed row action              */
+  --ctl:         60px;  /* standard round control                         */
+  --ctl-lg:      68px;  /* previous / next                                */
+  --ctl-play:    92px;  /* play / pause                                   */
+  --ctl-rail:    72px;  /* a settings category rail item                  */
+  --ctl-tile:   112px;  /* a drawer tile                                  */
+
+  /* ── surfaces ──────────────────────────────────────────────────────── */
+  --art:        500px;  /* now playing artwork, fixed                     */
+  --header-h:    96px;
+  --strip-h:     96px;  /* the mini strip                                 */
+  --row-h:       78px;  /* a settings row, minimum                        */
+  --track-h:     12px;  /* the progress bar                               */
+  --reserve:    238px;  /* the metadata block's reserved height           */
+
+  /* ── radii ─────────────────────────────────────────────────────────────
+     Bigger surfaces get bigger radii. 2px is for bar segments and meter
+     ticks, never for a box you could put text in. */
+  --r-tick:      2px;
+  --r-sm:        8px;
+  --r-md:       12px;
+  --r-lg:       15px;  /* list rows, sheet buttons                        */
+  --r-xl:       22px;
+  --r-card:     24px;  /* library cards, the artwork well                 */
+  --r-pill:    999px;
+  --r-circle:    50%;
+
+  /* ── layout ────────────────────────────────────────────────────────── */
+  --canvas-w:  1280px;
+  --canvas-h:   800px;
+  --pad-screen: 44px 56px 40px;
+  --gutter:      56px;
+  --gap-art:     48px;  /* artwork to metadata                            */
+
+  /* Settings is the one responsive surface. Below this the two-pane layout
+     becomes a drill-down. Measured on the mount, never the viewport. */
+  --bp-settings: 720px;
+}

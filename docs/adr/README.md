@@ -26,10 +26,12 @@ One file per decision: `NNNN-short-title.md`, copied from [0000-template.md](000
 | [0005](0005-docker-socket-access.md) | Docker socket access | accepted (proxy, editor only) | **yes** |
 | [0006](0006-glance-version-pinning.md) | Glance version pinning and upgrade policy | accepted (our stack only) | **yes** |
 | [0007](0007-versioning-and-release-notes.md) | Versioning and release-notes process | accepted | no |
-| [0008](0008-backup-and-rollback.md) | Backup and rollback | accepted | **yes** |
+| [0008](0008-backup-and-rollback.md) | Backup and rollback | accepted; superseded in part (0016) | **yes** |
 | [0009](0009-glance-behaviour-baseline.md) | Glance v0.8.6 behaviour baseline (verified facts) | accepted | **yes** |
-| [0010](0010-out-of-band-config-edits.md) | Handling hand edits to the generated glance.yml | accepted | **yes** |
-| [0011](0011-import-of-existing-config.md) | One-time import of the existing glance.yml | accepted (flatten) | **yes** |
-| [0012](0012-design-handoff.md) | Design handoff from Claude Design | accepted (mechanism unverified) | **yes** |
+| [0010](0010-out-of-band-config-edits.md) | Handling hand edits to the generated glance.yml | superseded (0016) | **yes** |
+| [0011](0011-import-of-existing-config.md) | One-time import of the existing glance.yml | accepted (flatten); item 4 superseded (0015) | **yes** |
+| [0012](0012-design-handoff.md) | Design handoff from Claude Design | accepted (first delivery by zip) | **yes** |
 | [0013](0013-license.md) | License: GPL-3.0 | accepted | no |
-| [0014](0014-data-model-and-generator.md) | Data model (schema v1) and YAML generator | proposed (accepted on merge of Phase 1) | no |
+| [0014](0014-data-model-and-generator.md) | Data model (schema v1) and YAML generator | accepted; superseded in part (0015) | no |
+| [0015](0015-document-preserving-writer.md) | Document-preserving YAML writer (design D-38) | proposed (spike first) | no |
+| [0016](0016-design-pass-1-adopted.md) | Design pass 1 is the UX source of truth | accepted | **yes** |
