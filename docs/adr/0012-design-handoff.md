@@ -33,6 +33,10 @@ Send one small sample handoff (e.g. a single screen) before real designs, so we 
 - [ ] it contains enough to build from (layout, tokens/colours, states, copy).
 Fallback if it can't be archived: a .zip/HTML export committed to `design/handoffs/`.
 
+## First delivery (2026-10-13)
+Design pass 1 arrived as a .zip export in chat, not through "Handoff to Claude Code", so ADR-0012's fallback was used. It is archived at
+`design/handoffs/2026-10-13-first-pass/` with one PM-approved redaction. The handoff-channel verification is still open.
+
 ## Decision record
 Channel chosen by the PM via chat on 2026-10-13. The archive rules above are Claude's proposal. They are
 not UX-visible, so they are in force unless the PM objects.

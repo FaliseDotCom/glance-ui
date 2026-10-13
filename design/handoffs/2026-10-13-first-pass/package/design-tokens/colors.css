@@ -1,0 +1,78 @@
+/* Colours — extracted from Now Playing.dc.html and Settings.dc.html.
+   Every value below appears in the designs. Nothing here is invented.
+
+   The palette is small on purpose: one ground, one ink, and a set of accents
+   that each MEAN something. An accent is never decorative — it identifies a
+   renderer, a settings group, or a state. */
+
+:root {
+  /* ── ground ───────────────────────────────────────────────────────────
+     Four surfaces, darkest outward. The panel never uses pure black. */
+  --bg-desk:    #0c1014;  /* outside the artboard; review chrome only     */
+  --bg-base:    #101a21;  /* the screen itself, under the blurred art     */
+  --bg-panel:   #16232c;  /* modals, sheets, the volume plate             */
+  --bg-well:    #17242d;  /* artwork well before an image resolves        */
+
+  /* The diagonal weave that sits behind every screen, blurred 70px. It is
+     what keeps a no-artwork screen from reading as an error. */
+  --weave-a:    #3f5a6d;
+  --weave-b:    #2e4453;
+
+  /* ── ink ──────────────────────────────────────────────────────────────
+     One ink colour at graded alpha. --ink-quiet is the contrast floor:
+     0.62 over --bg-base is 4.6:1. Never put text below it. */
+  --ink:            #e9eef2;
+  --ink-strong:     rgba(233, 238, 242, 0.90);
+  --ink-body:       rgba(233, 238, 242, 0.82);
+  --ink-muted:      rgba(233, 238, 242, 0.72);
+  --ink-quiet:      rgba(233, 238, 242, 0.62);
+  --ink-on-accent:  #0d151c;  /* glyph ink on an accent-filled control    */
+
+  /* Below the text floor: fills, lines and dividers only. */
+  --fill:           rgba(233, 238, 242, 0.07);  /* resting control        */
+  --fill-raised:    rgba(233, 238, 242, 0.09);  /* prev / next            */
+  --fill-press:     rgba(233, 238, 242, 0.20);  /* the press state        */
+  --fill-card:      rgba(255, 255, 255, 0.05);  /* list rows, cards       */
+  --line:           rgba(233, 238, 242, 0.10);  /* hairline rule          */
+  --line-strong:    rgba(233, 238, 242, 0.14);  /* card border, 21 uses   */
+  --line-faint:     rgba(233, 238, 242, 0.09);  /* header divider         */
+  --track:          rgba(233, 238, 242, 0.13);  /* progress bar trough    */
+
+  /* ── renderer accents ─────────────────────────────────────────────────
+     Each renderer owns a hue. It tints the top hairline, the source pill,
+     the progress fill and the play button, so the active source is legible
+     from across a room without reading a word. */
+  --accent-lms:       #7ed6bc;  /* also the generic affirm / active tint  */
+  --accent-spotify:   #8fd9a8;
+  --accent-bluetooth: #9fb4e8;
+
+  /* ── meaning accents ──────────────────────────────────────────────────*/
+  --accent-artist:  #f2a48f;  /* the artist name, and the Hi-Res tier     */
+  --accent-warn:    #e0a758;  /* unconfirmed setting; destructive action  */
+
+  /* Pressed variants of the two accents that carry text. */
+  --accent-lms-press:    #a8e5d3;
+  --accent-artist-press: #f8c4b4;
+
+  /* ── settings group accents ───────────────────────────────────────────
+     Seven groups, seven hues. In the phone drill-down the category rail is
+     gone, so the accent is the only thing carrying group identity. */
+  --group-audio:    var(--accent-lms);
+  --group-sources:  var(--accent-bluetooth);
+  --group-handoff:  var(--accent-warn);
+  --group-display:  #c8a2d8;
+  --group-enrich:   #e8a0b4;
+  --group-device:   #8fc4d8;
+  --group-system:   #b0bcc4;
+
+  /* ── scrims ───────────────────────────────────────────────────────────*/
+  --scrim:        rgba(8, 12, 16, 0.60);
+  --scrim-strong: rgba(8, 12, 16, 0.90);  /* toast ground                 */
+  /* Two veils, both measured. The light one is Now Playing, where the
+     artwork's colour is meant to bleed through; the dense one is every list
+     screen, where rows need contrast more than the ground needs colour. */
+  --veil:       radial-gradient(130% 105% at 20% 42%,
+                  rgba(22, 36, 46, 0.30), rgba(14, 23, 30, 0.86));  /* @kind color */
+  --veil-dense: radial-gradient(130% 105% at 20% 42%,
+                  rgba(20, 33, 42, 0.62), rgba(13, 21, 28, 0.93));  /* @kind color */
+}

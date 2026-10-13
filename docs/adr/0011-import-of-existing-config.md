@@ -1,6 +1,6 @@
 # 0011. One-time import of the existing glance.yml
 
-- **Status:** accepted
+- **Status:** accepted; item 4 superseded by ADR-0015/0016 (design D-38)
 - **Date:** 2026-10-13
 - **Decider:** PM
 - **UX impact:** **yes**. It decides what the generated file looks like compared to your current one, and how unsupported settings are shown.
@@ -34,6 +34,9 @@
 - Verified: `$include` semantics and `config:print` exist (docs v0.8.6).
 - Verified by test: `config:print` behaviour above (one fixture, one include, v0.8.6).
 - Not verified: the size and features of your actual config; includes nested more than one level deep.
+
+## Superseded in part (2026-10-13)
+Item 4 ("comments are lost") is replaced by design D-38: comments are kept next to the values the editor preserves (ADR-0015). Item 1 (flatten includes) matches design D-36.
 
 ## Decision record
 **Accepted 2026-10-13 by the PM (via chat)**: one flattened `glance.yml`. Unsupported parts are kept as read-only raw blocks. Comments are dropped and reported.

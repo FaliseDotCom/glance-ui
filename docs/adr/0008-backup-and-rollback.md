@@ -1,6 +1,6 @@
 # 0008. Backup and rollback (generated configs and editor data)
 
-- **Status:** accepted
+- **Status:** accepted; superseded in part by ADR-0016 (design D-30, D-31, D-35, D-46)
 - **Date:** 2026-10-13
 - **Decider:** PM
 - **UX impact:** **yes**. It decides the Save flow, a history/restore screen, and what you see when a save is rejected.
@@ -45,6 +45,13 @@ Glance gives no way to read which config it loaded (`/api/healthz` only reports 
 - Verified: atomic replace with a directory mount reloads Glance; invalid config keeps the old one (tests, ADR-0009).
 - Verified in Phase 1: validation with dummy placeholder values (ADR-0014; real binary, typed dummies, escapes left to Glance).
 - Not verified: SQLite `VACUUM INTO` under the chosen driver; retention numbers.
+
+## Superseded in part (2026-10-13, ADR-0016)
+- Restore loads a version **into the draft**; it goes live only through Save (D-31), not as an immediate write.
+- Versions are numbered full snapshots with a source (editor / import / outside editor); the first write over an existing file keeps it as version 0 (D-30, D-35).
+- Drafts live on the editor's server (D-46).
+- Post-save confirmation uses the `?v=` reload signal (`docs/design/reconciliation.md`, D-29).
+- Unchanged: validate before write, the `.prev` copy, atomic write, snapshots of the editor's data.
 
 ## Decision record
 **Accepted 2026-10-13 by the PM (via chat)**, as written, including the history/restore screen and retention of 14 daily plus 5 pre-migration snapshots. Post-save confirmation: option (c) now, (a) opt-in later.

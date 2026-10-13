@@ -16,3 +16,4 @@ echo "== fixture validation";      test/validate-fixtures.sh
 echo "== upstream example";        test/upstream-example.sh
 echo "== Glance CLI behaviour";    test/glance-cli.sh
 echo "== hot-reload behaviour";    test/glance-reload.sh
+echo "== docker-containers";       test/glance-docker.sh

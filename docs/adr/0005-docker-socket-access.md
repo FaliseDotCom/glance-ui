@@ -51,6 +51,10 @@ proxy is configured: free-text names, with a warning that they can't be checked.
 - Verified: the Glance docs and source facts above (v0.8.6); proxy version and README variables (2026-10-13).
 - Not verified: the proxy image digest and architecture support; label-vs-map precedence; the behaviour for unknown container names.
 
+## Later (2026-10-13)
+Design D-25 (direct socket) was **overridden by the PM**: this ADR stands. The design's preview Glance (D-39) also reads containers; its access is decided with the deployment (plan v2).
+Verified by test: the `containers` map wins over a `glance.hide` label (`test/glance-docker.sh`).
+
 ## Decision record
 **Accepted 2026-10-13 by the PM (via chat): option A, proxy for the editor only.** The live Glance keeps its
 current socket mount. Questions 1–2 are answered by this. Question 3: the new stack runs on Unraid, the same host as the current Glance (2026-10-13). The dev

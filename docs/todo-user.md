@@ -4,9 +4,10 @@ Things only you can do or decide. Claude adds items here and never ticks them. Y
 Decisions on ADRs are tracked in [handoff.md](handoff.md#needs-user-decision), not here.
 
 ## Now
-- [ ] **Review and merge the Phase 0 PR** on GitHub (public repo). Claude opened it from your gh login.
-- [ ] **Send one small sample "Handoff to Claude Code"** from Claude Design (a single screen is enough), so the delivery path can be
-      verified before real designs (ADR-0012).
+- [ ] **Review the design PR** (archive of design pass 1, reconciliation, plan v2).
+- [ ] Decide plan v2, D-56, D-62 and D-61 (see handoff "Needs user decision").
+- [ ] Add `Editor image builds and starts` to the required checks; set the repo to squash-merge only (ADR-0007), or tell Claude you prefer merge commits.
+- [ ] Optional: try Claude Design's "Handoff to Claude Code" once, so we know whether it works better than the zip (ADR-0012).
 
 ## Branch protection for `main` (apply in Settings → Rules → Rulesets, or Branches → Branch protection)
 Claude has not changed and will not change repo settings. Recommended ruleset "protect-main", target `main`:

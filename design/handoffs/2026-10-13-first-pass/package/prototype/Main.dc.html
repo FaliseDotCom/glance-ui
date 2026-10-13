@@ -1,0 +1,1745 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Glance Editor prototype</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nunito+Sans:wght@400;600;700&amp;family=IBM+Plex+Mono:wght@400;600&amp;display=swap">
+<style>
+body{margin:0;background:#0c1014}
+a{color:#7ed6bc}a:hover{color:#a8e5d3}
+:root{--bg-desk:#0c1014;--bg-base:#101a21;--bg-panel:#16232c;--bg-well:#17242d;--ink:#e9eef2;--ink-strong:rgba(233,238,242,.9);--ink-body:rgba(233,238,242,.82);--ink-muted:rgba(233,238,242,.72);--ink-quiet:rgba(233,238,242,.62);--ink-on-accent:#0d151c;--fill:rgba(233,238,242,.07);--fill-hover:rgba(233,238,242,.12);--fill-press:rgba(233,238,242,.2);--fill-card:rgba(255,255,255,.05);--line:rgba(233,238,242,.1);--line-strong:rgba(233,238,242,.14);--accent:#7ed6bc;--accent-press:#a8e5d3;--warn:#e0a758;--peri:#9fb4e8;--ui:'Nunito Sans','Avenir Next','Segoe UI',system-ui,sans-serif;--mono:'IBM Plex Mono','Courier New',monospace;--ease:cubic-bezier(.2,.8,.2,1)}
+*{box-sizing:border-box}
+.app{container-type:inline-size;position:relative;min-height:100vh;background:var(--bg-base);color:var(--ink-body);font-family:var(--ui);font-size:15px;line-height:1.35}
+.app button,.app input,.app select,.app textarea{font-family:inherit;font-size:inherit;color:inherit}
+.lbl{font-family:var(--mono);font-size:12px;font-weight:600;letter-spacing:.2em;text-transform:uppercase;color:var(--ink-quiet)}
+.rule{display:flex;align-items:center;gap:12px;margin:8px 0 4px}
+.rule::after{content:"";flex:1;height:1px;background:var(--line)}
+.mono{font-family:var(--mono);font-size:13px;letter-spacing:.02em}
+.h1{font-size:28px;font-weight:700;letter-spacing:-.015em;color:var(--ink);margin:0;line-height:1.1}
+.h2{font-size:20px;font-weight:700;letter-spacing:-.01em;color:var(--ink);margin:0}
+.h3{font-size:17px;font-weight:700;color:var(--ink);margin:0}
+.note{margin:0;color:var(--ink-muted);font-size:14px;line-height:1.5}
+.help{margin:6px 0 0;color:var(--ink-quiet);font-size:13px;line-height:1.45}
+.errtxt{margin:6px 0 0;color:var(--warn);font-size:13px;font-weight:600}
+.row{display:flex;align-items:center;gap:8px}
+.wrap{flex-wrap:wrap}
+.between{justify-content:space-between}
+.grow{flex:1 1 auto;min-width:0}
+.stack{display:flex;flex-direction:column;gap:10px}
+.btn{min-height:44px;padding:0 16px;border-radius:12px;border:0;background:var(--fill);color:var(--ink);font-weight:600;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:8px;transition:background-color 140ms var(--ease);white-space:nowrap;text-decoration:none}
+.btn:active{background:var(--fill-press)}
+.btn.pri{background:var(--accent);color:var(--ink-on-accent)}
+.btn.pri:active{background:var(--accent-press)}
+.btn.ghost{background:transparent}
+.btn.warn{color:var(--warn)}
+.btn.add{background:transparent;box-shadow:inset 0 0 0 1px var(--line-strong);color:var(--ink-muted);justify-content:flex-start}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.ib{width:44px;height:44px;border-radius:12px;border:0;background:transparent;color:var(--ink-muted);display:inline-flex;align-items:center;justify-content:center;cursor:pointer;flex:none;transition:background-color 140ms var(--ease)}
+.ib:active{background:var(--fill-press)}
+.ib:disabled{opacity:.3;cursor:not-allowed}
+.ib.off{color:var(--ink-quiet)}
+@media (hover:hover){.btn:hover:not(:disabled){background:var(--fill-hover)}.btn.pri:hover:not(:disabled){background:var(--accent-press)}.ib:hover:not(:disabled){background:var(--fill-hover);color:var(--ink)}.navbtn:hover{background:var(--fill)}.wmain:hover{background:var(--fill)}.choice:hover{box-shadow:inset 0 0 0 1px var(--accent)}}
+.input{width:100%;min-height:44px;padding:10px 12px;border-radius:10px;border:0;background:var(--bg-well);box-shadow:inset 0 0 0 1px var(--line-strong);color:var(--ink)}
+.input::placeholder{color:var(--ink-quiet)}
+.input:focus,.btn:focus-visible,.ib:focus-visible,.navbtn:focus-visible,.wmain:focus-visible,.seg button:focus-visible,.tog:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.input.big{font-size:20px;font-weight:700}
+.input.code{font-family:var(--mono);font-size:13px;line-height:1.55;min-height:300px;white-space:pre;resize:vertical}
+textarea.input{min-height:96px;resize:vertical}
+.input[aria-invalid="true"]{box-shadow:inset 0 0 0 2px var(--warn)}
+.flabel{display:block;font-weight:600;color:var(--ink-strong);margin-bottom:6px}
+.req{font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-quiet);margin-left:6px;font-weight:600}
+.field{padding:10px 12px;margin:0 -12px;border-radius:12px}
+.field.hl{background:rgba(224,167,88,.1);box-shadow:inset 0 0 0 1px rgba(224,167,88,.5)}
+.seg{display:inline-flex;background:var(--fill);border-radius:12px;padding:3px;gap:2px;flex-wrap:wrap}
+.seg button{min-height:40px;padding:0 14px;border-radius:9px;border:0;background:transparent;color:var(--ink-muted);font-weight:600;cursor:pointer}
+.seg button.on{background:var(--ink);color:var(--ink-on-accent)}
+.seg button:disabled{opacity:.4;cursor:not-allowed}
+.tog{width:60px;height:44px;border:0;background:transparent;padding:0;display:inline-flex;align-items:center;cursor:pointer;flex:none}
+.track{width:52px;height:30px;border-radius:999px;background:var(--fill-press);position:relative;transition:background-color 200ms var(--ease)}
+.knob{position:absolute;top:3px;left:3px;width:24px;height:24px;border-radius:50%;background:var(--ink);transition:transform 200ms var(--ease)}
+.tog.on .track{background:var(--accent)}
+.tog.on .knob{transform:translateX(22px);background:var(--ink-on-accent)}
+.top{display:flex;align-items:center;gap:10px;padding:10px 16px;border-bottom:1px solid var(--line-faint,rgba(233,238,242,.09));min-height:64px;flex-wrap:wrap}
+.spacer{flex:1}
+.status{display:inline-flex;align-items:center;gap:8px;font-family:var(--mono);font-size:12px;color:var(--ink-muted)}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--accent)}
+.status.bad .dot{background:var(--warn)}
+.chip{font-family:var(--mono);font-size:13px}
+.banner{display:flex;gap:12px;align-items:center;flex-wrap:wrap;padding:12px 16px;background:rgba(224,167,88,.12);border-bottom:1px solid rgba(224,167,88,.35);color:var(--ink-strong)}
+.banner svg{color:var(--warn);flex:none}
+.shell{display:grid;grid-template-columns:240px minmax(0,1fr)}
+.rail{border-right:1px solid var(--line);padding:16px 12px 24px;display:flex;flex-direction:column;gap:6px}
+.navrow{display:flex;align-items:center;gap:2px;border-radius:12px}
+.navrow.on{background:var(--fill)}
+.navbtn{flex:1;min-width:0;min-height:44px;padding:6px 12px;border:0;background:transparent;border-radius:12px;text-align:left;cursor:pointer;display:flex;flex-direction:column;justify-content:center;font-weight:600;color:var(--ink-strong)}
+.navbtn.on{background:var(--fill);color:var(--ink)}
+.navrow.on .navbtn{background:transparent}
+.navmeta{font-family:var(--mono);font-size:11px;letter-spacing:.06em;color:var(--ink-quiet);font-weight:400}
+.ib.sm{width:36px;height:44px}
+.work{display:grid;grid-template-columns:minmax(0,1fr);align-items:start}
+.work.open{grid-template-columns:minmax(0,1fr) 420px}
+.canvas{padding:24px 28px 96px;min-width:0;display:flex;flex-direction:column;gap:20px}
+.pagehead{display:flex;flex-direction:column;gap:12px}
+.rules{display:flex;flex-wrap:wrap;gap:8px 16px;font-family:var(--mono);font-size:12px;color:var(--ink-quiet);letter-spacing:.04em}
+.frame{width:100%;margin:0 auto;display:flex;flex-direction:column;gap:16px;padding:16px;border-radius:22px;box-shadow:inset 0 0 0 1px var(--line);background:rgba(0,0,0,.12)}
+.frametag{font-family:var(--mono);font-size:12px;color:var(--ink-quiet);letter-spacing:.04em}
+.head{display:flex;flex-direction:column;gap:10px;padding:12px;border-radius:15px;box-shadow:inset 0 0 0 1px var(--line);border-style:dashed}
+.headlist{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px}
+.cols{display:grid;gap:14px;align-items:start}
+.col{display:flex;flex-direction:column;gap:10px;padding:12px;border-radius:15px;background:var(--fill-card);box-shadow:inset 0 0 0 1px var(--line-strong);min-width:0}
+.colhead{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.wcard{border-radius:15px;background:var(--bg-panel);box-shadow:inset 0 0 0 1px var(--line-strong)}
+.wcard.sel{box-shadow:inset 0 0 0 2px var(--accent)}
+.wrow{display:flex;align-items:stretch}
+.grip{width:32px;min-height:44px;flex:none;border:0;background:transparent;color:var(--ink-quiet);display:inline-flex;align-items:center;justify-content:center;cursor:grab;border-radius:10px;padding:0}
+.grip:active{cursor:grabbing;background:var(--fill-press)}
+.grip:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+@media (hover:hover){.grip:hover{color:var(--ink);background:var(--fill)}}
+.wcard.dropbefore{box-shadow:0 -4px 0 -1px var(--accent),inset 0 0 0 1px var(--line-strong)}
+.wcard.dragging{opacity:.4}
+.col.dropcol{box-shadow:inset 0 0 0 2px var(--accent)}
+.dropzone{height:0;border-radius:4px}
+.dropzone.show{height:20px;box-shadow:inset 0 0 0 1px var(--line)}
+.dropzone.show.on{height:20px;background:rgba(126,214,188,.25);box-shadow:inset 0 0 0 2px var(--accent)}
+.wmain{display:flex;flex-direction:column;gap:2px;width:100%;min-width:0;text-align:left;padding:12px 14px 12px 4px;min-height:64px;border:0;background:transparent;border-radius:15px;cursor:pointer;color:inherit}
+.tlabel{font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-quiet);font-weight:600}
+.wname{font-weight:700;color:var(--ink);font-size:15px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:block}
+.wsum{font-size:13px;color:var(--ink-quiet);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:block}
+.errdot{font-family:var(--mono);font-size:11px;font-weight:700;color:var(--ink-on-accent);background:var(--warn);border-radius:999px;padding:1px 8px}
+.wact{display:flex;align-items:center;gap:0;padding:0 6px 6px;flex-wrap:wrap}
+.empty{padding:16px;border-radius:12px;box-shadow:inset 0 0 0 1px var(--line);color:var(--ink-quiet);font-size:14px;text-align:center}
+.ins{border-left:1px solid var(--line);background:var(--bg-panel);display:flex;flex-direction:column;min-height:100%;min-width:0}
+.inshead{display:flex;gap:8px;align-items:flex-start;padding:16px 16px 12px}
+.crumb{margin:0 0 4px;font-family:var(--mono);font-size:12px;color:var(--ink-quiet);letter-spacing:.02em}
+.insbody{padding:0 20px 20px;display:flex;flex-direction:column;gap:6px}
+.insfoot{margin-top:auto;padding:12px 20px 20px;border-top:1px solid var(--line);display:flex;gap:8px;flex-wrap:wrap}
+fieldset{border:0;padding:0;margin:0;min-width:0;display:flex;flex-direction:column;gap:4px}
+.notice{padding:12px 14px;border-radius:12px;background:rgba(159,180,232,.1);box-shadow:inset 0 0 0 1px rgba(159,180,232,.35);color:var(--ink-strong);font-size:14px;display:flex;flex-direction:column;gap:8px;align-items:flex-start}
+.subcard{padding:10px 12px;border-radius:12px;background:var(--fill-card);box-shadow:inset 0 0 0 1px var(--line);display:flex;flex-direction:column;gap:8px}
+.crow{display:flex;align-items:center;gap:4px;padding:4px 4px 4px 12px;border-radius:12px;background:var(--fill-card);box-shadow:inset 0 0 0 1px var(--line)}
+.crowmain{flex:1;min-width:0;min-height:44px;border:0;background:transparent;text-align:left;cursor:pointer;display:flex;flex-direction:column;justify-content:center;padding:0}
+.bgroup{padding:12px;border-radius:15px;background:var(--fill-card);box-shadow:inset 0 0 0 1px var(--line-strong);display:flex;flex-direction:column;gap:10px}
+.swatch{width:28px;height:28px;border-radius:8px;flex:none;box-shadow:inset 0 0 0 1px rgba(255,255,255,.18)}
+.blink{border-radius:12px;box-shadow:inset 0 0 0 1px var(--line);background:var(--bg-panel)}
+.blink.open{box-shadow:inset 0 0 0 1px var(--line-strong)}
+.blink.bad{box-shadow:inset 0 0 0 2px var(--warn)}
+.blinkmain{display:flex;align-items:center;gap:10px;width:100%;min-height:52px;padding:6px 10px;border:0;background:transparent;text-align:left;cursor:pointer;border-radius:12px}
+.ichip{width:34px;height:34px;border-radius:8px;background:var(--fill-press);display:inline-flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:11px;font-weight:600;color:var(--ink);flex:none;text-transform:uppercase}
+.blinkbody{padding:4px 12px 12px;display:flex;flex-direction:column;gap:2px}
+.cdot{width:8px;height:8px;border-radius:50%;flex:none;margin-right:6px}
+.cdot.run{background:var(--accent)}
+.cdot.stop{background:transparent;box-shadow:inset 0 0 0 1.5px var(--ink-quiet)}
+.lock{font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--peri);padding:0 10px;font-weight:600}
+.center{display:flex;justify-content:center;padding:48px 16px 96px}
+.welcome{width:100%;max-width:760px;display:flex;flex-direction:column;gap:18px}
+.choices{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.choice{display:flex;flex-direction:column;gap:6px;align-items:flex-start;text-align:left;padding:20px;border-radius:22px;border:0;background:var(--fill-card);box-shadow:inset 0 0 0 1px var(--line-strong);cursor:pointer;min-height:120px;color:inherit}
+.choice.on{box-shadow:inset 0 0 0 2px var(--accent)}
+.choice:disabled{opacity:.5;cursor:not-allowed}
+.choice .wsum{white-space:normal}
+.checks{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
+.checks li{display:flex;gap:12px;align-items:flex-start;padding:12px 14px;border-radius:12px;background:var(--fill-card);box-shadow:inset 0 0 0 1px var(--line)}
+.checks .wsum{white-space:normal}
+.ck{flex:none;width:22px;height:22px;display:inline-flex;align-items:center;justify-content:center;color:var(--accent)}
+.ck.warn,.ck.err{color:var(--warn)}
+.ck.info,.ck.skip{color:var(--ink-quiet)}
+.pre{margin:0;padding:12px 14px;border-radius:12px;background:var(--bg-well);box-shadow:inset 0 0 0 1px rgba(224,167,88,.5);font-family:var(--mono);font-size:13px;line-height:1.55;white-space:pre;overflow-x:auto;color:var(--ink-strong)}
+.minicols{display:flex;gap:6px;height:56px;width:100%}
+.mc{border-radius:6px;background:var(--fill-press)}
+.mc.small{flex:0 0 22%}
+.mc.full{flex:1 1 0}
+.themegrid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,360px);gap:24px;align-items:start}
+.crow2{display:grid;grid-template-columns:32px minmax(0,1fr);gap:10px;align-items:center}
+.sl{display:grid;grid-template-columns:20px minmax(0,1fr) 40px;gap:8px;align-items:center;font-family:var(--mono);font-size:12px;color:var(--ink-quiet)}
+.sl input{width:100%;accent-color:var(--accent);height:32px}
+.tprev{border-radius:22px;padding:18px;display:flex;flex-direction:column;gap:12px;box-shadow:inset 0 0 0 1px var(--line-strong)}
+.tcard{border-radius:10px;padding:14px;display:flex;flex-direction:column;gap:6px}
+.histgrid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:20px;align-items:start}
+.vlist{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
+.vrow{display:flex;flex-direction:column;gap:2px;width:100%;text-align:left;padding:12px 14px;border:0;border-radius:15px;background:var(--fill-card);box-shadow:inset 0 0 0 1px var(--line);cursor:pointer;min-height:64px;color:inherit}
+.vrow.on{box-shadow:inset 0 0 0 2px var(--accent)}
+.pill{font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;font-weight:600;padding:2px 8px;border-radius:999px;background:rgba(126,214,188,.16);color:var(--accent)}
+.pill.ext{background:rgba(159,180,232,.16);color:var(--peri)}
+.panel{padding:18px;border-radius:22px;background:var(--fill-card);box-shadow:inset 0 0 0 1px var(--line-strong);display:flex;flex-direction:column;gap:12px}
+.panel ul{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:4px}
+.scrim{position:fixed;inset:0;z-index:40;background:rgba(8,12,16,.6);backdrop-filter:blur(3px);display:flex;align-items:center;justify-content:center;padding:16px}
+.sheet{width:100%;max-width:620px;max-height:calc(100vh - 32px);overflow:auto;background:var(--bg-panel);border-radius:22px;box-shadow:0 30px 70px rgba(0,0,0,.5),inset 0 0 0 1px rgba(255,255,255,.08);padding:24px;display:flex;flex-direction:column;gap:14px}
+.sheetfoot{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap;margin-top:4px}
+.tlist{display:flex;flex-direction:column;gap:6px;max-height:420px;overflow:auto;padding:2px}
+.trow{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;align-items:center;width:100%;min-height:48px;padding:6px 12px;border:0;border-radius:12px;background:var(--fill-card);box-shadow:inset 0 0 0 1px var(--line);text-align:left;cursor:pointer}
+.trow:disabled{cursor:not-allowed;opacity:.55}
+.erow{display:flex;gap:12px;align-items:flex-start;padding:12px 14px;border-radius:12px;background:rgba(224,167,88,.08);box-shadow:inset 0 0 0 1px rgba(224,167,88,.35)}
+.erow .grow{display:flex;flex-direction:column;gap:2px}
+.icongrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px}
+.icell{display:flex;align-items:center;gap:8px;min-height:48px;padding:6px 10px;border:0;border-radius:12px;background:var(--fill-card);box-shadow:inset 0 0 0 1px var(--line);cursor:pointer;text-align:left;font-family:var(--mono);font-size:12px}
+.icell.on{box-shadow:inset 0 0 0 2px var(--accent)}
+.icell:disabled{opacity:.55;cursor:not-allowed}
+.icell .ichip{text-transform:none}
+.drop{display:flex;flex-direction:column;gap:10px;align-items:flex-start;padding:22px;border-radius:15px;box-shadow:inset 0 0 0 1.5px var(--line-strong);cursor:pointer}
+.drop:focus-within{box-shadow:inset 0 0 0 2px var(--accent)}
+.crow.picked{box-shadow:inset 0 0 0 2px var(--accent)}
+.chipbtn{min-height:40px;padding:0 14px;border-radius:999px;border:0;background:var(--fill);color:var(--ink-muted);font-weight:600;cursor:pointer}
+.chipbtn.on{background:var(--ink);color:var(--ink-on-accent)}
+.pixgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px}
+.pixcell{display:flex;flex-direction:column;align-items:stretch;text-align:left;padding:0;border:0;border-radius:12px;overflow:hidden;background:var(--fill-card);box-shadow:inset 0 0 0 1px var(--line);cursor:pointer}
+.pixcell.picked{box-shadow:inset 0 0 0 3px var(--accent)}
+.pixthumb{display:block;height:84px;background:repeating-linear-gradient(38deg,#3f5a6d 0 12px,#2e4453 12px 24px)}
+.pulse{animation:gxp 1.4s var(--ease) infinite alternate}
+@keyframes gxp{from{opacity:.45}to{opacity:1}}
+.toast{position:fixed;left:50%;bottom:88px;transform:translateX(-50%);z-index:50;background:rgba(8,12,16,.92);color:var(--ink);padding:8px 8px 8px 16px;border-radius:14px;display:flex;gap:10px;align-items:center;box-shadow:0 18px 50px rgba(0,0,0,.5);max-width:calc(100% - 32px);font-size:14px}
+.tabs{display:none}
+.phone-only{display:none}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.pagepick{min-width:0;flex:1 1 140px}
+.pvwrap{position:fixed;inset:0;z-index:35;background:var(--bg-desk);display:flex;flex-direction:column}
+.pvbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:10px 16px;background:var(--bg-panel);border-bottom:1px solid var(--line)}
+.pvstatus{font-family:var(--mono);font-size:12px;color:var(--ink-muted)}
+.pvstatus.stale{color:var(--warn)}
+.pvstage{flex:1;overflow:auto;padding:16px;display:flex;flex-direction:column;gap:12px;align-items:center}
+.pvbuild{margin-top:80px;max-width:480px;text-align:center}
+.pvframe{width:100%;border-radius:12px;box-shadow:0 0 0 1px var(--line-strong);padding-bottom:32px;min-height:480px}
+.pvnav{display:flex;gap:4px;padding:8px 16px;flex-wrap:wrap;border-bottom:1px solid rgba(128,128,128,.2)}
+.pvtab{border:0;background:transparent;min-height:44px;padding:0 12px;font-weight:600;cursor:pointer;font-size:15px}
+.pvtab.on{text-decoration:underline;text-underline-offset:6px;text-decoration-thickness:2px}
+.pvpage{margin:0 auto;padding:20px;display:flex;flex-direction:column;gap:20px}
+.pvheadrow{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px}
+.pvcols{display:grid;gap:20px;align-items:start}
+.pvcol{display:flex;flex-direction:column;gap:20px;min-width:0}
+.pvw{display:flex;flex-direction:column;gap:8px;min-width:0}
+.pvwt{font-size:12px;letter-spacing:.12em;font-weight:600}
+.pvwb{border-radius:8px;padding:14px;display:flex;flex-direction:column;gap:8px;font-size:14px;min-height:60px}
+.pvi{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pvi.h{font-weight:700;font-size:12px;letter-spacing:.08em;margin-top:4px}
+.pvph{display:block;height:10px;border-radius:4px;background:currentColor;opacity:.14;width:100%}
+.pvph.b{width:72%}
+.pvph.c{width:48%}
+.themegrid.one{grid-template-columns:minmax(0,760px)}
+.thgal{display:grid;grid-template-columns:repeat(auto-fill,minmax(132px,1fr));gap:8px}
+.thcard{min-height:64px;border:0;border-radius:12px;padding:10px;display:flex;flex-direction:column;gap:8px;align-items:flex-start;text-align:left;cursor:pointer;box-shadow:inset 0 0 0 1px rgba(255,255,255,.14)}
+.thcard.on{box-shadow:inset 0 0 0 2px var(--accent),0 0 0 2px var(--accent)}
+.dotc{width:14px;height:14px;border-radius:50%;box-shadow:inset 0 0 0 1px rgba(255,255,255,.2)}
+.swrow{display:flex;flex-wrap:wrap;gap:8px}
+.swb{width:44px;height:44px;border-radius:12px;border:0;cursor:pointer;box-shadow:inset 0 0 0 1px rgba(255,255,255,.18);padding:0}
+.swb.on{outline:2px solid var(--ink);outline-offset:2px}
+.swb.mine{border-radius:50%}
+.swb.follow{width:auto;padding:0 12px;background:var(--fill);color:var(--ink);font-weight:600;font-size:13px}
+.swb.follow.on{background:var(--ink);color:var(--ink-on-accent);outline:0}
+.swb.add{background:transparent;color:var(--ink-muted);display:inline-flex;align-items:center;justify-content:center;box-shadow:inset 0 0 0 1px var(--line-strong)}
+.picker{padding:14px;border-radius:15px;background:var(--bg-well);box-shadow:inset 0 0 0 1px var(--line-strong);display:flex;flex-direction:column;gap:10px}
+.syspick{width:48px;height:48px;border-radius:12px;overflow:hidden;box-shadow:inset 0 0 0 1px var(--line-strong);flex:none;cursor:pointer}
+.syspick input{width:64px;height:64px;margin:-8px;border:0;padding:0;cursor:pointer;background:transparent}
+.thumb{width:40px;height:40px;border-radius:8px;flex:none;background:repeating-linear-gradient(38deg,#3f5a6d 0 8px,#2e4453 8px 16px)}
+.crow.dimmed .thumb{opacity:.5}
+@container (max-width: 760px){
+.shell{grid-template-columns:minmax(0,1fr)}
+.rail{display:none}
+.phone-only{display:flex}
+.desk-only{display:none !important}
+.work.open{grid-template-columns:minmax(0,1fr)}
+.ins{position:fixed;inset:0;z-index:30;border-left:0;overflow:auto}
+.cols{grid-template-columns:minmax(0,1fr) !important}
+.frame{max-width:none !important;padding:10px}
+.canvas{padding:16px 16px 120px}
+.top{padding:8px 12px}
+.choices,.themegrid,.histgrid{grid-template-columns:minmax(0,1fr)}
+.tabs{display:flex;position:sticky;bottom:0;z-index:20;background:var(--bg-panel);border-top:1px solid var(--line);padding:6px 8px}
+.tabs button{flex:1;min-height:52px;border:0;background:transparent;border-radius:12px;font-weight:600;color:var(--ink-muted);cursor:pointer}
+.tabs button.on{color:var(--ink);background:var(--fill)}
+.scrim{align-items:flex-end;padding:0}
+.sheet{border-radius:22px 22px 0 0;max-height:92vh;padding:20px 16px}
+.toast{bottom:84px}
+.h1{font-size:24px}
+}
+</style>
+</helmet>
+<div class="app">
+
+<header class="top">
+  <span class="lbl desk-only">Glance editor</span>
+  <sc-if value="{{showPagePick}}" hint-placeholder-val="{{true}}">
+    <label class="phone-only pagepick" for="pagepick"><span class="sr">Page</span>
+      <select id="pagepick" class="input" value="{{curPid}}" onChange="{{pickPageSel}}">
+        <sc-for list="{{navPages}}" as="op" hint-placeholder-count="3"><option value="{{op.id}}">{{op.name}}</option></sc-for>
+      </select>
+    </label>
+  </sc-if>
+  <span class="spacer desk-only"></span>
+  <span class="status {{statusCls}}" title="{{statusText}}"><span class="dot"></span><span class="desk-only">{{statusText}}</span></span>
+  <sc-if value="{{hasChanges}}" hint-placeholder-val="{{true}}">
+    <button class="btn ghost desk-only" onClick="{{openDiscard}}">Discard</button>
+    <button class="btn chip desk-only" onClick="{{openReview}}">{{changesLabel}}</button>
+  </sc-if>
+  <sc-if value="{{showSave}}" hint-placeholder-val="{{true}}">
+    <button class="btn" onClick="{{openPreview}}" disabled="{{previewDis}}" title="{{previewWhy}}">Preview</button>
+    <button class="btn pri" onClick="{{openReview}}" disabled="{{saveDis}}">{{saveLabel}}</button>
+  </sc-if>
+</header>
+
+<sc-if value="{{showUnreachable}}" hint-placeholder-val="{{false}}">
+  <div class="banner" role="status">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v6M12 16.5v.5"></path></svg>
+    <span class="grow">Glance is not responding at [GLANCE_URL]. Editing still works and saves still write glance.yml, but the reload can't be confirmed.</span>
+    <button class="btn" onClick="{{retry}}">Check again</button>
+  </div>
+</sc-if>
+<sc-if value="{{showErrBar}}" hint-placeholder-val="{{false}}">
+  <div class="banner" role="status">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v6M12 16.5v.5"></path></svg>
+    <span class="grow">{{errBarText}}</span>
+    <button class="btn" onClick="{{showErrList}}">Show problems</button>
+  </div>
+</sc-if>
+
+<sc-if value="{{sWelcome}}" hint-placeholder-val="{{false}}">
+  <div class="center"><div class="welcome">
+    <span class="lbl">First run</span>
+    <h1 class="h1">Set up the editor</h1>
+    <p class="note">The editor owns one file: <span class="mono">[CONFIG_PATH]/glance.yml</span>. Nothing is written until you press Save.</p>
+    <div class="choices">
+      <button class="choice" onClick="{{goImport}}" disabled="{{noFile}}">
+        <span class="h3">Import glance.yml</span>
+        <span class="wsum">{{importHint}}</span>
+      </button>
+      <button class="choice" onClick="{{goEmpty}}">
+        <span class="h3">Start empty</span>
+        <span class="wsum">{{emptyHint}}</span>
+      </button>
+    </div>
+  </div></div>
+</sc-if>
+
+<sc-if value="{{sImport}}" hint-placeholder-val="{{false}}">
+  <div class="center"><div class="welcome">
+    <span class="lbl">Import</span>
+    <h1 class="h1">{{importTitle}}</h1>
+    <ul class="checks">
+      <sc-for list="{{importChecks}}" as="k" hint-placeholder-count="4">
+        <li>
+          <span class="ck {{k.kind}}">
+            <sc-if value="{{k.isOk}}" hint-placeholder-val="{{true}}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5 9-10"></path></svg></sc-if>
+            <sc-if value="{{k.isAlert}}" hint-placeholder-val="{{false}}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v6M12 16.5v.5"></path></svg></sc-if>
+            <sc-if value="{{k.isInfo}}" hint-placeholder-val="{{false}}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M12 11v6M12 7.5v.5"></path></svg></sc-if>
+          </span>
+          <span class="grow"><span class="h3" style="font-size: 15px">{{k.title}}</span><span class="wsum">{{k.detail}}</span></span>
+        </li>
+      </sc-for>
+    </ul>
+    <sc-if value="{{importBad}}" hint-placeholder-val="{{false}}">
+      <pre class="pre">{{importSnippet}}</pre>
+      <sc-if value="{{rawFix}}" hint-placeholder-val="{{false}}">
+        <label class="flabel" for="rawfix">glance.yml</label>
+        <textarea id="rawfix" class="input code" spellcheck="false" value="{{rawFixText}}" onChange="{{onRawFix}}"></textarea>
+        <p class="help">The fixed text is held in the editor. The file on disk is untouched until the first save.</p>
+      </sc-if>
+      <div class="row wrap">
+        <sc-if value="{{rawFix}}" hint-placeholder-val="{{false}}"><button class="btn pri" onClick="{{recheck}}">Check again</button></sc-if>
+        <sc-if value="{{noRawFix}}" hint-placeholder-val="{{true}}"><button class="btn pri" onClick="{{openRawFix}}">Fix the YAML here</button></sc-if>
+        <button class="btn" onClick="{{goEmpty}}">Start empty instead</button>
+        <button class="btn ghost" onClick="{{goWelcome}}">Back</button>
+      </div>
+    </sc-if>
+    <sc-if value="{{importOk}}" hint-placeholder-val="{{true}}">
+      <div class="row wrap">
+        <button class="btn pri" onClick="{{doImport}}">Import 3 pages</button>
+        <button class="btn ghost" onClick="{{goWelcome}}">Back</button>
+      </div>
+    </sc-if>
+  </div></div>
+</sc-if>
+
+<sc-if value="{{sLayoutPick}}" hint-placeholder-val="{{false}}">
+  <div class="center"><div class="welcome">
+    <span class="lbl">Start empty</span>
+    <h1 class="h1">First page</h1>
+    <div class="field" style="margin: 0; padding: 0">
+      <label class="flabel" for="newname">Page name</label>
+      <input id="newname" class="input big" value="{{newName}}" onChange="{{onNewName}}">
+    </div>
+    <div class="rule"><span class="lbl">Column layout</span></div>
+    <p class="note">Every option follows Glance's rule: up to 3 columns, 1 or 2 of them full. Small columns are 300 px wide. You can change this later.</p>
+    <div class="choices">
+      <sc-for list="{{presets}}" as="pr" hint-placeholder-count="6">
+        <button class="choice {{pr.cls}}" onClick="{{pr.pick}}" aria-pressed="{{pr.on}}">
+          <span class="minicols"><sc-for list="{{pr.blocks}}" as="b" hint-placeholder-count="2"><span class="mc {{b.size}}"></span></sc-for></span>
+          <span class="h3" style="font-size: 15px">{{pr.label}}</span>
+        </button>
+      </sc-for>
+    </div>
+    <div class="row wrap">
+      <button class="btn pri" onClick="{{createFirst}}" disabled="{{createDis}}">Create page</button>
+      <button class="btn ghost" onClick="{{goWelcome}}">Back</button>
+    </div>
+  </div></div>
+</sc-if>
+
+<sc-if value="{{sEditor}}" hint-placeholder-val="{{true}}">
+<div class="shell">
+  <nav class="rail" aria-label="Editor">
+    <div class="rule"><span class="lbl">Pages</span></div>
+    <sc-for list="{{navPages}}" as="p" hint-placeholder-count="3">
+      <div class="navrow {{p.cls}}">
+        <button class="navbtn" onClick="{{p.select}}" aria-current="{{p.current}}">{{p.name}}<span class="navmeta">{{p.meta}}</span></button>
+        <sc-if value="{{p.on}}" hint-placeholder-val="{{false}}">
+          <button class="ib sm" aria-label="Move page up" onClick="{{p.up}}" disabled="{{p.upDis}}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 15l6-6 6 6"></path></svg></button>
+          <button class="ib sm" aria-label="Move page down" onClick="{{p.down}}" disabled="{{p.downDis}}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"></path></svg></button>
+        </sc-if>
+      </div>
+    </sc-for>
+    <button class="btn ghost" style="justify-content: flex-start; color: var(--ink-muted)" onClick="{{addPage}}">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg>Add page</button>
+    <div class="rule" style="margin-top: 16px"><span class="lbl">Site</span></div>
+    <button class="navbtn {{themeCls}}" onClick="{{goTheme}}">Theme<span class="navmeta">Colours and presets</span></button>
+    <button class="navbtn {{histCls}}" onClick="{{goHistory}}">History<span class="navmeta">{{verMeta}}</span></button>
+  </nav>
+
+  <main class="work {{workCls}}">
+    <div class="canvas">
+
+<sc-if value="{{sPages}}" hint-placeholder-val="{{true}}">
+  <sc-if value="{{noPage}}" hint-placeholder-val="{{false}}">
+    <div class="empty" style="padding: 40px">No pages. Glance needs at least one page before it will start.<br><br><button class="btn pri" onClick="{{addPage}}">Add page</button></div>
+  </sc-if>
+  <sc-if value="{{hasPage}}" hint-placeholder-val="{{true}}">
+    <section class="pagehead" aria-label="Page settings">
+      <div class="row wrap" style="align-items: flex-end; gap: 16px">
+        <div class="grow" style="flex: 1 1 260px">
+          <label class="flabel" for="pname">Page name <span class="req">Required</span></label>
+          <input id="pname" class="input big" value="{{pg.name}}" onChange="{{pg.onName}}" aria-invalid="{{pg.nameBad}}">
+        </div>
+        <div style="flex: 0 1 220px; min-width: 160px">
+          <label class="flabel" for="pslug">Slug</label>
+          <input id="pslug" class="input mono" value="{{pg.slug}}" placeholder="{{pg.slugPh}}" onChange="{{pg.onSlug}}">
+        </div>
+      </div>
+      <div class="row wrap" style="gap: 12px 24px; align-items: flex-start">
+        <div>
+          <span class="flabel">Width</span>
+          <div class="seg" role="group" aria-label="Page width">
+            <sc-for list="{{pg.widthOpts}}" as="o" hint-placeholder-count="3"><button class="{{o.cls}}" onClick="{{o.pick}}" disabled="{{o.dis}}" aria-pressed="{{o.on}}">{{o.label}}</button></sc-for>
+          </div>
+          <sc-if value="{{pg.widthNote}}" hint-placeholder-val="{{false}}"><p class="help">{{pg.widthNoteText}}</p></sc-if>
+        </div>
+        <div class="row"><button class="tog {{pg.cvCls}}" aria-pressed="{{pg.cv}}" aria-labelledby="lcv" onClick="{{pg.toggleCv}}"><span class="track"><span class="knob"></span></span></button><span id="lcv">Center vertically</span></div>
+        <div class="row"><button class="tog {{pg.hnCls}}" aria-pressed="{{pg.hn}}" aria-labelledby="lhn" onClick="{{pg.toggleHn}}"><span class="track"><span class="knob"></span></span></button><span id="lhn">Hide desktop navigation</span></div>
+        <span class="spacer"></span>
+        <div class="row wrap">
+          <button class="btn phone-only" onClick="{{pg.up}}" disabled="{{pg.upDis}}">Move up</button>
+          <button class="btn phone-only" onClick="{{pg.down}}" disabled="{{pg.downDis}}">Move down</button>
+          <button class="btn phone-only" onClick="{{addPage}}">Add page</button>
+          <button class="btn warn" onClick="{{pg.del}}" disabled="{{pg.delDis}}" title="{{pg.delWhy}}">Delete page</button>
+        </div>
+      </div>
+    </section>
+
+    <div class="rules" aria-label="Layout rules"><span>Up to 3 columns</span><span>1–2 full</span><span>Small = 300 px</span><span>Slim width: max 2 columns</span><span style="color: var(--ink-muted)">Move things with their grip: drag it, or tap it for move buttons</span></div>
+
+    <div class="frame" style="max-width: {{frameMax}}">
+      <span class="frametag">{{frameTag}}</span>
+      <section class="head" aria-label="Head widgets">
+        <div class="row between wrap"><span class="lbl">Head widgets · span all columns</span>
+          <button class="btn ghost" onClick="{{addHead}}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg>Add head widget</button></div>
+        <sc-if value="{{headEmpty}}" hint-placeholder-val="{{false}}"><p class="help" style="margin: 0">None. Head widgets sit above the columns, full width.</p></sc-if>
+        <div class="headlist">
+          <sc-for list="{{headCards}}" as="w" hint-placeholder-count="1">
+            <div class="wcard {{w.cls}}" onDragOver="{{w.over}}" onDrop="{{w.drop}}">
+              <div class="wrow"><button class="grip" draggable="true" onDragStart="{{w.dragStart}}" onDragEnd="{{w.dragEnd}}" onClick="{{w.open}}" aria-label="{{w.gripLabel}}" title="Drag to move, or tap for move buttons"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="9" cy="6" r="1.6"></circle><circle cx="15" cy="6" r="1.6"></circle><circle cx="9" cy="12" r="1.6"></circle><circle cx="15" cy="12" r="1.6"></circle><circle cx="9" cy="18" r="1.6"></circle><circle cx="15" cy="18" r="1.6"></circle></svg></button>
+              <button class="wmain" onClick="{{w.open}}">
+                <span class="row between"><span class="tlabel">{{w.typeLabel}}</span><sc-if value="{{w.err}}" hint-placeholder-val="{{false}}"><span class="errdot">Fix</span></sc-if></span>
+                <span class="wname">{{w.name}}</span><span class="wsum">{{w.sum}}</span>
+              </button></div>
+              <sc-if value="{{w.sel}}" hint-placeholder-val="{{false}}">
+                <div class="wact">
+                  <button class="ib" aria-label="Move left" onClick="{{w.up}}" disabled="{{w.upDis}}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"></path></svg></button>
+                  <button class="ib" aria-label="Move right" onClick="{{w.down}}" disabled="{{w.downDis}}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"></path></svg></button>
+                  <span class="spacer"></span>
+                  <button class="ib" aria-label="Delete widget" onClick="{{w.del}}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"></path></svg></button>
+                </div>
+              </sc-if>
+            </div>
+          </sc-for>
+        </div>
+      </section>
+
+      <div class="cols" style="grid-template-columns: {{colTemplate}}">
+        <sc-for list="{{cols}}" as="c" hint-placeholder-count="3">
+          <section class="col {{c.dropCls}}" aria-label="{{c.label}}" onDragOver="{{c.colOver}}" onDrop="{{c.colDrop}}">
+            <div class="colhead">
+              <button class="grip" draggable="true" onDragStart="{{c.dragStart}}" onDragEnd="{{c.dragEnd}}" onClick="{{c.grip}}" aria-label="Move {{c.label}}" aria-expanded="{{c.moveOpen}}" title="Drag to move, or tap for move buttons"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="9" cy="6" r="1.6"></circle><circle cx="15" cy="6" r="1.6"></circle><circle cx="9" cy="12" r="1.6"></circle><circle cx="15" cy="12" r="1.6"></circle><circle cx="9" cy="18" r="1.6"></circle><circle cx="15" cy="18" r="1.6"></circle></svg></button>
+              <span class="lbl">{{c.label}}</span>
+              <span class="spacer"></span>
+              <button class="ib sm" aria-label="Remove column" title="{{c.rmWhy}}" onClick="{{c.remove}}" disabled="{{c.rmDis}}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg></button>
+            </div>
+            <sc-if value="{{c.moveOpen}}" hint-placeholder-val="{{false}}">
+              <div class="row wrap">
+                <button class="btn" onClick="{{c.left}}" disabled="{{c.leftDis}}"><span class="desk-only">Move left</span><span class="phone-only">Move up</span></button>
+                <button class="btn" onClick="{{c.right}}" disabled="{{c.rightDis}}"><span class="desk-only">Move right</span><span class="phone-only">Move down</span></button>
+              </div>
+            </sc-if>
+            <div class="seg" role="group" aria-label="Column size">
+              <sc-for list="{{c.sizeOpts}}" as="o" hint-placeholder-count="2"><button class="{{o.cls}}" onClick="{{o.pick}}" disabled="{{o.dis}}" aria-pressed="{{o.on}}">{{o.label}}</button></sc-for>
+            </div>
+            <sc-if value="{{c.hasNote}}" hint-placeholder-val="{{false}}"><p class="help" style="margin: 0">{{c.note}}</p></sc-if>
+            <div class="stack">
+              <sc-for list="{{c.widgets}}" as="w" hint-placeholder-count="2">
+                <div class="wcard {{w.cls}}" onDragOver="{{w.over}}" onDrop="{{w.drop}}">
+                  <div class="wrow"><button class="grip" draggable="true" onDragStart="{{w.dragStart}}" onDragEnd="{{w.dragEnd}}" onClick="{{w.open}}" aria-label="{{w.gripLabel}}" title="Drag to move, or tap for move buttons"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="9" cy="6" r="1.6"></circle><circle cx="15" cy="6" r="1.6"></circle><circle cx="9" cy="12" r="1.6"></circle><circle cx="15" cy="12" r="1.6"></circle><circle cx="9" cy="18" r="1.6"></circle><circle cx="15" cy="18" r="1.6"></circle></svg></button>
+                  <button class="wmain" onClick="{{w.open}}">
+                    <span class="row between"><span class="tlabel">{{w.typeLabel}}</span><sc-if value="{{w.err}}" hint-placeholder-val="{{false}}"><span class="errdot">Fix</span></sc-if></span>
+                    <span class="wname">{{w.name}}</span><span class="wsum">{{w.sum}}</span>
+                  </button></div>
+                  <sc-if value="{{w.sel}}" hint-placeholder-val="{{false}}">
+                    <div class="wact">
+                      <button class="ib" aria-label="Move up" onClick="{{w.up}}" disabled="{{w.upDis}}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 15l6-6 6 6"></path></svg></button>
+                      <button class="ib" aria-label="Move down" onClick="{{w.down}}" disabled="{{w.downDis}}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"></path></svg></button>
+                      <button class="ib" aria-label="Move to previous column" onClick="{{w.left}}" disabled="{{w.lDis}}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"></path></svg></button>
+                      <button class="ib" aria-label="Move to next column" onClick="{{w.right}}" disabled="{{w.rDis}}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"></path></svg></button>
+                      <span class="spacer"></span>
+                      <button class="ib" aria-label="Delete widget" onClick="{{w.del}}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"></path></svg></button>
+                    </div>
+                  </sc-if>
+                </div>
+              </sc-for>
+              <div class="dropzone {{c.endCls}}" onDragOver="{{c.endOver}}" onDrop="{{c.endDrop}}" aria-hidden="true"></div>
+              <sc-if value="{{c.empty}}" hint-placeholder-val="{{false}}"><div class="empty">No widgets in this column yet.</div></sc-if>
+              <button class="btn add" onClick="{{c.add}}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg>Add widget</button>
+            </div>
+          </section>
+        </sc-for>
+      </div>
+      <div class="row wrap">
+        <button class="btn" onClick="{{addColumn}}" disabled="{{addColDis}}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg>Add column</button>
+        <sc-if value="{{addColDis}}" hint-placeholder-val="{{false}}"><span class="help" style="margin: 0">{{addColWhy}}</span></sc-if>
+      </div>
+    </div>
+  </sc-if>
+</sc-if>
+
+<sc-if value="{{sTheme}}" hint-placeholder-val="{{false}}">
+  <h1 class="h1">Theme</h1>
+  <p class="note">Pick colours from the swatches, or add your own with the picker. Glance stores colours as HSL numbers; the editor writes them for you.</p>
+  <div class="themegrid one">
+    <div class="stack" style="gap: 14px">
+      <div class="rule"><span class="lbl">Start from a theme</span></div>
+      <p class="help" style="margin: 0">The themes published in Glance's docs. Applying one fills in every colour below; change anything afterwards.</p>
+      <div class="thgal">
+        <sc-for list="{{th.gallery}}" as="tg" hint-placeholder-count="6">
+          <button class="thcard {{tg.cls}}" style="background: {{tg.bg}}" aria-pressed="{{tg.on}}" onClick="{{tg.apply}}">
+            <span class="row" style="gap: 4px"><span class="dotc" style="background: {{tg.pri}}"></span><span class="dotc" style="background: {{tg.pos}}"></span><span class="dotc" style="background: {{tg.neg}}"></span></span>
+            <span style="color: {{tg.text}}; font-weight: 600; font-size: 13px">{{tg.name}}</span>
+          </button>
+        </sc-for>
+      </div>
+
+      <div class="rule"><span class="lbl">Colours</span></div>
+      <div class="row"><button class="tog {{th.lightCls}}" aria-pressed="{{th.light}}" aria-labelledby="llight" onClick="{{th.toggleLight}}"><span class="track"><span class="knob"></span></span></button><span id="llight">Light theme <span class="help">(text colours are inverted for a light background)</span></span></div>
+      <sc-for list="{{th.colors}}" as="tc" hint-placeholder-count="4">
+        <div class="panel" style="gap: 10px">
+          <div class="row between wrap">
+            <span class="flabel" style="margin: 0">{{tc.label}}</span>
+            <span class="row"><span class="swatch" style="background: {{tc.swatch}}"></span><span class="mono">{{tc.shown}}</span><button class="btn ghost" style="min-height: 36px; padding: 0 10px" onClick="{{tc.reset}}" disabled="{{tc.resetDis}}">Reset</button></span>
+          </div>
+          <p class="help" style="margin: 0">Used for: {{tc.usedFor}}</p>
+          <div class="swrow" role="group" aria-label="{{tc.label}} colours">
+            <sc-if value="{{tc.hasFollow}}" hint-placeholder-val="{{false}}"><button class="swb follow {{tc.followCls}}" aria-pressed="{{tc.follow}}" onClick="{{tc.pickFollow}}">Same as primary</button></sc-if>
+            <sc-for list="{{tc.swatches}}" as="sw" hint-placeholder-count="8"><button class="swb {{sw.cls}}" style="background: {{sw.css}}" aria-pressed="{{sw.on}}" aria-label="{{sw.aria}}" title="{{sw.aria}}" onClick="{{sw.pick}}"></button></sc-for>
+            <button class="swb add" aria-label="Add a colour with the picker" title="Add a colour" onClick="{{tc.openPicker}}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg></button>
+          </div>
+          <sc-if value="{{tc.isMine}}" hint-placeholder-val="{{false}}"><button class="btn ghost" style="align-self: flex-start; min-height: 36px; padding: 0 10px" onClick="{{tc.removeMine}}">Remove this colour from my colours</button></sc-if>
+          <sc-if value="{{tc.pickOpen}}" hint-placeholder-val="{{false}}">
+            <div class="picker">
+              <div class="row"><span class="swatch" style="width: 48px; height: 48px; background: {{tc.pk.css}}"></span><span class="grow"><span class="mono" style="display: block; color: var(--ink)">{{tc.pk.text}}</span><span class="help" style="margin: 0">HSL, as Glance stores it</span></span>
+                <label class="syspick" title="System colour picker"><span class="sr">System colour picker</span><input type="color" value="{{tc.pk.sysHex}}" onChange="{{tc.pk.onSys}}"></label></div>
+              <label class="sl">H<input type="range" min="0" max="360" value="{{tc.pk.h}}" onChange="{{tc.pk.onH}}" aria-label="Hue"><span>{{tc.pk.h}}</span></label>
+              <label class="sl">S<input type="range" min="0" max="100" value="{{tc.pk.s}}" onChange="{{tc.pk.onS}}" aria-label="Saturation"><span>{{tc.pk.s}}</span></label>
+              <label class="sl">L<input type="range" min="0" max="100" value="{{tc.pk.l}}" onChange="{{tc.pk.onL}}" aria-label="Lightness"><span>{{tc.pk.l}}</span></label>
+              <div><label class="flabel" for="pkhex-{{tc.key}}" style="font-size: 14px">Or paste a hex colour</label><input id="pkhex-{{tc.key}}" class="input mono" placeholder="#7ed6bc" value="{{tc.pk.hex}}" onChange="{{tc.pk.onHex}}"></div>
+              <div class="row wrap"><button class="btn pri" onClick="{{tc.pk.useSave}}">Use and add to my colours</button><button class="btn" onClick="{{tc.pk.use}}">Use once</button><button class="btn ghost" onClick="{{tc.pk.cancel}}">Cancel</button></div>
+            </div>
+          </sc-if>
+        </div>
+      </sc-for>
+      <div class="row wrap" style="gap: 14px">
+        <div style="flex: 1 1 200px"><label class="flabel" for="cm">Contrast multiplier</label><input id="cm" class="input mono" inputmode="decimal" value="{{th.contrast}}" placeholder="1" onChange="{{th.onContrast}}"><p class="help">Raises or lowers how visible text is.</p></div>
+        <div style="flex: 1 1 200px"><label class="flabel" for="tsm">Text saturation multiplier</label><input id="tsm" class="input mono" inputmode="decimal" value="{{th.textSat}}" placeholder="1" onChange="{{th.onTextSat}}"><p class="help">Raises or lowers how colourful text is.</p></div>
+      </div>
+
+      <div class="rule"><span class="lbl">Background</span></div>
+      <div class="seg" role="group" aria-label="Background type"><sc-for list="{{th.bgModes}}" as="bm" hint-placeholder-count="3"><button class="{{bm.cls}}" aria-pressed="{{bm.on}}" onClick="{{bm.pick}}">{{bm.label}}</button></sc-for></div>
+      <sc-if value="{{th.bgNone}}" hint-placeholder-val="{{true}}"><p class="help" style="margin: 0">The page uses the background colour above.</p></sc-if>
+      <sc-if value="{{th.bgAny}}" hint-placeholder-val="{{false}}">
+        <div class="notice">Glance has no background-image setting. The editor writes its own CSS file into Glance's assets folder and points Glance's custom CSS option at it. That CSS depends on Glance's page markup, so it is tested against the pinned Glance version, and Preview shows it before it goes live.</div>
+        <span class="flabel" style="margin: 0">{{th.imgLabel}}</span>
+        <div class="stack" style="gap: 6px">
+          <sc-for list="{{th.images}}" as="im" hint-placeholder-count="2">
+            <div class="crow {{im.cls}}">
+              <span class="thumb" aria-hidden="true"></span>
+              <button class="crowmain" style="padding-left: 10px" onClick="{{im.pick}}" aria-pressed="{{im.on}}"><span class="mono" style="color: var(--ink)">{{im.name}}</span><span class="wsum">{{im.sub}}</span></button>
+              <sc-if value="{{th.isShow}}" hint-placeholder-val="{{false}}">
+                <button class="ib sm" aria-label="Move up" onClick="{{im.up}}" disabled="{{im.upDis}}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 15l6-6 6 6"></path></svg></button>
+                <button class="ib sm" aria-label="Move down" onClick="{{im.down}}" disabled="{{im.downDis}}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"></path></svg></button>
+              </sc-if>
+              <button class="ib sm" aria-label="Remove image" onClick="{{im.del}}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"></path></svg></button>
+            </div>
+          </sc-for>
+          <sc-if value="{{th.noImages}}" hint-placeholder-val="{{true}}"><div class="empty">No images yet.</div></sc-if>
+          <button class="btn add" onClick="{{th.addImage}}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg>Add images</button>
+          <p class="help" style="margin: 0">From this device, a folder on the server, or Pixabay. Images end up in Glance's assets folder and are served from /assets/.</p>
+        </div>
+        <sc-if value="{{th.isShow}}" hint-placeholder-val="{{false}}">
+          <span class="flabel" style="margin: 0">Change image every</span>
+          <div class="seg" role="group" aria-label="Interval"><sc-for list="{{th.intervals}}" as="o" hint-placeholder-count="4"><button class="{{o.cls}}" aria-pressed="{{o.on}}" onClick="{{o.pick}}">{{o.label}}</button></sc-for></div>
+          <span class="flabel" style="margin: 0">Order</span>
+          <div class="seg" role="group" aria-label="Order"><sc-for list="{{th.orders}}" as="o" hint-placeholder-count="2"><button class="{{o.cls}}" aria-pressed="{{o.on}}" onClick="{{o.pick}}">{{o.label}}</button></sc-for></div>
+          <span class="flabel" style="margin: 0">Transition</span>
+          <div class="seg" role="group" aria-label="Transition"><sc-for list="{{th.transitions}}" as="o" hint-placeholder-count="2"><button class="{{o.cls}}" aria-pressed="{{o.on}}" onClick="{{o.pick}}">{{o.label}}</button></sc-for></div>
+          <sc-if value="{{th.needsScript}}" hint-placeholder-val="{{false}}"><p class="help" style="margin: 0">Shuffle needs a small script added through Glance's document option, which inserts HTML into every page's head. In order with a cut or fade can be done in CSS alone.</p></sc-if>
+        </sc-if>
+        <span class="flabel" style="margin: 0">Fit</span>
+        <div class="seg" role="group" aria-label="Fit"><sc-for list="{{th.fits}}" as="o" hint-placeholder-count="2"><button class="{{o.cls}}" aria-pressed="{{o.on}}" onClick="{{o.pick}}">{{o.label}}</button></sc-for></div>
+        <label class="sl" style="grid-template-columns: 70px minmax(0,1fr) 48px">Dim<input type="range" min="0" max="80" value="{{th.dim}}" onChange="{{th.onDim}}" aria-label="Dim image"><span>{{th.dimText}}</span></label>
+        <label class="sl" style="grid-template-columns: 70px minmax(0,1fr) 48px">Blur<input type="range" min="0" max="20" value="{{th.blur}}" onChange="{{th.onBlur}}" aria-label="Blur image"><span>{{th.blurText}}</span></label>
+        <span class="flabel" style="margin: 0">Widget surfaces</span>
+        <div class="seg" role="group" aria-label="Widget surfaces"><sc-for list="{{th.surfaces}}" as="o" hint-placeholder-count="2"><button class="{{o.cls}}" aria-pressed="{{o.on}}" onClick="{{o.pick}}">{{o.label}}</button></sc-for></div>
+        <p class="help" style="margin: 0">Glance paints widgets with the background colour, so the image shows only around them unless surfaces are see-through. Dim and blur keep text readable over a busy photo.</p>
+      </sc-if>
+
+    </div>
+  </div>
+</sc-if>
+
+<sc-if value="{{sHistory}}" hint-placeholder-val="{{false}}">
+  <h1 class="h1">History</h1>
+  <p class="note">Every save stores the whole config as a version. Restoring loads a version into the draft; Glance doesn't change until you save.</p>
+  <sc-if value="{{histEmpty}}" hint-placeholder-val="{{false}}"><div class="empty" style="padding: 32px">No versions yet. The first save creates version 1{{histEmptyTail}}</div></sc-if>
+  <div class="histgrid">
+    <ol class="vlist">
+      <sc-for list="{{versions}}" as="v" hint-placeholder-count="3">
+        <li><button class="vrow {{v.cls}}" onClick="{{v.select}}">
+          <span class="row between"><span class="mono" style="color: var(--ink)">Version {{v.n}}</span><span class="row"><sc-if value="{{v.ext}}" hint-placeholder-val="{{false}}"><span class="pill ext">Outside editor</span></sc-if><sc-if value="{{v.live}}" hint-placeholder-val="{{false}}"><span class="pill">Live</span></sc-if></span></span>
+          <span style="color: var(--ink-strong); font-weight: 600">{{v.summary}}</span>
+          <span class="wsum">{{v.when}} · {{v.by}}</span>
+        </button></li>
+      </sc-for>
+    </ol>
+    <sc-if value="{{verSel}}" hint-placeholder-val="{{false}}">
+      <div class="panel">
+        <span class="lbl">Version {{vs.n}}</span>
+        <h2 class="h2">{{vs.summary}}</h2>
+        <span class="wsum">{{vs.when}} · {{vs.by}} · {{vs.counts}}</span>
+        <ul><sc-for list="{{vs.list}}" as="li" hint-placeholder-count="2"><li class="note">{{li.t}}</li></sc-for></ul>
+        <p class="help">{{vs.diffNote}}</p>
+        <div class="row wrap"><button class="btn pri" onClick="{{vs.restore}}" disabled="{{vs.live}}">Restore as draft</button><sc-if value="{{vs.live}}" hint-placeholder-val="{{false}}"><span class="help" style="margin: 0">This is what Glance is running.</span></sc-if></div>
+      </div>
+    </sc-if>
+    <sc-if value="{{verNone}}" hint-placeholder-val="{{false}}"><div class="empty">Pick a version to see what it changed.</div></sc-if>
+  </div>
+</sc-if>
+
+    </div>
+
+    <sc-if value="{{insOpen}}" hint-placeholder-val="{{false}}">
+      <aside class="ins" aria-label="Widget settings">
+        <div class="inshead">
+          <button class="ib phone-only" aria-label="Back to layout" onClick="{{ins.close}}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"></path></svg></button>
+          <div class="grow"><p class="crumb">{{ins.crumb}}</p><h2 class="h2">{{ins.name}}</h2><span class="tlabel">{{ins.typeLabel}}</span></div>
+          <button class="ib desk-only" aria-label="Close settings" onClick="{{ins.close}}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg></button>
+        </div>
+        <div class="insbody">
+          <div class="seg" role="tablist" aria-label="Edit mode" style="align-self: flex-start; margin-bottom: 8px">
+            <button role="tab" class="{{ins.formCls}}" aria-selected="{{ins.isForm}}" onClick="{{ins.toForm}}">Settings</button>
+            <button role="tab" class="{{ins.yamlCls}}" aria-selected="{{ins.isYaml}}" onClick="{{ins.toYaml}}">YAML</button>
+          </div>
+          <sc-if value="{{ins.hasParent}}" hint-placeholder-val="{{false}}"><button class="btn ghost" style="align-self: flex-start; padding: 0 8px" onClick="{{ins.toParent}}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"></path></svg>{{ins.parentName}}</button></sc-if>
+
+          <sc-if value="{{ins.isForm}}" hint-placeholder-val="{{true}}">
+            <sc-if value="{{ins.raw}}" hint-placeholder-val="{{false}}">
+              <div class="notice">This widget is edited as YAML, so the form is read-only. Discarding the override returns it to the form values.<button class="btn" onClick="{{ins.discardRaw}}">Discard YAML override</button></div>
+            </sc-if>
+            <fieldset disabled="{{ins.raw}}">
+              <legend class="sr">Widget properties</legend>
+              <sc-for list="{{ins.fields}}" as="f" hint-placeholder-count="3">
+                <div class="{{f.cls}}">
+                  <sc-if value="{{f.isText}}" hint-placeholder-val="{{true}}">
+                    <label class="flabel" for="{{f.id}}">{{f.label}}<span class="req">{{f.reqMark}}</span></label>
+                    <input id="{{f.id}}" class="input" value="{{f.value}}" placeholder="{{f.ph}}" onChange="{{f.onChange}}" aria-invalid="{{f.err}}">
+                  </sc-if>
+                  <sc-if value="{{f.isNumber}}" hint-placeholder-val="{{false}}">
+                    <label class="flabel" for="{{f.id}}">{{f.label}}<span class="req">{{f.reqMark}}</span></label>
+                    <input id="{{f.id}}" class="input mono" inputmode="numeric" value="{{f.value}}" placeholder="{{f.ph}}" onChange="{{f.onChange}}" aria-invalid="{{f.err}}">
+                  </sc-if>
+                  <sc-if value="{{f.isBool}}" hint-placeholder-val="{{false}}">
+                    <div class="row between"><span class="flabel" style="margin: 0" id="{{f.lblId}}">{{f.label}}</span><button class="tog {{f.togCls}}" aria-pressed="{{f.on}}" aria-labelledby="{{f.lblId}}" onClick="{{f.toggle}}"><span class="track"><span class="knob"></span></span></button></div>
+                  </sc-if>
+                  <sc-if value="{{f.isEnum}}" hint-placeholder-val="{{false}}">
+                    <span class="flabel">{{f.label}}</span>
+                    <div class="seg" role="group" aria-label="{{f.label}}"><sc-for list="{{f.opts}}" as="o" hint-placeholder-count="2"><button class="{{o.cls}}" aria-pressed="{{o.on}}" onClick="{{o.pick}}">{{o.label}}</button></sc-for></div>
+                  </sc-if>
+                  <sc-if value="{{f.isDuration}}" hint-placeholder-val="{{false}}">
+                    <label class="flabel" for="{{f.id}}">{{f.label}}</label>
+                    <div class="row wrap"><input id="{{f.id}}" class="input mono" style="width: 96px" inputmode="numeric" placeholder="Default" value="{{f.num}}" onChange="{{f.onNum}}" aria-invalid="{{f.durBad}}">
+                      <div class="seg" role="group" aria-label="Unit"><sc-for list="{{f.unitOpts}}" as="u" hint-placeholder-count="4"><button class="{{u.cls}}" aria-pressed="{{u.on}}" onClick="{{u.pick}}">{{u.label}}</button></sc-for></div>
+                      <sc-if value="{{f.hasValue}}" hint-placeholder-val="{{false}}"><button class="btn ghost" style="min-height: 36px; padding: 0 10px" onClick="{{f.clear}}">Use default</button></sc-if></div>
+                    <sc-if value="{{f.durBad}}" hint-placeholder-val="{{false}}"><p class="errtxt">Glance expects a whole number followed by s, m, h or d.</p></sc-if>
+                  </sc-if>
+                  <sc-if value="{{f.isNote}}" hint-placeholder-val="{{false}}"><span class="flabel">{{f.label}}</span></sc-if>
+                  <sc-if value="{{f.isList}}" hint-placeholder-val="{{false}}">
+                    <label class="flabel" for="{{f.id}}">{{f.label}}<span class="req">{{f.reqMark}}</span></label>
+                    <textarea id="{{f.id}}" class="input mono" value="{{f.value}}" onChange="{{f.onChange}}" aria-invalid="{{f.err}}" spellcheck="false"></textarea>
+                  </sc-if>
+                  <sc-if value="{{f.isObj}}" hint-placeholder-val="{{false}}">
+                    <span class="flabel">{{f.label}}<span class="req">{{f.reqMark}}</span></span>
+                    <div class="stack" style="gap: 8px">
+                      <sc-for list="{{f.items}}" as="it" hint-placeholder-count="2">
+                        <div class="subcard">
+                          <div class="row between"><span class="tlabel">{{f.itemNoun}} {{it.n}}</span><button class="ib" aria-label="Remove item" onClick="{{it.remove}}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg></button></div>
+                          <sc-for list="{{it.sub}}" as="sf" hint-placeholder-count="2">
+                            <div><label class="flabel" for="{{sf.id}}" style="font-size: 14px">{{sf.label}}<span class="req">{{sf.reqMark}}</span></label><div class="row"><input id="{{sf.id}}" class="input grow" value="{{sf.value}}" onChange="{{sf.onChange}}" aria-invalid="{{sf.bad}}"><sc-if value="{{sf.isIcon}}" hint-placeholder-val="{{false}}"><button class="btn" onClick="{{sf.find}}">Find</button></sc-if></div></div>
+                          </sc-for>
+                        </div>
+                      </sc-for>
+                      <sc-if value="{{f.empty}}" hint-placeholder-val="{{false}}"><div class="empty">{{f.emptyText}}</div></sc-if>
+                      <button class="btn add" onClick="{{f.add}}">{{f.addLabel}}</button>
+                    </div>
+                  </sc-if>
+                  <sc-if value="{{f.hasHelp}}" hint-placeholder-val="{{false}}"><p class="help">{{f.help}}</p></sc-if>
+                  <sc-if value="{{f.err}}" hint-placeholder-val="{{false}}"><p class="errtxt">{{f.errMsg}}</p></sc-if>
+                </div>
+              </sc-for>
+            </fieldset>
+            <sc-if value="{{ins.noSchema}}" hint-placeholder-val="{{false}}"><div class="notice">The prototype's schema covers a handful of widget types. In the build, every type gets fields generated from its schema; until then, the YAML tab edits anything.<button class="btn" onClick="{{ins.toYaml}}">Open YAML</button></div></sc-if>
+
+            <sc-if value="{{ins.isContainer}}" hint-placeholder-val="{{false}}">
+              <div class="rule"><span class="lbl">{{ins.childLabel}}</span></div>
+              <p class="help" style="margin: 0 0 6px">{{ins.childRule}}</p>
+              <div class="stack" style="gap: 6px">
+                <sc-for list="{{ins.children}}" as="ch" hint-placeholder-count="2">
+                  <div class="crow">
+                    <button class="crowmain" onClick="{{ch.edit}}"><span class="tlabel">{{ch.typeLabel}}</span><span class="wname">{{ch.name}}</span></button>
+                    <sc-if value="{{ch.err}}" hint-placeholder-val="{{false}}"><span class="errdot">Fix</span></sc-if>
+                    <button class="ib sm" aria-label="Move up" onClick="{{ch.up}}" disabled="{{ch.upDis}}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 15l6-6 6 6"></path></svg></button>
+                    <button class="ib sm" aria-label="Move down" onClick="{{ch.down}}" disabled="{{ch.downDis}}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"></path></svg></button>
+                    <button class="ib sm" aria-label="Delete" onClick="{{ch.del}}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"></path></svg></button>
+                  </div>
+                </sc-for>
+                <sc-if value="{{ins.noChildren}}" hint-placeholder-val="{{false}}"><div class="empty">{{ins.noChildText}}</div></sc-if>
+                <button class="btn add" onClick="{{ins.addChild}}">{{ins.addChildLabel}}</button>
+              </div>
+            </sc-if>
+
+            <sc-if value="{{ins.isBookmarks}}" hint-placeholder-val="{{false}}">
+              <div class="rule"><span class="lbl">Groups</span></div>
+              <div class="stack">
+                <sc-for list="{{ins.groups}}" as="g" hint-placeholder-count="2">
+                  <div class="bgroup">
+                    <div class="row">
+                      <span class="swatch" style="background: {{g.swatch}}"></span>
+                      <input class="input grow" aria-label="Group title" value="{{g.title}}" placeholder="Untitled group" onChange="{{g.onTitle}}">
+                      <button class="ib sm" aria-label="Move group up" onClick="{{g.up}}" disabled="{{g.upDis}}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 15l6-6 6 6"></path></svg></button>
+                      <button class="ib sm" aria-label="Move group down" onClick="{{g.down}}" disabled="{{g.downDis}}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"></path></svg></button>
+                      <button class="ib sm" aria-label="Delete group" onClick="{{g.del}}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"></path></svg></button>
+                    </div>
+                    <div style="display: flex; flex-direction: column; gap: 8px">
+                      <span class="flabel" style="font-size: 14px; margin: 0">Colour <span class="help">· this group's accent. Swatches follow your current theme.</span></span>
+                      <div class="swrow" role="group" aria-label="Group colour">
+                        <button class="swb follow {{g.defCls}}" aria-pressed="{{g.isDef}}" onClick="{{g.pickDef}}">Theme primary</button>
+                        <sc-for list="{{g.swatches}}" as="sw" hint-placeholder-count="8"><button class="swb {{sw.cls}}" style="background: {{sw.css}}" aria-pressed="{{sw.on}}" aria-label="{{sw.aria}}" title="{{sw.aria}}" onClick="{{sw.pick}}"></button></sc-for>
+                        <button class="swb add" aria-label="Add a colour with the picker" title="Add a colour" onClick="{{g.openPicker}}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg></button>
+                      </div>
+                      <sc-if value="{{g.pickOpen}}" hint-placeholder-val="{{false}}">
+                        <div class="picker">
+                          <div class="row"><span class="swatch" style="width: 48px; height: 48px; background: {{g.pk.css}}"></span><span class="grow"><span class="mono" style="display: block; color: var(--ink)">{{g.pk.text}}</span></span>
+                            <label class="syspick" title="System colour picker"><span class="sr">System colour picker</span><input type="color" value="{{g.pk.sysHex}}" onChange="{{g.pk.onSys}}"></label></div>
+                          <label class="sl">H<input type="range" min="0" max="360" value="{{g.pk.h}}" onChange="{{g.pk.onH}}" aria-label="Hue"><span>{{g.pk.h}}</span></label>
+                          <label class="sl">S<input type="range" min="0" max="100" value="{{g.pk.s}}" onChange="{{g.pk.onS}}" aria-label="Saturation"><span>{{g.pk.s}}</span></label>
+                          <label class="sl">L<input type="range" min="0" max="100" value="{{g.pk.l}}" onChange="{{g.pk.onL}}" aria-label="Lightness"><span>{{g.pk.l}}</span></label>
+                          <div class="row wrap"><button class="btn pri" onClick="{{g.pk.useSave}}">Use and add to my colours</button><button class="btn" onClick="{{g.pk.use}}">Use once</button><button class="btn ghost" onClick="{{g.pk.cancel}}">Cancel</button></div>
+                        </div>
+                      </sc-if>
+                      <sc-if value="{{g.colorBad}}" hint-placeholder-val="{{false}}"><p class="errtxt">This colour isn't valid HSL. Pick a swatch or use the picker.</p></sc-if>
+                    </div>
+                    <sc-for list="{{g.links}}" as="l" hint-placeholder-count="2">
+                      <div class="blink {{l.cls}}">
+                        <button class="blinkmain" onClick="{{l.toggle}}" aria-expanded="{{l.open}}">
+                          <span class="ichip">{{l.chip}}</span>
+                          <span class="grow"><span class="wname">{{l.title}}</span><span class="wsum mono">{{l.url}}</span></span>
+                          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"></path></svg>
+                        </button>
+                        <sc-if value="{{l.open}}" hint-placeholder-val="{{false}}">
+                          <div class="blinkbody">
+                            <div class="field"><label class="flabel" for="{{l.tid}}">Title<span class="req">Required</span></label><input id="{{l.tid}}" class="input" value="{{l.fTitle}}" onChange="{{l.onT}}" aria-invalid="{{l.tBad}}"></div>
+                            <div class="field"><label class="flabel" for="{{l.uid}}">URL<span class="req">Required</span></label><input id="{{l.uid}}" class="input mono" value="{{l.fUrl}}" onChange="{{l.onU}}" aria-invalid="{{l.uBad}}"><p class="help">Environment variables such as ${NAME} are kept as written.</p></div>
+                            <div class="field"><label class="flabel" for="{{l.iid}}">Icon</label><div class="row"><input id="{{l.iid}}" class="input mono grow" value="{{l.fIcon}}" placeholder="di:name, si:name, sh:name, mdi:name or a URL" onChange="{{l.onI}}"><button class="btn" onClick="{{l.pickIcon}}">Find</button></div></div>
+                            <div class="field"><label class="flabel" for="{{l.did}}">Description</label><input id="{{l.did}}" class="input" value="{{l.fDesc}}" onChange="{{l.onD}}"></div>
+                            <div class="field row between"><span id="{{l.stid}}">Open in the same tab</span><button class="tog {{l.stCls}}" aria-pressed="{{l.same}}" aria-labelledby="{{l.stid}}" onClick="{{l.toggleSame}}"><span class="track"><span class="knob"></span></span></button></div>
+                            <div class="row">
+                              <button class="ib" aria-label="Move link up" onClick="{{l.up}}" disabled="{{l.upDis}}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 15l6-6 6 6"></path></svg></button>
+                              <button class="ib" aria-label="Move link down" onClick="{{l.down}}" disabled="{{l.downDis}}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"></path></svg></button>
+                              <span class="spacer"></span>
+                              <button class="btn warn" onClick="{{l.del}}">Delete link</button>
+                            </div>
+                          </div>
+                        </sc-if>
+                      </div>
+                    </sc-for>
+                    <sc-if value="{{g.empty}}" hint-placeholder-val="{{false}}"><div class="empty">No links in this group.</div></sc-if>
+                    <button class="btn add" onClick="{{g.addLink}}">Add link</button>
+                  </div>
+                </sc-for>
+                <sc-if value="{{ins.noGroups}}" hint-placeholder-val="{{false}}"><div class="empty">No groups. Glance needs at least one group with links.</div></sc-if>
+                <button class="btn" onClick="{{ins.addGroup}}">Add group</button>
+              </div>
+            </sc-if>
+
+            <sc-if value="{{ins.isDocker}}" hint-placeholder-val="{{false}}">
+              <div class="rule"><span class="lbl">Containers</span></div>
+              <p class="help" style="margin: 0 0 6px">{{ins.dkSummary}}</p>
+              <div class="stack" style="gap: 6px">
+                <sc-for list="{{ins.dkRows}}" as="r" hint-placeholder-count="4">
+                  <div class="crow">
+                    <span class="cdot {{r.stCls}}"></span>
+                    <span class="grow" style="padding: 6px 0"><span class="mono" style="color: var(--ink); display: block">{{r.name}}</span><span class="wsum" style="white-space: normal">{{r.sub}}</span></span>
+                    <sc-if value="{{r.locked}}" hint-placeholder-val="{{false}}"><span class="lock">Label</span></sc-if>
+                    <sc-if value="{{r.free}}" hint-placeholder-val="{{true}}">
+                      <button class="ib {{r.cls}}" aria-pressed="{{r.visible}}" aria-label="{{r.aria}}" onClick="{{r.toggle}}">
+                        <sc-if value="{{r.visible}}" hint-placeholder-val="{{true}}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"></path><circle cx="12" cy="12" r="3"></circle></svg></sc-if>
+                        <sc-if value="{{r.hidden}}" hint-placeholder-val="{{false}}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"></path><path d="M3 3l18 18"></path></svg></sc-if>
+                      </button>
+                    </sc-if>
+                  </div>
+                </sc-for>
+              </div>
+            </sc-if>
+          </sc-if>
+
+          <sc-if value="{{ins.isYaml}}" hint-placeholder-val="{{false}}">
+            <label class="flabel" for="yaml">YAML for this widget</label>
+            <textarea id="yaml" class="input code" spellcheck="false" value="{{ins.yamlText}}" onChange="{{ins.onYaml}}"></textarea>
+            <div class="row wrap"><button class="btn pri" onClick="{{ins.applyYaml}}" disabled="{{ins.yamlSame}}">Apply YAML</button><button class="btn ghost" onClick="{{ins.resetYaml}}" disabled="{{ins.yamlSame}}">Revert</button></div>
+            <p class="help">Apply switches this widget to a YAML override; the form goes read-only for it. ${NAME} references stay as text. Glance's own validator checks the result when you save.</p>
+          </sc-if>
+        </div>
+        <div class="insfoot"><button class="btn warn" onClick="{{ins.del}}">Delete widget</button></div>
+      </aside>
+    </sc-if>
+  </main>
+</div>
+<nav class="tabs" aria-label="Sections">
+  <button class="{{tabPages}}" onClick="{{goPages}}">Pages</button>
+  <button class="{{tabTheme}}" onClick="{{goTheme}}">Theme</button>
+  <button class="{{tabHist}}" onClick="{{goHistory}}">History</button>
+</nav>
+</sc-if>
+
+<sc-if value="{{pvOpen}}" hint-placeholder-val="{{false}}">
+  <div class="pvwrap" role="dialog" aria-modal="true" aria-label="Preview of the draft">
+    <div class="pvbar">
+      <span class="pill ext">Preview · not live</span>
+      <span class="pvstatus {{pv.statusCls}}">{{pv.status}}</span>
+      <span class="spacer"></span>
+      <div class="seg" role="group" aria-label="Preview width">
+        <sc-for list="{{pv.devs}}" as="d" hint-placeholder-count="2"><button class="{{d.cls}}" aria-pressed="{{d.on}}" onClick="{{d.pick}}">{{d.label}}</button></sc-for>
+      </div>
+      <button class="btn" onClick="{{pv.refresh}}" disabled="{{pv.building}}">Refresh</button>
+      <button class="btn ghost" onClick="{{pv.back}}">Back to editing</button>
+      <button class="btn pri" onClick="{{pv.goLive}}" disabled="{{pv.liveDis}}">Save and go live</button>
+    </div>
+    <div class="pvstage">
+      <sc-if value="{{pv.building}}" hint-placeholder-val="{{false}}">
+        <div class="pvbuild"><p class="h2 pulse" style="margin: 0 0 8px">Starting the preview</p><p class="note">A separate preview Glance is loading the draft. Its widgets fetch their data fresh, so the first load can take a moment. Live Glance is not touched.</p></div>
+      </sc-if>
+      <sc-if value="{{pv.ready}}" hint-placeholder-val="{{true}}">
+        <div class="pvframe" style="max-width: {{pv.frameW}}; background: {{pv.bg}}; color: {{pv.text}}">
+          <nav class="pvnav" aria-label="Preview pages">
+            <sc-for list="{{pv.pages}}" as="pg2" hint-placeholder-count="3"><button class="pvtab {{pg2.cls}}" style="color: {{pg2.color}}" onClick="{{pg2.pick}}" aria-current="{{pg2.current}}">{{pg2.name}}</button></sc-for>
+          </nav>
+          <div class="pvpage" style="max-width: {{pv.pageMax}}">
+            <sc-if value="{{pv.hasHead}}" hint-placeholder-val="{{false}}">
+              <div class="pvheadrow">
+                <sc-for list="{{pv.head}}" as="pw" hint-placeholder-count="1">
+                  <div class="pvw"><span class="pvwt" style="color: {{pv.muted}}">{{pw.title}}</span><div class="pvwb" style="background: {{pv.card}}"><sc-for list="{{pw.items}}" as="pi" hint-placeholder-count="2"><span class="{{pi.cls}}" style="color: {{pi.color}}">{{pi.t}}</span></sc-for><sc-if value="{{pw.noItems}}" hint-placeholder-val="{{true}}"><span class="pvph"></span><span class="pvph b"></span></sc-if></div></div>
+                </sc-for>
+              </div>
+            </sc-if>
+            <div class="pvcols" style="grid-template-columns: {{pv.colTemplate}}">
+              <sc-for list="{{pv.cols}}" as="pc" hint-placeholder-count="3">
+                <div class="pvcol">
+                  <sc-for list="{{pc.widgets}}" as="pw" hint-placeholder-count="2">
+                    <div class="pvw"><span class="pvwt" style="color: {{pv.muted}}">{{pw.title}}</span><div class="pvwb" style="background: {{pv.card}}"><sc-for list="{{pw.items}}" as="pi" hint-placeholder-count="2"><span class="{{pi.cls}}" style="color: {{pi.color}}">{{pi.t}}</span></sc-for><sc-if value="{{pw.noItems}}" hint-placeholder-val="{{true}}"><span class="pvph"></span><span class="pvph b"></span><span class="pvph c"></span></sc-if></div></div>
+                  </sc-for>
+                  <sc-if value="{{pc.empty}}" hint-placeholder-val="{{false}}"><span class="pvph c" style="opacity: .06; height: 40px"></span></sc-if>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+        </div>
+        <p class="help" style="max-width: 720px; text-align: center">Prototype stand-in drawn from the draft. In the build this area shows the preview Glance itself; if Glance refuses to be framed, Preview opens it in a new tab instead.</p>
+      </sc-if>
+    </div>
+  </div>
+</sc-if>
+
+<sc-if value="{{sheetOpen}}" hint-placeholder-val="{{false}}">
+  <div class="scrim">
+    <div class="sheet" role="dialog" aria-modal="true" aria-label="{{sheetTitle}}">
+
+      <sc-if value="{{shAdd}}" hint-placeholder-val="{{false}}">
+        <div class="row between"><div><span class="lbl">{{addWhere}}</span><h2 class="h2">Add widget</h2></div><button class="ib" aria-label="Close" onClick="{{closeSheet}}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg></button></div>
+        <label class="sr" for="addq">Search widget types</label>
+        <input id="addq" class="input" placeholder="Search widget types" value="{{addQuery}}" onChange="{{onAddQuery}}">
+        <div class="tlist">
+          <sc-for list="{{addTypes}}" as="t" hint-placeholder-count="6">
+            <button class="trow" onClick="{{t.pick}}" disabled="{{t.dis}}">
+              <span><span class="wname">{{t.label}}</span><span class="wsum" style="white-space: normal">{{t.why}}</span></span>
+              <span class="tlabel">{{t.cat}}</span>
+            </button>
+          </sc-for>
+          <sc-if value="{{addNone}}" hint-placeholder-val="{{false}}"><div class="empty">No widget type matches.</div></sc-if>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{shReview}}" hint-placeholder-val="{{false}}">
+        <span class="lbl">Save</span>
+        <h2 class="h2">{{reviewTitle}}</h2>
+        <ul class="checks"><sc-for list="{{changeList}}" as="ch" hint-placeholder-count="3"><li><span class="mono grow" style="white-space: normal">{{ch.t}}</span></li></sc-for></ul>
+        <div class="notice">Saving writes glance.yml. Glance reloads on its own and clears its cached data, so widgets fetch fresh data on the next page load.</div>
+        <p class="help">Before writing, the draft is checked twice: against the editor's schema, then with Glance's own config:validate.</p>
+        <div class="sheetfoot"><button class="btn ghost" onClick="{{closeSheet}}">Keep editing</button><button class="btn pri" onClick="{{startSave}}">Check and save</button></div>
+      </sc-if>
+
+      <sc-if value="{{shChecking}}" hint-placeholder-val="{{false}}">
+        <span class="lbl">Save</span><h2 class="h2 pulse">{{checkingText}}</h2>
+        <p class="help">Nothing has been written yet.</p>
+      </sc-if>
+
+      <sc-if value="{{shErrors}}" hint-placeholder-val="{{false}}">
+        <span class="lbl">Not saved</span>
+        <h2 class="h2">{{errTitle}}</h2>
+        <p class="note">{{errNote}}</p>
+        <div class="stack" style="gap: 8px">
+          <sc-for list="{{errRows}}" as="e" hint-placeholder-count="2">
+            <div class="erow">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#e0a758" stroke-width="2" stroke-linecap="round" aria-hidden="true" style="flex: none; margin-top: 2px"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v6M12 16.5v.5"></path></svg>
+              <span class="grow"><span class="mono" style="font-size: 12px; color: var(--ink-quiet)">{{e.source}} · {{e.where}}</span><span style="font-weight: 700; color: var(--ink)">{{e.field}}</span><span class="note">{{e.msg}}</span></span>
+              <button class="btn" onClick="{{e.go}}">Go to</button>
+            </div>
+          </sc-for>
+        </div>
+        <div class="sheetfoot"><button class="btn ghost" onClick="{{closeSheet}}">Close</button></div>
+      </sc-if>
+
+      <sc-if value="{{shSaving}}" hint-placeholder-val="{{false}}">
+        <span class="lbl">Save</span><h2 class="h2 pulse">Writing glance.yml</h2>
+        <p class="help">Waiting for Glance to pick up the change.</p>
+      </sc-if>
+
+      <sc-if value="{{shSaved}}" hint-placeholder-val="{{false}}">
+        <span class="lbl">Saved</span>
+        <h2 class="h2">Version {{savedN}} is live</h2>
+        <p class="note">{{savedText}}</p>
+        <div class="sheetfoot"><button class="btn ghost" onClick="{{goHistoryClose}}">View history</button><button class="btn pri" onClick="{{closeSheet}}">Done</button></div>
+      </sc-if>
+
+      <sc-if value="{{shDiscard}}" hint-placeholder-val="{{false}}">
+        <span class="lbl">Discard</span>
+        <h2 class="h2">Discard {{changesLabel}}?</h2>
+        <p class="note">The draft goes back to the live version. Saved versions are not affected.</p>
+        <div class="sheetfoot"><button class="btn ghost" onClick="{{closeSheet}}">Keep editing</button><button class="btn warn" onClick="{{doDiscard}}">Discard changes</button></div>
+      </sc-if>
+
+      <sc-if value="{{shDelPage}}" hint-placeholder-val="{{false}}">
+        <span class="lbl">Delete page</span>
+        <h2 class="h2">Delete “{{pg.name}}”?</h2>
+        <p class="note">Its {{pg.widgetCount}} go with it. This only changes the draft; nothing is removed from Glance until you save, and every saved version stays in History.</p>
+        <div class="sheetfoot"><button class="btn ghost" onClick="{{closeSheet}}">Cancel</button><button class="btn warn" onClick="{{doDelPage}}">Delete page</button></div>
+      </sc-if>
+
+      <sc-if value="{{shImgs}}" hint-placeholder-val="{{false}}">
+        <div class="row between"><div><span class="lbl">Background</span><h2 class="h2">Add images</h2></div><button class="ib" aria-label="Close" onClick="{{closeSheet}}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg></button></div>
+        <div class="seg" role="tablist" aria-label="Image source"><sc-for list="{{ims.tabs}}" as="it" hint-placeholder-count="3"><button role="tab" class="{{it.cls}}" aria-selected="{{it.on}}" onClick="{{it.pick}}">{{it.label}}</button></sc-for></div>
+
+        <sc-if value="{{ims.isDevice}}" hint-placeholder-val="{{true}}">
+          <label class="drop" for="devfiles">
+            <span class="h3" style="font-size: 16px">Choose files or a folder from this device</span>
+            <span class="help" style="margin: 0">JPEG, PNG or WebP. On a phone this opens your photo library. Files are uploaded to Glance's assets folder.</span>
+            <input id="devfiles" class="sr" type="file" accept="image/*" multiple onChange="{{ims.onFiles}}">
+            <span class="btn pri" aria-hidden="true">Choose files</span>
+          </label>
+          <label class="btn" for="devfolder" style="align-self: flex-start">Choose a whole folder<input id="devfolder" class="sr" type="file" accept="image/*" multiple webkitdirectory="" onChange="{{ims.onFolder}}"></label>
+          <p class="help" style="margin: 0">Folder upload works in desktop browsers; phones generally only offer files.</p>
+        </sc-if>
+
+        <sc-if value="{{ims.isServer}}" hint-placeholder-val="{{false}}">
+          <p class="help" style="margin: 0">Folders mounted into the editor's container, for example your photo library. Pick single images, or use a whole folder for a slideshow.</p>
+          <div class="row wrap" style="gap: 4px">
+            <sc-for list="{{ims.crumbs}}" as="cb" hint-placeholder-count="2"><button class="btn ghost" style="min-height: 36px; padding: 0 8px; font-family: var(--mono); font-size: 13px" onClick="{{cb.go}}">{{cb.label}}</button><span class="help" style="margin: 0">/</span></sc-for>
+          </div>
+          <div class="stack" style="gap: 6px; max-height: 340px; overflow: auto">
+            <sc-for list="{{ims.entries}}" as="en" hint-placeholder-count="5">
+              <div class="crow {{en.cls}}">
+                <sc-if value="{{en.isDir}}" hint-placeholder-val="{{true}}">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true" style="flex: none; color: var(--peri)"><path d="M3 7h6l2 2h10v10H3z"></path></svg>
+                  <button class="crowmain" style="padding-left: 10px" onClick="{{en.open}}"><span class="mono" style="color: var(--ink)">{{en.name}}</span><span class="wsum">{{en.sub}}</span></button>
+                  <button class="btn" style="min-height: 40px" onClick="{{en.useFolder}}">Use folder</button>
+                </sc-if>
+                <sc-if value="{{en.isFile}}" hint-placeholder-val="{{false}}">
+                  <span class="thumb" aria-hidden="true"></span>
+                  <button class="crowmain" style="padding-left: 10px" onClick="{{en.toggle}}" aria-pressed="{{en.on}}"><span class="mono" style="color: var(--ink)">{{en.name}}</span><span class="wsum">{{en.sub}}</span></button>
+                  <sc-if value="{{en.on}}" hint-placeholder-val="{{false}}"><span class="pill">Selected</span></sc-if>
+                </sc-if>
+              </div>
+            </sc-for>
+          </div>
+          <div class="sheetfoot"><button class="btn pri" onClick="{{ims.addSel}}" disabled="{{ims.noSel}}">{{ims.addSelLabel}}</button></div>
+        </sc-if>
+
+        <sc-if value="{{ims.isPix}}" hint-placeholder-val="{{false}}">
+          <span class="flabel" style="margin: 0">Categories <span class="help">· pick one or more</span></span>
+          <div class="swrow" role="group" aria-label="Categories"><sc-for list="{{ims.cats}}" as="ct" hint-placeholder-count="10"><button class="chipbtn {{ct.cls}}" aria-pressed="{{ct.on}}" onClick="{{ct.pick}}">{{ct.label}}</button></sc-for></div>
+
+          <div class="seg" role="group" aria-label="How to use Pixabay"><sc-for list="{{ims.modes}}" as="md" hint-placeholder-count="2"><button class="{{md.cls}}" aria-pressed="{{md.on}}" onClick="{{md.pick}}">{{md.label}}</button></sc-for></div>
+
+          <sc-if value="{{ims.isFeed}}" hint-placeholder-val="{{true}}">
+            <p class="note">The editor keeps a set of images from these categories ready in the background and swaps them for fresh ones on a schedule. No picking, no downloading by hand.</p>
+            <span class="flabel" style="margin: 0">Keep ready</span>
+            <div class="seg" role="group" aria-label="How many images"><sc-for list="{{ims.counts}}" as="o" hint-placeholder-count="3"><button class="{{o.cls}}" aria-pressed="{{o.on}}" onClick="{{o.pick}}">{{o.label}}</button></sc-for></div>
+            <span class="flabel" style="margin: 0">Swap for new images</span>
+            <div class="seg" role="group" aria-label="Refresh"><sc-for list="{{ims.refreshes}}" as="o" hint-placeholder-count="4"><button class="{{o.cls}}" aria-pressed="{{o.on}}" onClick="{{o.pick}}">{{o.label}}</button></sc-for></div>
+            <p class="help" style="margin: 0">Swapping replaces image files only; glance.yml doesn't change and nothing needs saving.</p>
+          </sc-if>
+          <sc-if value="{{ims.isPick}}" hint-placeholder-val="{{false}}">
+            <div class="row"><label class="sr" for="pixq">Refine with words</label><input id="pixq" class="input grow" placeholder="Optional words, e.g. alps winter" value="{{ims.q}}" onChange="{{ims.onQ}}"><button class="btn" onClick="{{ims.search}}" disabled="{{ims.needKey}}">Search</button></div>
+            <sc-if value="{{ims.loading}}" hint-placeholder-val="{{false}}"><p class="note pulse">Searching Pixabay…</p></sc-if>
+            <sc-if value="{{ims.hasResults}}" hint-placeholder-val="{{false}}">
+              <div class="pixgrid">
+                <sc-for list="{{ims.results}}" as="pr" hint-placeholder-count="6">
+                  <button class="pixcell {{pr.cls}}" onClick="{{pr.toggle}}" aria-pressed="{{pr.on}}"><span class="pixthumb" aria-hidden="true"></span><span class="wsum" style="padding: 6px 8px 0">{{pr.title}}</span><span class="wsum" style="padding: 0 8px 8px">{{pr.by}}</span></button>
+                </sc-for>
+              </div>
+            </sc-if>
+          </sc-if>
+
+          <sc-if value="{{ims.needKey}}" hint-placeholder-val="{{true}}">
+            <div class="picker">
+              <label class="flabel" for="pixkey" style="margin: 0">Pixabay API key</label>
+              <p class="help" style="margin: 0">Free from your Pixabay account. Stored in the editor's settings, never in glance.yml; only the editor's server talks to Pixabay.</p>
+              <div class="row"><input id="pixkey" class="input mono grow" type="password" autocomplete="off" value="{{ims.keyDraft}}" onChange="{{ims.onKey}}" placeholder="Paste your key"><button class="btn" onClick="{{ims.saveKey}}" disabled="{{ims.keyDis}}">{{ims.keyBtn}}</button></div>
+              <sc-if value="{{ims.keyBad}}" hint-placeholder-val="{{false}}"><p class="errtxt">Pixabay rejected this key. Check it and try again.</p></sc-if>
+            </div>
+          </sc-if>
+          <sc-if value="{{ims.hasKey}}" hint-placeholder-val="{{false}}"><div class="row between wrap"><span class="help" style="margin: 0">Key saved · <span class="mono">{{ims.keyMasked}}</span></span><button class="btn ghost" style="min-height: 36px; padding: 0 10px" onClick="{{ims.changeKey}}">Change key</button></div></sc-if>
+          <p class="help" style="margin: 0">Images are stored in Glance's assets folder with each photographer's name. Prototype results are placeholders.</p>
+          <div class="sheetfoot"><button class="btn pri" onClick="{{ims.pixGo}}" disabled="{{ims.pixGoDis}}">{{ims.pixGoLabel}}</button></div>
+        </sc-if>
+      </sc-if>
+
+      <sc-if value="{{shIcon}}" hint-placeholder-val="{{false}}">
+        <div class="row between"><div><span class="lbl">Icon{{ic.forText}}</span><h2 class="h2">Choose an icon</h2></div><button class="ib" aria-label="Close" onClick="{{closeSheet}}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg></button></div>
+        <div class="row wrap" style="gap: 8px"><span class="help" style="margin: 0">Current:</span><span class="ichip" style="width: auto; padding: 0 8px; text-transform: none">{{ic.current}}</span><sc-if value="{{ic.hasCurrent}}" hint-placeholder-val="{{false}}"><button class="btn ghost" style="min-height: 36px; padding: 0 10px" onClick="{{ic.clear}}">Remove icon</button></sc-if></div>
+        <div class="seg" role="tablist" aria-label="Where to look"><sc-for list="{{ic.tabs}}" as="it" hint-placeholder-count="5"><button role="tab" class="{{it.cls}}" aria-selected="{{it.on}}" onClick="{{it.pick}}">{{it.label}}</button></sc-for></div>
+
+        <sc-if value="{{ic.isSug}}" hint-placeholder-val="{{true}}">
+          <p class="help" style="margin: 0">{{ic.sugIntro}}</p>
+          <div class="icongrid">
+            <sc-for list="{{ic.sug}}" as="r" hint-placeholder-count="4"><button class="icell {{r.cls}}" onClick="{{r.pick}}" disabled="{{r.dis}}" aria-pressed="{{r.on}}"><span class="ichip">{{r.chip}}</span><span class="grow" style="min-width: 0"><span style="display: block; color: var(--ink); overflow: hidden; text-overflow: ellipsis">{{r.name}}</span><span class="wsum" style="white-space: normal; font-family: var(--ui)">{{r.sub}}</span></span></button></sc-for>
+          </div>
+          <sc-if value="{{ic.sugNone}}" hint-placeholder-val="{{false}}"><div class="empty">No suggestions for this name. Try searching the libraries or the web.</div></sc-if>
+        </sc-if>
+
+        <sc-if value="{{ic.isLib}}" hint-placeholder-val="{{false}}">
+          <label class="sr" for="iq">Search icons</label>
+          <input id="iq" class="input" placeholder="Search {{ic.libName}}" value="{{iconQuery}}" onChange="{{onIconQuery}}">
+          <div class="icongrid">
+            <sc-for list="{{ic.libResults}}" as="r" hint-placeholder-count="8"><button class="icell {{r.cls}}" onClick="{{r.pick}}" aria-pressed="{{r.on}}"><span class="ichip">{{r.chip}}</span><span class="grow" style="min-width: 0"><span style="display: block; color: var(--ink); overflow: hidden; text-overflow: ellipsis">{{r.name}}</span><span class="wsum" style="font-family: var(--ui)">{{r.sub}}</span></span></button></sc-for>
+          </div>
+          <sc-if value="{{ic.libNone}}" hint-placeholder-val="{{false}}"><div class="empty">No icon with that name. Try another word, or search the web.</div></sc-if>
+          <p class="help" style="margin: 0">Searches each library's published icon list online. Prototype names are samples; real previews load in the build.</p>
+        </sc-if>
+
+        <sc-if value="{{ic.isWeb}}" hint-placeholder-val="{{false}}">
+          <div class="row"><label class="sr" for="wq">Search the web for an icon</label><input id="wq" class="input grow" placeholder="e.g. jellyfin logo" value="{{ic.webQ}}" onChange="{{ic.onWebQ}}"><button class="btn pri" onClick="{{ic.webSearch}}" disabled="{{ic.webDis}}">Search</button></div>
+          <sc-if value="{{ic.webLoading}}" hint-placeholder-val="{{false}}"><p class="note pulse">Searching the web…</p></sc-if>
+          <sc-if value="{{ic.webHas}}" hint-placeholder-val="{{false}}">
+            <div class="icongrid">
+              <sc-for list="{{ic.web}}" as="r" hint-placeholder-count="6"><button class="icell" onClick="{{r.pick}}"><span class="ichip">{{r.chip}}</span><span class="grow" style="min-width: 0"><span style="display: block; color: var(--ink)">{{r.name}}</span><span class="wsum" style="font-family: var(--ui)">{{r.sub}}</span></span></button></sc-for>
+            </div>
+          </sc-if>
+          <sc-if value="{{ic.webIdle}}" hint-placeholder-val="{{true}}"><div class="empty">Search images on the web. The one you pick is downloaded into Glance's assets folder, so the dashboard doesn't depend on that site.</div></sc-if>
+          <p class="help" style="margin: 0">Results come from an image search service (which one is an open decision). Check that you may use an image before picking it. Prototype results are placeholders.</p>
+        </sc-if>
+
+        <sc-if value="{{iconIsUrl}}" hint-placeholder-val="{{false}}">
+          <label class="flabel" for="iurl">Image URL or /assets/ path</label>
+          <input id="iurl" class="input mono" value="{{iconUrl}}" placeholder="https://… or /assets/…" onChange="{{onIconUrl}}">
+          <div class="row"><span class="tog-label help" style="margin: 0">An external URL is used as it is; Glance loads it from that site each time.</span></div>
+          <div class="sheetfoot"><button class="btn pri" onClick="{{useIconUrl}}" disabled="{{iconUrlDis}}">Use this</button></div>
+        </sc-if>
+      </sc-if>
+    </div>
+  </div>
+</sc-if>
+
+<sc-if value="{{hasToast}}" hint-placeholder-val="{{false}}">
+  <div class="toast" role="status"><span>{{toastText}}</span><sc-if value="{{toastUndo}}" hint-placeholder-val="{{false}}"><button class="btn" style="min-height: 36px" onClick="{{undo}}">Undo</button></sc-if></div>
+</sc-if>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"scenario":{"editor":"enum","options":["imported","firstrun","noFile","importInvalid","unreachable","glanceRejects"],"default":"imported","section":"Prototype"},"$preview":{"width":1440,"height":960}}'>
+var UID = 100;
+function nid() { UID += 1; return 'w' + UID; }
+function clone(o) { return JSON.parse(JSON.stringify(o)); }
+function isEmpty(v) { return v === undefined || v === null || v === '' || (Array.isArray(v) && v.filter(function (x) { return x !== '' && x !== null; }).length === 0); }
+var TYPES = [['rss','RSS','Feeds'],['videos','Videos','Feeds'],['hacker-news','Hacker News','Feeds'],['lobsters','Lobsters','Feeds'],['reddit','Reddit','Feeds'],['twitch-channels','Twitch channels','Feeds'],['twitch-top-games','Twitch top games','Feeds'],['search','Search','Tools'],['bookmarks','Bookmarks','Tools'],['to-do','To-do','Tools'],['clock','Clock','Info'],['calendar','Calendar','Info'],['calendar-legacy','Calendar (legacy)','Info'],['weather','Weather','Info'],['markets','Markets','Info'],['monitor','Monitor','Server'],['docker-containers','Docker containers','Server'],['server-stats','Server stats','Server'],['dns-stats','DNS stats','Server'],['releases','Releases','Dev'],['repository','Repository','Dev'],['change-detection','ChangeDetection.io','Dev'],['group','Group','Layout'],['split-column','Split column','Layout'],['custom-api','Custom API','Advanced'],['extension','Extension','Advanced'],['iframe','iframe','Advanced'],['html','HTML','Advanced']];
+var TL = {}; TYPES.forEach(function (t) { TL[t[0]] = t[1]; });
+var COMMON = [{ key: 'title', label: 'Title', kind: 'text', ph: 'Type default', help: 'Shown in the widget header.' }];
+// Glance docs: cache is a shared property, but "not all widgets can have their cache duration modified" and
+// "the calendar and weather widgets update on the hour and this cannot be changed". Per-type support below is
+// the prototype's assumption; the build derives it from the pinned Glance source.
+var CACHE_FIELD = { key: 'cache', label: 'Refresh data every', kind: 'duration', help: 'How long Glance keeps the data this widget fetched before fetching it again. Empty uses Glance\u2019s default for this widget.' };
+var NO_DATA = ['clock', 'search', 'bookmarks', 'group', 'split-column', 'to-do', 'html', 'iframe'];
+var FIXED_REFRESH = ['weather', 'calendar'];
+function fieldsFor(type) { var sc = SCHEMA[type]; var f = COMMON.slice(); if (FIXED_REFRESH.indexOf(type) >= 0) f.push({ key: '_refresh', label: 'Data refresh', kind: 'note', help: 'Updates on the hour. Glance doesn\u2019t allow changing this for this widget.' }); else if (NO_DATA.indexOf(type) < 0) f.push(CACHE_FIELD); return sc ? f.concat(sc.fields) : f; }
+var HOUR = { key: 'hour-format', label: 'Hour format', kind: 'enum', options: ['12h', '24h'], def: '24h' };
+var SCHEMA = {
+  'weather': { fields: [{ key: 'location', label: 'Location', kind: 'text', required: true, help: 'City, optionally with country.', reqMsg: 'Required. Glance needs a location to fetch a forecast.' }, { key: 'units', label: 'Units', kind: 'enum', options: ['metric', 'imperial'], def: 'metric' }, HOUR, { key: 'hide-location', label: 'Hide location', kind: 'bool' }] },
+  'clock': { fields: [HOUR] },
+  'rss': { fields: [{ key: 'limit', label: 'Item limit', kind: 'number', ph: 'Type default' }, { key: 'feeds', label: 'Feeds', kind: 'objlist', required: true, noun: 'Feed', item: [{ key: 'url', label: 'Feed URL', req: true }, { key: 'title', label: 'Title' }], addLabel: 'Add feed', reqMsg: 'Add at least one feed.' }] },
+  'reddit': { fields: [{ key: 'subreddit', label: 'Subreddit', kind: 'text', required: true }] },
+  'videos': { fields: [{ key: 'channels', label: 'Channel IDs', kind: 'list', required: true, help: 'One channel ID per line.' }] },
+  'releases': { fields: [{ key: 'repositories', label: 'Repositories', kind: 'list', required: true, help: 'One owner/repo per line.' }] },
+  'monitor': { fields: [{ key: 'sites', label: 'Sites', kind: 'objlist', required: true, noun: 'Site', item: [{ key: 'title', label: 'Title', req: true }, { key: 'url', label: 'URL', req: true }, { key: 'icon', label: 'Icon', kind: 'icon' }], addLabel: 'Add site', reqMsg: 'Add at least one site.' }] },
+  'search': { fields: [{ key: 'search-engine', label: 'Search engine', kind: 'text', ph: 'Type default' }, { key: 'new-tab', label: 'Open results in a new tab', kind: 'bool' }] },
+  'split-column': { fields: [{ key: 'max-columns', label: 'Max columns', kind: 'number', ph: 'Type default' }] },
+  'group': { fields: [] },
+  'docker-containers': { fields: [{ key: 'hide-by-default', label: 'Hide by default', kind: 'bool', help: 'When on, only containers you switch on below are shown.' }, { key: 'running-only', label: 'Running only', kind: 'bool' }, { key: 'sock-path', label: 'Docker socket path', kind: 'text', ph: 'Type default' }] },
+  'bookmarks': { fields: [] }
+};
+var CONTAINERS = [{ name: 'jellyfin', status: 'running' }, { name: 'immich-server', status: 'running' }, { name: 'immich-postgres', status: 'running' }, { name: 'paperless', status: 'running' }, { name: 'uptime-kuma', status: 'running' }, { name: 'glance', status: 'running' }, { name: 'glance-editor', status: 'running' }, { name: 'watchtower', status: 'running', label: true }, { name: 'old-nextcloud', status: 'exited' }];
+var ICONS = ['jellyfin', 'immich', 'paperless-ngx', 'home-assistant', 'proxmox', 'portainer', 'nextcloud', 'github', 'gitea', 'grafana', 'plex', 'sonarr', 'radarr', 'syncthing', 'uptime-kuma', 'vaultwarden', 'pi-hole', 'adguard-home', 'traefik', 'docker'];
+var PRESETS = [['One full column', ['full']], ['Small + full', ['small', 'full']], ['Full + small', ['full', 'small']], ['Two full', ['full', 'full']], ['Small + full + small', ['small', 'full', 'small']], ['Small + full + full', ['small', 'full', 'full']]];
+var COLORS = [{ key: 'background', label: 'Background', def: '240 8 9', pal: 'BG', used: 'the page and the widgets on it.' }, { key: 'primary', label: 'Primary', def: '43 50 70', pal: 'PRI', used: 'accents across the page, mostly unvisited links. Also the default for Positive and for bookmark group colours.' }, { key: 'positive', label: 'Positive', def: '', pal: 'POS', used: 'good news: a stock price up, a Twitch channel live, a monitored site online.' }, { key: 'negative', label: 'Negative', def: '0 70 70', pal: 'NEG', used: 'the opposite of Positive, for example a monitored site offline, and server-stats bars when they turn red.' }];
+var BAD_RAW = 'type: monitor\ntitle: Services\nsites:\n  - title: Jellyfin\n    url: ${JELLYFIN_URL}\n    check-interval: often\n';
+var BAD_IMPORT = 'pages:\n  - name: Home\n    columns:\n      - size: small\n        widgets:\n          - type: clock\n\t    hour-format: 24h\n';
+
+// Themes and palettes: values copied from Glance docs/themes.md (main, read 2026-10-13).
+var THEMES = [
+  { name: 'Glance default', bg: '240 8 9', pri: '43 50 70' },
+  { name: 'Teal City', bg: '225 14 15', pri: '157 47 65', cm: '1.1' },
+  { name: 'Catppuccin Frappe', bg: '229 19 23', pri: '222 74 74', pos: '96 44 68', neg: '359 68 71', cm: '1.2' },
+  { name: 'Catppuccin Macchiato', bg: '232 23 18', pri: '220 83 75', pos: '105 48 72', neg: '351 74 73', cm: '1.2' },
+  { name: 'Catppuccin Mocha', bg: '240 21 15', pri: '217 92 83', pos: '115 54 76', neg: '347 70 65', cm: '1.2' },
+  { name: 'Camouflage', bg: '186 21 20', pri: '97 13 80', cm: '1.2' },
+  { name: 'Gruvbox Dark', bg: '0 0 16', pri: '43 59 81', pos: '61 66 44', neg: '6 96 59' },
+  { name: 'Kanagawa Dark', bg: '240 13 14', pri: '51 33 68', neg: '358 100 68', cm: '1.2' },
+  { name: 'Tucan', bg: '50 1 6', pri: '24 97 58', neg: '209 88 54' },
+  { name: 'Dracula', bg: '231 15 21', pri: '265 89 79', pos: '135 94 66', neg: '0 100 67', cm: '1.2' },
+  { name: 'Shades of Purple', bg: '243 33 25', pri: '50 100 49', pos: '98 82 71', neg: '12 77 52', cm: '1.2' },
+  { name: 'Neon Pink', bg: '240 27 11', pri: '321 100 71', pos: '165 78 51', neg: '360 100 71', cm: '1.5' },
+  { name: 'Catppuccin Latte', light: true, bg: '220 23 95', pri: '220 91 54', pos: '109 58 40', neg: '347 87 44', cm: '1.0' },
+  { name: 'Peachy', light: true, bg: '28 40 77', pri: '155 100 20', neg: '0 100 60', cm: '1.1', ts: '0.5' },
+  { name: 'Zebra', light: true, bg: '0 0 95', pri: '0 0 10', neg: '0 90 50' }
+];
+function uniq(a) { var o = []; a.forEach(function (x) { if (x && o.indexOf(x) < 0) o.push(x); }); return o; }
+var PAL_BG = uniq(THEMES.map(function (t) { return t.bg; }));
+var PAL_PRI = uniq(THEMES.map(function (t) { return t.pri; }));
+var PAL_POS = uniq(THEMES.map(function (t) { return t.pos; }));
+var PAL_NEG = uniq(['0 70 70'].concat(THEMES.map(function (t) { return t.neg; })));
+var PAL_GROUP = uniq(PAL_PRI.concat(PAL_POS.slice(0, 4), PAL_NEG.slice(0, 4)));
+// Bookmark group swatches follow the active theme: its positive/negative (when set) plus six hues
+// rotated from the primary at a saturation and lightness kept readable on the theme's background.
+function groupPalette(th) {
+  var out = []; var p = hslParts(th.primary) || [43, 50, 70];
+  if (th.positive && hslParts(th.positive)) out.push(norm(th.positive));
+  var neg = th.negative || '0 70 70'; if (hslParts(neg)) out.push(norm(neg));
+  var sat = Math.max(p[1], 40); var lig = th.light ? Math.min(Math.max(p[2], 25), 50) : Math.min(Math.max(p[2], 55), 80);
+  [45, 90, 150, 200, 250, 300].forEach(function (d) { var v = ((p[0] + d) % 360) + ' ' + sat + ' ' + lig; if (out.indexOf(v) < 0) out.push(v); });
+  return out;
+}
+function norm(s) { return String(s || '').trim().split(/\s+/).join(' '); }
+function hsl2hex(p) { var h = p[0], s = p[1] / 100, l = p[2] / 100; var a = s * Math.min(l, 1 - l); function f(n) { var k = (n + h / 30) % 12; var c = l - a * Math.max(-1, Math.min(k - 3, 9 - k, 1)); var x = Math.round(255 * c).toString(16); return x.length < 2 ? '0' + x : x; } return '#' + f(0) + f(8) + f(4); }
+function hex2hsl(hex) { var m = /^#?([0-9a-f]{6})$/i.exec(String(hex).trim()); if (!m) return null; var n = parseInt(m[1], 16); var r = (n >> 16 & 255) / 255, g = (n >> 8 & 255) / 255, b = (n & 255) / 255; var mx = Math.max(r, g, b), mn = Math.min(r, g, b), l = (mx + mn) / 2, h = 0, s = 0; if (mx !== mn) { var d = mx - mn; s = l > 0.5 ? d / (2 - mx - mn) : d / (mx + mn); h = mx === r ? (g - b) / d + (g < b ? 6 : 0) : (mx === g ? (b - r) / d + 2 : (r - g) / d + 4); h *= 60; } return [Math.round(h), Math.round(s * 100), Math.round(l * 100)]; }
+var STRIPES = 'repeating-linear-gradient(38deg, #3f5a6d 0 24px, #2e4453 24px 48px)';
+function pageBg(th) { var b = hslParts(th.background) || [240, 8, 9]; if ((th.bgMode || 'none') === 'none') return hslCss(b); var d = (th.dim || 0) / 100; return 'linear-gradient(rgba(0,0,0,' + d + '), rgba(0,0,0,' + d + ')), ' + STRIPES; }
+function surfaceCss(th) { var b = hslParts(th.background) || [240, 8, 9]; var l = Math.max(0, Math.min(100, b[2] + (th.light ? -4 : 5))); if ((th.bgMode || 'none') !== 'none' && th.surface === 'See-through') return 'hsl(' + b[0] + ' ' + b[1] + '% ' + l + '% / 0.72)'; return 'hsl(' + b[0] + ' ' + b[1] + '% ' + l + '%)'; }
+
+COLORS.forEach(function (c) { c.pal = { BG: PAL_BG, PRI: PAL_PRI, POS: PAL_POS, NEG: PAL_NEG }[c.pal]; });
+var SERVER_TREE = {
+  '/': [{ name: 'media', dir: true }],
+  '/media': [{ name: 'photos', dir: true }, { name: 'wallpapers', dir: true }],
+  '/media/photos': [{ name: 'mountains', dir: true }, { name: 'IMG_0412.jpg', size: '[size]' }, { name: 'IMG_0413.jpg', size: '[size]' }, { name: 'IMG_0420.jpg', size: '[size]' }],
+  '/media/photos/mountains': [{ name: 'alps-01.jpg', size: '[size]' }, { name: 'alps-02.jpg', size: '[size]' }, { name: 'dolomites.jpg', size: '[size]' }],
+  '/media/wallpapers': [{ name: 'forest.jpg', size: '[size]' }, { name: 'lake.jpg', size: '[size]' }, { name: 'dunes.jpg', size: '[size]' }, { name: 'aurora.jpg', size: '[size]' }]
+};
+// Editor-defined shortcuts; each maps to a Pixabay search (category parameter where Pixabay has one, else a query). Verify against Pixabay's API docs.
+var PIX_CATS = ['Nature', 'Landscape', 'Mountains', 'Sea', 'Forest', 'Sky', 'City', 'Space', 'Animals', 'Abstract'];
+function W(type, props, children) { var w = { id: nid(), type: type, props: props || {} }; if (children) w.children = children; else if (type === 'group' || type === 'split-column') w.children = []; return w; }
+function wname(w) { return (w.props && w.props.title) || TL[w.type] || w.type; }
+function plural(n, s, p) { return n + ' ' + (n === 1 ? s : (p || s + 's')); }
+function hslParts(s) { if (!s) return null; var m = String(s).trim().split(/\s+/); if (m.length !== 3) return null; var n = m.map(Number); if (n.some(isNaN)) return null; if (n[0] < 0 || n[0] > 360 || n[1] < 0 || n[1] > 100 || n[2] < 0 || n[2] > 100) return null; return n; }
+function hslCss(p, dl) { return 'hsl(' + p[0] + ' ' + p[1] + '% ' + Math.max(0, Math.min(100, p[2] + (dl || 0))) + '%)'; }
+function summary(w) {
+  if (w.raw != null) return 'Edited as YAML';
+  var p = w.props, k = w.children ? w.children.length : 0;
+  switch (w.type) {
+    case 'group': return plural(k, 'tab');
+    case 'split-column': return plural(k, 'widget');
+    case 'bookmarks': var g = p.groups || []; return plural(g.length, 'group') + ' · ' + plural(g.reduce(function (a, x) { return a + x.links.length; }, 0), 'link');
+    case 'weather': return p.location || 'No location set';
+    case 'rss': return plural((p.feeds || []).length, 'feed');
+    case 'monitor': return plural((p.sites || []).length, 'site');
+    case 'docker-containers': return p['hide-by-default'] ? 'Hidden unless switched on' : 'All shown unless hidden';
+    case 'reddit': return p.subreddit ? 'r/' + p.subreddit : 'No subreddit set';
+    case 'videos': return plural((p.channels || []).filter(Boolean).length, 'channel');
+    case 'releases': return plural((p.repositories || []).filter(Boolean).length, 'repository', 'repositories');
+    case 'clock': return p['hour-format'] || '24h';
+    default: return 'Defaults';
+  }
+}
+function yq(v) { if (typeof v === 'string') { if (v === '' || /[:#\[\]{}&*!|>'"%@`,]|^[\s-]|\s$/.test(v)) return JSON.stringify(v); return v; } return String(v); }
+function toYaml(v, ind) {
+  ind = ind || 0; var pad = new Array(ind + 1).join(' ');
+  if (Array.isArray(v)) { return v.map(function (it) { if (it && typeof it === 'object') { return pad + '- ' + toYaml(it, ind + 2).slice(ind + 2); } return pad + '- ' + yq(it) + '\n'; }).join(''); }
+  if (v && typeof v === 'object') {
+    return Object.keys(v).filter(function (k) { var x = v[k]; return !(x === undefined || x === null || x === '' || x === false || (Array.isArray(x) && !x.length) || (x && typeof x === 'object' && !Array.isArray(x) && !Object.keys(x).length)); })
+      .map(function (k) { var x = v[k]; if (x && typeof x === 'object') return pad + k + ':\n' + toYaml(x, ind + 2); return pad + k + ': ' + yq(x) + '\n'; }).join('');
+  }
+  return pad + yq(v) + '\n';
+}
+function plain(w) { var o = { type: w.type }; Object.keys(w.props).forEach(function (k) { var v = w.props[k]; if (Array.isArray(v) && typeof v[0] === 'string') v = v.filter(Boolean); o[k] = v; }); if (w.children) o.widgets = w.children.map(plain); return o; }
+function widgetYaml(w) { return w.raw != null ? w.raw : toYaml(plain(w)); }
+function getArr(pages, loc) { var p = pages.filter(function (x) { return x.id === loc.pid; })[0]; if (!p) return null; var arr = loc.col < 0 ? p.head : (p.columns[loc.col] || {}).widgets; for (var i = 0; i < loc.path.length - 1; i++) { var w = arr && arr[loc.path[i]]; if (!w) return null; arr = w.children; } return arr || null; }
+function getW(pages, loc) { var a = getArr(pages, loc); return a ? a[loc.path[loc.path.length - 1]] || null : null; }
+function sameLoc(a, b) { return a && b && a.pid === b.pid && a.col === b.col && a.path.join('.') === b.path.join('.'); }
+function crumbOf(pages, loc) { var p = pages.filter(function (x) { return x.id === loc.pid; })[0]; if (!p) return ''; var parts = [p.name || 'Untitled page', loc.col < 0 ? 'Head' : 'Column ' + (loc.col + 1)]; for (var i = 1; i < loc.path.length; i++) { var w = getW(pages, { pid: loc.pid, col: loc.col, path: loc.path.slice(0, i) }); if (w) parts.push(wname(w)); } return parts.join(' › '); }
+function walkAll(pages, fn) { pages.forEach(function (p) { function walk(w, loc) { fn(w, loc, p); (w.children || []).forEach(function (c, i) { walk(c, { pid: p.id, col: loc.col, path: loc.path.concat(i) }); }); } p.head.forEach(function (w, i) { walk(w, { pid: p.id, col: -1, path: [i] }); }); p.columns.forEach(function (c, ci) { c.widgets.forEach(function (w, i) { walk(w, { pid: p.id, col: ci, path: [i] }); }); }); }); }
+function countWidgets(pages) { var n = 0; walkAll(pages, function () { n++; }); return n; }
+function schemaErrors(pages, theme) {
+  var out = [];
+  pages.forEach(function (p) { if (!String(p.name || '').trim()) out.push({ page: p.id, source: 'Editor', where: 'Page', field: 'Page name', msg: 'Required. Glance shows it in the navigation.' }); });
+  walkAll(pages, function (w, loc) {
+    if (w.raw != null) return;
+    var where = crumbOf(pages, loc) + ' › ' + wname(w);
+    var sc = SCHEMA[w.type];
+    if (w.props.cache && !/^\d+[smhd]$/.test(String(w.props.cache))) out.push({ loc: loc, wid: w.id, key: 'cache', source: 'Editor', where: where, field: 'Refresh data every', msg: 'Use a whole number followed by s, m, h or d.' });
+    if (sc) sc.fields.forEach(function (f) {
+      var v = w.props[f.key];
+      if (f.required && isEmpty(v)) out.push({ loc: loc, wid: w.id, key: f.key, source: 'Editor', where: where, field: f.label, msg: f.reqMsg || 'Required.' });
+      if (f.kind === 'objlist' && Array.isArray(v)) v.forEach(function (it, ii) { f.item.forEach(function (sf) { if (sf.req && !String(it[sf.key] || '').trim()) out.push({ loc: loc, wid: w.id, key: f.key, source: 'Editor', where: where, field: f.noun + ' ' + (ii + 1) + ' · ' + sf.label, msg: 'Required.' }); }); });
+    });
+    if (w.type === 'bookmarks') {
+      var gs = w.props.groups || [];
+      if (!gs.length) out.push({ loc: loc, wid: w.id, key: 'groups', source: 'Editor', where: where, field: 'Groups', msg: 'Add at least one group.' });
+      gs.forEach(function (g, gi) {
+        if (g.color && !hslParts(g.color)) out.push({ loc: loc, wid: w.id, key: 'groups', source: 'Editor', where: where, field: 'Group ' + (gi + 1) + ' · colour', msg: 'Use three numbers: hue 0–360, saturation and lightness 0–100.' });
+        g.links.forEach(function (l, li) { if (!String(l.title || '').trim() || !String(l.url || '').trim()) out.push({ loc: loc, wid: w.id, key: 'groups', link: w.id + ':' + gi + ':' + li, source: 'Editor', where: where, field: 'Group ' + (gi + 1) + ' · link ' + (li + 1), msg: 'A link needs a title and a URL.' }); });
+      });
+    }
+  });
+  COLORS.forEach(function (c) { var v = theme[c.key]; if (v && !hslParts(v)) out.push({ theme: true, source: 'Editor', where: 'Theme', field: c.label, msg: 'Not a valid colour. Pick a swatch or use the picker.' }); });
+  if (theme.bgMode === 'image' && !(theme.images || []).length) out.push({ theme: true, source: 'Editor', where: 'Theme › Background', field: 'Image', msg: 'Upload an image, or set the background back to Colour only.' });
+  if (theme.bgMode === 'slideshow' && (theme.images || []).reduce(function (n, im) { return n + (im.count || 1); }, 0) < 2) out.push({ theme: true, source: 'Editor', where: 'Theme › Background', field: 'Slideshow', msg: 'A slideshow needs at least 2 images.' });
+  return out;
+}
+function glanceErrors(pages) { var out = []; walkAll(pages, function (w, loc) { if (w.badRaw) out.push({ loc: loc, wid: w.id, glance: true, source: 'Glance config:validate', where: crumbOf(pages, loc) + ' › ' + wname(w), field: 'YAML', msg: '[Glance’s message, shown verbatim, e.g. the property it rejected and why.]' }); }); return out; }
+function samplePages(sc) {
+  var mon = W('monitor', { title: 'Services', sites: [{ title: 'Jellyfin', url: '${JELLYFIN_URL}', icon: 'di:jellyfin' }, { title: 'Immich', url: '${IMMICH_URL}', icon: 'di:immich' }] });
+  if (sc === 'glanceRejects') { mon.raw = BAD_RAW; mon.badRaw = true; }
+  return [
+    { id: 'p1', name: 'Home', slug: '', width: 'default', cv: false, hn: false, head: [W('search', { 'search-engine': 'duckduckgo' })], columns: [
+      { size: 'small', widgets: [W('clock', { 'hour-format': '24h' }), W('calendar', {})] },
+      { size: 'full', widgets: [W('group', {}, [W('rss', { title: 'Tech news', feeds: [{ url: '[FEED_URL_1]', title: '' }, { url: '[FEED_URL_2]', title: '' }] }), W('hacker-news', {}), W('lobsters', {})]), W('bookmarks', { title: 'Services', groups: [{ title: 'Media', color: '', links: [{ title: 'Jellyfin', url: '${JELLYFIN_URL}', icon: 'di:jellyfin', description: '' }, { title: 'Immich', url: '${IMMICH_URL}', icon: 'di:immich', description: '' }] }, { title: 'Admin', color: '200 50 60', links: [{ title: 'Portainer', url: '${PORTAINER_URL}', icon: 'si:portainer', description: '' }, { title: 'Uptime Kuma', url: '${KUMA_URL}', icon: 'sh:uptime-kuma', description: '' }] }] }), W('videos', { channels: ['[CHANNEL_ID]'] })] },
+      { size: 'small', widgets: [W('weather', { location: '[YOUR LOCATION]', units: 'metric' }), W('docker-containers', { containers: { 'glance-editor': { hide: true } } }), W('releases', { repositories: ['glanceapp/glance'] })] }] },
+    { id: 'p2', name: 'Media', slug: '', width: 'default', cv: false, hn: false, head: [], columns: [{ size: 'full', widgets: [W('videos', { channels: ['[CHANNEL_ID]'] })] }, { size: 'full', widgets: [W('reddit', { subreddit: 'selfhosted' })] }] },
+    { id: 'p3', name: 'Ops', slug: '', width: 'wide', cv: false, hn: false, head: [], columns: [{ size: 'small', widgets: [W('server-stats', {})] }, { size: 'full', widgets: [mon, W('split-column', {}, [W('dns-stats', {}), W('group', {}, [W('releases', { repositories: ['immich-app/immich'] }), W('repository', {})])])] }] }
+  ];
+}
+function defaultTheme() { return { light: false, background: '240 8 9', primary: '43 50 70', positive: '', negative: '0 70 70', contrast: '', textSat: '', presets: [], bgMode: 'none', images: [], imgSel: 0, interval: '15 min', order: 'In order', trans: 'Fade', fit: 'Fill (crop)', dim: 30, blur: 0, surface: 'Solid' }; }
+function sampleVersions(pages, theme) {
+  var v1 = clone(pages); v1[0].columns[1].widgets.splice(1, 1);
+  return [
+    { n: 3, when: 'Today 09:12', by: 'Editor', summary: 'Added Bookmarks to Home', list: ['Home › Column 2 · added Bookmarks', 'Home › Bookmarks · 2 groups, 4 links'], snapshot: clone(pages), theme: clone(theme) },
+    { n: 2, when: 'Yesterday 22:40', by: 'Outside editor', ext: true, summary: 'glance.yml changed outside the editor', list: ['Spotted by comparing the file with the last save when the editor opened.', 'Kept as its own version so it can be restored or compared.'], snapshot: clone(v1), theme: clone(theme) },
+    { n: 1, when: 'Yesterday 21:05', by: 'Import', summary: 'Imported from glance.yml', list: ['3 pages, ' + countWidgets(v1) + ' widgets', '1 $include file, 4 environment variables kept as written'], snapshot: clone(v1), theme: clone(theme) }
+  ];
+}
+
+class Component extends DCLogic {
+  constructor(props) { super(props); this.state = this.initial(props.scenario || 'imported'); }
+  componentDidUpdate(pp) { var a = pp.scenario || 'imported', b = this.props.scenario || 'imported'; if (a !== b) this.setState(this.initial(b)); }
+  componentWillUnmount() { clearTimeout(this.tt); clearTimeout(this.t1); clearTimeout(this.t2); clearTimeout(this.t3); clearTimeout(this.t4); }
+  initial(sc) {
+    UID = 100;
+    var imported = ['imported', 'unreachable', 'glanceRejects'].indexOf(sc) >= 0;
+    var pages = imported ? samplePages(sc) : [];
+    var theme = defaultTheme();
+    return { sc: sc, screen: imported ? 'pages' : 'welcome', pages: pages, saved: clone(pages), theme: theme, savedTheme: clone(theme), changes: {}, curPid: pages.length ? pages[0].id : null, sel: null, insTab: 'form', yamlDraft: null, sheet: null, addTarget: null, addQuery: '', showErrors: false, hl: null, errors: [], toast: null, versions: imported ? sampleVersions(pages, theme) : [], selVer: null, reachable: sc !== 'unreachable', newName: 'Home', preset: 1, rawFix: false, rawFixText: BAD_IMPORT, importFixed: false, iconT: null, iconPrefix: 'di', iconQuery: '', iconUrl: '', openLink: null, savedN: null, savedReach: true, preview: null, checkFor: 'save', myColors: [], pk: null, webQ: '', webState: null, dragging: null, dropKey: null, colMove: null, imgTab: 'device', srvPath: '/', srvSel: [], pixKey: '', pixKeyDraft: '', pixKeyBad: false, pixKeyChecking: false, pixCats: ['Nature', 'Landscape'], pixMode: 'feed', pixCount: '20 images', pixRefresh: 'Weekly', pixQ: '', pixState: null, pixSel: [] };
+  }
+  say(text, undo) { var self = this; clearTimeout(this.tt); this.setState({ toast: { text: text, undo: undo || null } }); this.tt = setTimeout(function () { self.setState({ toast: null }); }, undo ? 6000 : 3000); }
+  mutate(fn, key, msg, extra) { var pages = clone(this.state.pages); fn(pages); var ch = Object.assign({}, this.state.changes); if (key) ch[key] = msg; this.setState(Object.assign({ pages: pages, changes: ch }, extra || {})); }
+  snapshot() { return { pages: clone(this.state.pages), changes: clone(this.state.changes), sel: this.state.sel }; }
+  restoreSnap(s) { this.setState({ pages: s.pages, changes: s.changes, sel: s.sel, toast: null }); }
+  page() { var s = this.state; return s.pages.filter(function (p) { return p.id === s.curPid; })[0] || null; }
+  select(loc) { this.setState({ sel: loc, insTab: 'form', yamlDraft: null, hl: null, openLink: null, screen: 'pages' }); }
+  setProp(loc, w, key, val, label, ckey) { var crumb = crumbOf(this.state.pages, loc) + ' › ' + wname(w); this.mutate(function (pages) { getW(pages, loc).props[key] = val; }, ckey || ('prop:' + w.id + ':' + key), crumb + ' · ' + label); }
+  moveW(loc, d) { var i = loc.path[loc.path.length - 1], j = i + d; var nl = { pid: loc.pid, col: loc.col, path: loc.path.slice(0, -1).concat(j) }; var where = crumbOf(this.state.pages, loc); this.mutate(function (pages) { var a = getArr(pages, loc); var t = a[i]; a[i] = a[j]; a[j] = t; }, 'order:' + loc.pid + ':' + loc.col + ':' + loc.path.slice(0, -1).join('.'), where + ' · reordered', { sel: sameLoc(this.state.sel, loc) ? nl : this.state.sel }); }
+  moveCol(loc, d) { var p = this.page(); var i = loc.path[0]; var w = p.columns[loc.col].widgets[i]; var nc = loc.col + d; var ni = p.columns[nc].widgets.length; this.mutate(function (pages) { var pp = pages.filter(function (x) { return x.id === loc.pid; })[0]; var x = pp.columns[loc.col].widgets.splice(i, 1)[0]; pp.columns[nc].widgets.push(x); }, 'move:' + w.id, p.name + ' · moved ' + wname(w) + ' to column ' + (nc + 1), { sel: { pid: loc.pid, col: nc, path: [ni] } }); }
+  delW(loc) { var w = getW(this.state.pages, loc); if (!w) return; var snap = this.snapshot(); var self = this; var where = crumbOf(this.state.pages, loc); var i = loc.path[loc.path.length - 1]; var s = this.state.sel; var nsel = s; if (s && sameLoc(s, loc)) nsel = loc.path.length > 1 ? { pid: loc.pid, col: loc.col, path: loc.path.slice(0, -1) } : null; this.mutate(function (pages) { getArr(pages, loc).splice(i, 1); }, 'del:' + w.id, where + ' · deleted ' + wname(w), { sel: nsel }); this.say('Deleted ' + wname(w) + ' from the draft', function () { self.restoreSnap(snap); }); }
+  openAdd(t) { this.setState({ sheet: 'add', addTarget: t, addQuery: '' }); }
+  addType(type) {
+    var t = this.state.addTarget, s = this.state; var props = {}; var sc = SCHEMA[type];
+    if (sc) sc.fields.forEach(function (f) { if (f.def) props[f.key] = f.def; if (f.kind === 'objlist' || f.kind === 'list') props[f.key] = []; });
+    if (type === 'bookmarks') props.groups = [];
+    var w = W(type, props); var arr = t.parentPath ? getW(s.pages, { pid: t.pid, col: t.col, path: t.parentPath }).children : (t.col < 0 ? this.page().head : this.page().columns[t.col].widgets); var idx = arr.length;
+    var where = t.parentPath ? crumbOf(s.pages, { pid: t.pid, col: t.col, path: t.parentPath.concat(0) }) : crumbOf(s.pages, { pid: t.pid, col: t.col, path: [0] });
+    this.mutate(function (pages) { var a = t.parentPath ? getW(pages, { pid: t.pid, col: t.col, path: t.parentPath }).children : (function () { var p = pages.filter(function (x) { return x.id === t.pid; })[0]; return t.col < 0 ? p.head : p.columns[t.col].widgets; })(); a.push(w); }, 'add:' + w.id, where + ' · added ' + TL[type], { sheet: null, sel: { pid: t.pid, col: t.col, path: (t.parentPath || []).concat(idx) }, insTab: 'form', yamlDraft: null, addQuery: '', hl: null });
+  }
+  pageMut(fn, key, msg, extra) { var pid = this.state.curPid; this.mutate(function (pages) { fn(pages.filter(function (x) { return x.id === pid; })[0], pages); }, key, msg, extra); }
+  addPage() { UID += 1; var id = 'p' + UID; var p = { id: id, name: 'New page', slug: '', width: 'default', cv: false, hn: false, head: [], columns: [{ size: 'full', widgets: [] }] }; this.mutate(function (pages) { pages.push(p); }, 'page:' + id, 'Added page “New page”', { curPid: id, screen: 'pages', sel: null }); }
+  validate() { var s = this.state; var e = schemaErrors(s.pages, s.theme); if (!e.length) e = glanceErrors(s.pages); return e; }
+  startSave() {
+    var self = this; this.setState({ sheet: 'checking', checkFor: 'save' });
+    this.t1 = setTimeout(function () {
+      var errs = self.validate();
+      if (errs.length) { self.setState({ sheet: 'errors', errors: errs, showErrors: true }); return; }
+      self.setState({ sheet: 'saving' });
+      self.t2 = setTimeout(function () {
+        var s = self.state; var n = (s.versions[0] ? s.versions[0].n : 0) + 1; var list = Object.keys(s.changes).map(function (k) { return s.changes[k]; });
+        var v = { n: n, when: 'Just now', by: 'Editor', summary: list.length === 1 ? list[0] : plural(list.length, 'change'), list: list, snapshot: clone(s.pages), theme: clone(s.theme) };
+        self.setState({ versions: [v].concat(s.versions), saved: clone(s.pages), savedTheme: clone(s.theme), changes: {}, sheet: 'saved', savedN: n, savedReach: s.reachable, showErrors: false, hl: null, selVer: null, preview: null });
+      }, 900);
+    }, 800);
+  }
+  sig() { return JSON.stringify([this.state.pages, this.state.theme]); }
+  startPreview() {
+    var self = this; this.setState({ sheet: 'checking', checkFor: 'preview' });
+    this.t1 = setTimeout(function () {
+      var errs = self.validate();
+      if (errs.length) { self.setState({ sheet: 'errors', errors: errs, showErrors: true }); return; }
+      var old = self.state.preview || {};
+      var pid = old.pid && self.state.pages.some(function (x) { return x.id === old.pid; }) ? old.pid : (self.state.curPid || (self.state.pages[0] || {}).id);
+      self.setState({ sheet: null, sel: null, preview: { sig: self.sig(), pid: pid, device: old.device || 'desktop', building: true, open: true } });
+      self.t2 = setTimeout(function () { self.setState({ preview: Object.assign({}, self.state.preview, { building: false }) }); }, 1400);
+    }, 700);
+  }
+  openPreview() { var p = this.state.preview; if (p && p.sig === this.sig()) { this.setState({ preview: Object.assign({}, p, { open: true }), sel: null }); return; } this.startPreview(); }
+  gotoErr(e) {
+    if (this.state.preview) this.setState({ preview: Object.assign({}, this.state.preview, { open: false }) });
+    if (e.theme) { this.setState({ sheet: null, screen: 'theme', sel: null }); return; }
+    if (e.page) { this.setState({ sheet: null, screen: 'pages', curPid: e.page, sel: null }); return; }
+    this.setState({ sheet: null, screen: 'pages', curPid: e.loc.pid, sel: e.loc, insTab: e.glance ? 'yaml' : 'form', hl: e.key || null, yamlDraft: null, openLink: e.link || null });
+  }
+  goIcon(name) { var t = this.state.iconT; if (!t) return; this.setIcon(t, name); this.setState({ sheet: null }); }
+  setIcon(t, val) { var w = getW(this.state.pages, t.loc); if (!w) return;
+    if (t.kind === 'bm') { var g = clone(w.props.groups || []); g[t.gi].links[t.li].icon = val; this.setProp(t.loc, w, 'groups', g, 'icon for ' + (g[t.gi].links[t.li].title || 'link'), 'bm:' + w.id + ':' + t.gi + ':' + t.li + ':icon'); return; }
+    var arr = clone(w.props[t.key] || []); arr[t.ii][t.sk] = val; this.setProp(t.loc, w, t.key, arr, 'icon for ' + (arr[t.ii].title || 'item ' + (t.ii + 1)), 'obj:' + w.id + ':' + t.key + ':' + t.ii + ':' + t.sk); }
+  openIcon(t) { this.setState({ sheet: 'icon', iconT: t, iconPrefix: t.title ? 'sug' : 'all', iconQuery: '', iconUrl: /^(https?:|\/)/.test(t.cur || '') ? t.cur : '', webQ: t.title ? t.title + ' logo' : '', webState: null }); }
+  setTheme(key, val, label) { var th = Object.assign({}, this.state.theme); th[key] = val; var ch = Object.assign({}, this.state.changes); ch['theme:' + key] = 'Theme · ' + label; this.setState({ theme: th, changes: ch }); }
+
+  swatches(list, cur, onPick) { var mine = this.state.myColors.filter(function (c) { return list.indexOf(c) < 0; }); var all = list.concat(mine); var c0 = norm(cur); return all.map(function (c) { var p = hslParts(c); var on = c0 === c; var isMine = list.indexOf(c) < 0; return { css: hslCss(p), on: on, cls: (on ? 'on' : '') + (isMine ? ' mine' : ''), aria: (isMine ? 'My colour ' : '') + c, pick: function () { onPick(c); } }; }); }
+  startDrag(e, src) { try { e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', 'glance-editor'); } catch (x) {} this.dragSrc = src; var w = src.kind === 'w' ? getW(this.state.pages, src.loc) : null; this.setState({ dragging: w ? w.id : 'col', dropKey: null }); }
+  endDrag() { this.dragSrc = null; this.setState({ dragging: null, dropKey: null }); }
+  dragOver(e, kind, key) { var d = this.dragSrc; if (!d || d.kind !== kind) return; e.preventDefault(); if (kind === 'w') e.stopPropagation(); if (this.state.dropKey !== key) this.setState({ dropKey: key }); }
+  dropWidget(toCol, toIdx) {
+    var d = this.dragSrc; this.endDrag(); if (!d || d.kind !== 'w') return;
+    var from = d.loc, i = from.path[0], p = this.page(); if (!p || from.pid !== p.id) return;
+    if (from.col === toCol && (toIdx === i || toIdx === i + 1)) return;
+    var w = from.col < 0 ? p.head[i] : p.columns[from.col].widgets[i]; var ni = (from.col === toCol && toIdx > i) ? toIdx - 1 : toIdx;
+    this.mutate(function (pages) { var pp = pages.filter(function (x) { return x.id === from.pid; })[0]; var src = from.col < 0 ? pp.head : pp.columns[from.col].widgets; var x = src.splice(i, 1)[0]; var dst = toCol < 0 ? pp.head : pp.columns[toCol].widgets; dst.splice(ni, 0, x); },
+      'move:' + w.id, p.name + ' · moved ' + wname(w) + (toCol < 0 ? ' to head widgets' : ' to column ' + (toCol + 1)), { sel: { pid: from.pid, col: toCol, path: [ni] } });
+  }
+  dropColumn(from, to) {
+    this.endDrag(); if (from === to) return; var p = this.page();
+    this.pageMut(function (x) { var c = x.columns.splice(from, 1)[0]; x.columns.splice(to, 0, c); }, 'corder:' + p.id, p.name + ' · reordered columns', { sel: null, colMove: null });
+  }
+  openPicker(target, cur) { var p = hslParts(cur) || [200, 50, 60]; this.setState({ pk: { target: target, h: p[0], s: p[1], l: p[2], hexDraft: null } }); }
+  applyColor(t, val) {
+    if (t.kind === 'theme') { this.setTheme(t.key, val, t.label); return; }
+    var w = getW(this.state.pages, t.loc); if (!w) return; var g = clone(w.props.groups || []); g[t.gi].color = val; this.setProp(t.loc, w, 'groups', g, 'group colour', 'bm:' + w.id + ':' + t.gi + ':color');
+  }
+  pickerVals() {
+    var self = this, s = this.state, pk = s.pk; if (!pk) return {}; var p = [pk.h, pk.s, pk.l];
+    var upd = function (patch) { self.setState({ pk: Object.assign({}, self.state.pk, patch) }); };
+    var set = function (i, v) { var a = p.slice(); a[i] = Number(v); upd({ h: a[0], s: a[1], l: a[2], hexDraft: null }); };
+    return { css: hslCss(p), text: p.join(' '), hex: pk.hexDraft != null ? pk.hexDraft : hsl2hex(p), sysHex: hsl2hex(p), h: p[0], s: p[1], l: p[2],
+      onH: function (e) { set(0, e.target.value); }, onS: function (e) { set(1, e.target.value); }, onL: function (e) { set(2, e.target.value); },
+      onHex: function (e) { var v = e.target.value; var q = hex2hsl(v); upd(q ? { h: q[0], s: q[1], l: q[2], hexDraft: v } : { hexDraft: v }); },
+      onSys: function (e) { var q = hex2hsl(e.target.value); if (q) upd({ h: q[0], s: q[1], l: q[2], hexDraft: null }); },
+      use: function () { self.applyColor(pk.target, p.join(' ')); self.setState({ pk: null }); },
+      useSave: function () { var v = p.join(' '); self.applyColor(pk.target, v); var mine = self.state.myColors.indexOf(v) >= 0 ? self.state.myColors : self.state.myColors.concat([v]); self.setState({ pk: null, myColors: mine }); self.say('Added to my colours'); },
+      cancel: function () { self.setState({ pk: null }); } };
+  }
+
+  fieldVals(w, loc, f) {
+    var self = this, s = this.state; var id = 'f-' + w.id + '-' + f.key; var v = w.props[f.key];
+    var err = s.showErrors && f.required && isEmpty(v);
+    var hl = s.hl === f.key && sameLoc(s.sel, loc);
+    var set = function (val) { self.setProp(loc, w, f.key, val, f.label); };
+    var o = { id: id, lblId: id + '-l', label: f.label, reqMark: f.required ? 'Required' : '', hasHelp: !!f.help, help: f.help || '', ph: f.ph || '', err: !!err, errMsg: f.reqMsg || 'Required.', cls: 'field' + (hl ? ' hl' : ''), isText: f.kind === 'text', isNumber: f.kind === 'number', isBool: f.kind === 'bool', isEnum: f.kind === 'enum', isDuration: f.kind === 'duration', isNote: f.kind === 'note', isList: f.kind === 'list', isObj: f.kind === 'objlist' };
+    if (o.isText || o.isNumber) { o.value = v == null ? '' : String(v); o.onChange = function (e) { set(e.target.value); }; }
+    if (o.isBool) { o.on = !!v; o.togCls = v ? 'on' : ''; o.toggle = function () { set(!v); }; }
+    if (o.isEnum) { var cur = v || f.def || ''; o.opts = f.options.map(function (x) { return { label: x, on: cur === x, cls: cur === x ? 'on' : '', pick: function () { set(x); } }; }); }
+    if (o.isDuration) { var dm = /^(\d+)([smhd])$/.exec(String(v || '')); var num = dm ? dm[1] : (v ? '' : ''); var unit = dm ? dm[2] : (s.durUnit && s.durUnit[id]) || 'm';
+      o.num = dm ? dm[1] : ''; o.durBad = !!(v && !dm); o.unitOpts = [['s', 'seconds'], ['m', 'minutes'], ['h', 'hours'], ['d', 'days']].map(function (u) { return { label: u[1], on: unit === u[0], cls: unit === u[0] ? 'on' : '', pick: function () { var du = Object.assign({}, self.state.durUnit || {}); du[id] = u[0]; self.setState({ durUnit: du }); if (dm) set(dm[1] + u[0]); } }; });
+      o.onNum = function (e) { var n = e.target.value.replace(/[^0-9]/g, ''); set(n ? n + unit : ''); }; o.clear = function () { set(''); }; o.hasValue = !!v; o.isDefault = !v; }
+    if (o.isList) { o.value = (v || []).join('\n'); o.onChange = function (e) { set(e.target.value.split('\n')); }; }
+    if (o.isObj) {
+      var arr = v || [];
+      o.itemNoun = f.noun; o.addLabel = f.addLabel; o.empty = !arr.length; o.emptyText = 'None yet.';
+      o.add = function () { set(arr.concat([{}])); };
+      o.items = arr.map(function (it, ii) { return { n: ii + 1, remove: function () { var a = clone(arr); a.splice(ii, 1); set(a); }, sub: f.item.map(function (sf) { return { isIcon: sf.kind === 'icon', find: function () { self.openIcon({ kind: 'obj', loc: loc, key: f.key, ii: ii, sk: sf.key, title: it.title || '', url: it.url || '', cur: it[sf.key] || '' }); }, id: id + '-' + ii + '-' + sf.key, label: sf.label, reqMark: sf.req ? 'Required' : '', value: it[sf.key] || '', bad: !!(s.showErrors && sf.req && !String(it[sf.key] || '').trim()), onChange: function (e) { var a = clone(arr); a[ii][sf.key] = e.target.value; set(a); } }; }) }; });
+    }
+    return o;
+  }
+
+  insVals(errIds) {
+    var self = this, s = this.state; var empty = { fields: [], children: [], groups: [], dkRows: [] };
+    if (!s.sel || s.screen !== 'pages') return null; var loc = s.sel; var w = getW(s.pages, loc); if (!w) return null;
+    var sc = SCHEMA[w.type]; var isForm = s.insTab === 'form';
+    var o = Object.assign(empty, { crumb: crumbOf(s.pages, loc), name: wname(w), typeLabel: TL[w.type] || w.type, isForm: isForm, isYaml: !isForm, formCls: isForm ? 'on' : '', yamlCls: isForm ? '' : 'on', raw: w.raw != null, noSchema: !sc && w.raw == null,
+      toForm: function () { self.setState({ insTab: 'form' }); }, toYaml: function () { self.setState({ insTab: 'yaml' }); },
+      close: function () { self.setState({ sel: null, hl: null }); }, del: function () { self.delW(loc); } });
+    o.fields = fieldsFor(w.type).map(function (f) { return self.fieldVals(w, loc, f); });
+    if (loc.path.length > 1) { var par = getW(s.pages, { pid: loc.pid, col: loc.col, path: loc.path.slice(0, -1) }); o.hasParent = true; o.parentName = 'Back to ' + wname(par); o.toParent = function () { self.select({ pid: loc.pid, col: loc.col, path: loc.path.slice(0, -1) }); }; }
+    o.discardRaw = function () { self.mutate(function (pages) { var x = getW(pages, loc); x.raw = null; x.badRaw = false; }, 'raw:' + w.id, crumbOf(s.pages, loc) + ' › ' + wname(w) + ' · YAML override discarded'); };
+    o.yamlText = s.yamlDraft != null ? s.yamlDraft : widgetYaml(w); o.yamlSame = s.yamlDraft == null;
+    o.onYaml = function (e) { self.setState({ yamlDraft: e.target.value }); };
+    o.resetYaml = function () { self.setState({ yamlDraft: null }); };
+    o.applyYaml = function () { var txt = s.yamlDraft; self.mutate(function (pages) { var x = getW(pages, loc); x.raw = txt; x.badRaw = false; }, 'raw:' + w.id, crumbOf(s.pages, loc) + ' › ' + wname(w) + ' · edited as YAML', { yamlDraft: null }); self.say('YAML applied to the draft'); };
+    if (w.children) {
+      var grp = w.type === 'group'; o.isContainer = true; o.childLabel = grp ? 'Tabs' : 'Widgets';
+      o.childRule = grp ? 'Each widget is a tab. A group can’t contain a group or a split column.' : 'Widgets sit side by side. A split column can contain groups.';
+      o.addChildLabel = grp ? 'Add tab' : 'Add widget'; o.noChildren = !w.children.length; o.noChildText = grp ? 'No tabs yet.' : 'No widgets yet.';
+      o.addChild = function () { self.openAdd({ pid: loc.pid, col: loc.col, parentPath: loc.path, parentType: w.type }); };
+      o.children = w.children.map(function (c, i) { var cl = { pid: loc.pid, col: loc.col, path: loc.path.concat(i) }; return { name: wname(c), typeLabel: TL[c.type] || c.type, err: !!(s.showErrors && errIds[c.id]), edit: function () { self.select(cl); }, up: function () { self.moveW(cl, -1); }, down: function () { self.moveW(cl, 1); }, upDis: i === 0, downDis: i === w.children.length - 1, del: function () { self.delW(cl); } }; });
+    }
+    if (w.type === 'bookmarks' && w.raw == null) {
+      var gs = w.props.groups || []; o.isBookmarks = true; o.noGroups = !gs.length;
+      var setG = function (fn, key, label) { var g = clone(gs); fn(g); self.setProp(loc, w, 'groups', g, label, 'bm:' + w.id + ':' + key); };
+      var prim = hslParts(s.theme.primary) || [43, 50, 70];
+      o.addGroup = function () { setG(function (g) { g.push({ title: '', color: '', links: [] }); }, 'g' + gs.length, 'added a group'); };
+      o.groups = gs.map(function (g, gi) {
+        var gp = hslParts(g.color);
+        var gt = { kind: 'bm', loc: loc, wid: w.id, gi: gi }; var gOpen = !!(s.pk && s.pk.target.kind === 'bm' && s.pk.target.wid === w.id && s.pk.target.gi === gi);
+        return { cid: 'gc-' + w.id + '-' + gi, title: g.title || '', color: g.color || '', colorBad: !!(g.color && !gp), swatch: hslCss(gp || prim), empty: !g.links.length,
+          isDef: !g.color, defCls: g.color ? '' : 'on', pickDef: function () { self.applyColor(gt, ''); },
+          swatches: self.swatches((function () { var pal = groupPalette(s.theme); var c = norm(g.color); if (c && hslParts(c) && pal.indexOf(c) < 0 && s.myColors.indexOf(c) < 0) pal = [c].concat(pal); return pal; })(), g.color, function (val) { self.applyColor(gt, val); }), openPicker: function () { self.openPicker(gt, g.color || s.theme.primary); }, pickOpen: gOpen, pk: gOpen ? self.pickerVals() : {},
+          onTitle: function (e) { var val = e.target.value; setG(function (x) { x[gi].title = val; }, gi + ':title', 'group title'); },
+          onColor: function (e) { var val = e.target.value; setG(function (x) { x[gi].color = val; }, gi + ':color', 'group colour'); },
+          up: function () { setG(function (x) { var t = x[gi]; x[gi] = x[gi - 1]; x[gi - 1] = t; }, 'order', 'reordered groups'); }, down: function () { setG(function (x) { var t = x[gi]; x[gi] = x[gi + 1]; x[gi + 1] = t; }, 'order', 'reordered groups'); }, upDis: gi === 0, downDis: gi === gs.length - 1,
+          del: function () { var snap = self.snapshot(); setG(function (x) { x.splice(gi, 1); }, 'del' + gi, 'deleted group ' + (g.title || gi + 1)); self.say('Deleted the group', function () { self.restoreSnap(snap); }); },
+          addLink: function () { var k = w.id + ':' + gi + ':' + g.links.length; setG(function (x) { x[gi].links.push({ title: '', url: '', icon: '', description: '' }); }, gi + ':add' + g.links.length, 'added a link'); self.setState({ openLink: k }); },
+          links: g.links.map(function (l, li) {
+            var k = w.id + ':' + gi + ':' + li; var open = s.openLink === k; var tBad = s.showErrors && !String(l.title || '').trim(); var uBad = s.showErrors && !String(l.url || '').trim();
+            var setL = function (key, val, label) { setG(function (x) { x[gi].links[li][key] = val; }, gi + ':' + li + ':' + key, label + ' for ' + (l.title || 'link ' + (li + 1))); };
+            var chip = !l.icon ? '–' : (/^(https?:|\/)/.test(l.icon) ? 'url' : l.icon.split(':')[0].slice(0, 3));
+            return { chip: chip, title: l.title || 'Untitled link', url: l.url || 'No URL', open: open, cls: (open ? 'open' : '') + ((tBad || uBad) ? ' bad' : ''),
+              toggle: function () { self.setState({ openLink: open ? null : k }); },
+              tid: 'lt-' + k, uid: 'lu-' + k, iid: 'li-' + k, did: 'ld-' + k, stid: 'ls-' + k, fTitle: l.title || '', fUrl: l.url || '', fIcon: l.icon || '', fDesc: l.description || '', tBad: tBad, uBad: uBad, same: !!l['same-tab'], stCls: l['same-tab'] ? 'on' : '',
+              onT: function (e) { setL('title', e.target.value, 'title'); }, onU: function (e) { setL('url', e.target.value, 'URL'); }, onI: function (e) { setL('icon', e.target.value, 'icon'); }, onD: function (e) { setL('description', e.target.value, 'description'); },
+              toggleSame: function () { setL('same-tab', !l['same-tab'], 'same-tab'); },
+              pickIcon: function () { self.openIcon({ kind: 'bm', loc: loc, gi: gi, li: li, title: l.title, url: l.url, cur: l.icon || '' }); },
+              up: function () { setG(function (x) { var a = x[gi].links; var t = a[li]; a[li] = a[li - 1]; a[li - 1] = t; }, gi + ':order', 'reordered links'); self.setState({ openLink: w.id + ':' + gi + ':' + (li - 1) }); },
+              down: function () { setG(function (x) { var a = x[gi].links; var t = a[li]; a[li] = a[li + 1]; a[li + 1] = t; }, gi + ':order', 'reordered links'); self.setState({ openLink: w.id + ':' + gi + ':' + (li + 1) }); },
+              upDis: li === 0, downDis: li === g.links.length - 1,
+              del: function () { var snap = self.snapshot(); setG(function (x) { x[gi].links.splice(li, 1); }, gi + ':del' + li, 'deleted link ' + (l.title || li + 1)); self.setState({ openLink: null }); self.say('Deleted the link', function () { self.restoreSnap(snap); }); } };
+          }) };
+      });
+    }
+    if (w.type === 'docker-containers' && w.raw == null) {
+      o.isDocker = true; var hbd = !!w.props['hide-by-default'], ro = !!w.props['running-only'], map = w.props.containers || {}; var shown = 0;
+      o.dkRows = CONTAINERS.map(function (c) {
+        var cfg = map[c.name] && map[c.name].hide; var locked = !!c.label; var visible = locked ? false : (hbd ? cfg === false : cfg !== true); var filtered = ro && c.status !== 'running'; if (visible && !filtered) shown++;
+        return { name: c.name, locked: locked, free: !locked, visible: visible, hidden: !visible, cls: visible ? '' : 'off', stCls: c.status === 'running' ? 'run' : 'stop', aria: (visible ? 'Hide ' : 'Show ') + c.name,
+          sub: locked ? 'Hidden by the glance.hide label on the container. Change it where the container is defined.' : (filtered ? 'Stopped · not shown while Running only is on' : (c.status === 'running' ? 'Running' : 'Stopped')) + (visible ? '' : ' · hidden'),
+          toggle: function () { var m = clone(map); var nv = !visible; if (hbd) { if (nv) m[c.name] = { hide: false }; else delete m[c.name]; } else { if (nv) delete m[c.name]; else m[c.name] = { hide: true }; } self.setProp(loc, w, 'containers', m, c.name + (nv ? ' shown' : ' hidden'), 'dk:' + w.id + ':' + c.name); } };
+      });
+      o.dkSummary = shown + ' of ' + CONTAINERS.length + ' containers shown. The list comes from the Docker socket; hiding writes to this widget’s containers map in glance.yml.';
+    }
+    return o;
+  }
+
+  renderVals() {
+    var self = this, s = this.state; var scen = s.sc;
+    var screen = s.screen; var p = this.page();
+    var chList = Object.keys(s.changes).map(function (k) { return s.changes[k]; }); var nCh = chList.length;
+    var live = schemaErrors(s.pages, s.theme).concat(glanceErrors(s.pages)); var errIds = {};
+    live.forEach(function (e) { if (e.loc) { for (var i = 1; i <= e.loc.path.length; i++) { var x = getW(s.pages, { pid: e.loc.pid, col: e.loc.col, path: e.loc.path.slice(0, i) }); if (x) errIds[x.id] = true; } } });
+    var sEditor = ['pages', 'theme', 'history'].indexOf(screen) >= 0;
+    var v = {
+      sWelcome: screen === 'welcome', sImport: screen === 'import', sLayoutPick: screen === 'layout', sEditor: sEditor,
+      sPages: screen === 'pages', sTheme: screen === 'theme', sHistory: screen === 'history',
+      showPagePick: screen === 'pages' && s.pages.length > 0, curPid: s.curPid || '',
+      statusCls: s.reachable ? '' : 'bad', statusText: s.reachable ? 'Glance reachable' : 'Glance not responding',
+      hasChanges: nCh > 0, changesLabel: plural(nCh, 'unsaved change'), showSave: sEditor, saveDis: nCh === 0, saveLabel: 'Save',
+      showUnreachable: !s.reachable && sEditor,
+      showErrBar: sEditor && s.showErrors && live.length > 0 && !s.sheet, errBarText: plural(live.length, 'problem') + ' to fix before saving.',
+      showErrList: function () { self.setState({ sheet: 'errors', errors: self.validate() }); },
+      retry: function () { self.say('Still no response from Glance at [GLANCE_URL]'); },
+      openReview: function () { if (nCh) self.setState({ sheet: 'review' }); }, openDiscard: function () { self.setState({ sheet: 'discard' }); },
+      doDiscard: function () { self.setState({ pages: clone(s.saved), theme: clone(s.savedTheme), changes: {}, sel: null, sheet: null, showErrors: false, hl: null, curPid: (s.saved.filter(function (x) { return x.id === s.curPid; })[0] || s.saved[0] || {}).id || null }); self.say('Draft discarded'); },
+      pickPageSel: function (e) { self.setState({ curPid: e.target.value, sel: null, screen: 'pages' }); },
+      addPage: function () { self.addPage(); },
+      goPages: function () { self.setState({ screen: 'pages' }); }, goTheme: function () { self.setState({ screen: 'theme', sel: null }); }, goHistory: function () { self.setState({ screen: 'history', sel: null }); },
+      themeCls: screen === 'theme' ? 'on' : '', histCls: screen === 'history' ? 'on' : '', verMeta: s.versions.length ? 'Live: version ' + s.versions[0].n : 'No versions yet',
+      tabPages: screen === 'pages' ? 'on' : '', tabTheme: screen === 'theme' ? 'on' : '', tabHist: screen === 'history' ? 'on' : '',
+      workCls: (s.sel && screen === 'pages' && getW(s.pages, s.sel)) ? 'open' : ''
+    };
+    v.navPages = s.pages.map(function (pp, i) { var on = pp.id === s.curPid; var n = 0; walkAll([pp], function () { n++; }); return { id: pp.id, name: pp.name || 'Untitled page', meta: plural(n, 'widget') + ' · ' + pp.columns.length + ' col', on: on, cls: on && screen === 'pages' ? 'on' : '', current: on && screen === 'pages' ? 'page' : 'false', select: function () { self.setState({ curPid: pp.id, screen: 'pages', sel: null }); },
+      up: function () { self.mutate(function (pg) { var t = pg[i]; pg[i] = pg[i - 1]; pg[i - 1] = t; }, 'pageorder', 'Reordered pages'); }, down: function () { self.mutate(function (pg) { var t = pg[i]; pg[i] = pg[i + 1]; pg[i + 1] = t; }, 'pageorder', 'Reordered pages'); }, upDis: i === 0, downDis: i === s.pages.length - 1 }; });
+
+    // welcome / import / layout
+    v.noFile = scen === 'noFile';
+    v.importHint = scen === 'noFile' ? 'No glance.yml found at the mounted path. Check the volume mount, or start empty.' : 'Found glance.yml. It is read and checked first; nothing is written.';
+    v.emptyHint = scen === 'noFile' ? 'One page with a column layout. glance.yml is created on first save.' : 'One page with a column layout. On first save the existing glance.yml is kept in History as version 0.';
+    v.goImport = function () { self.setState({ screen: 'import' }); }; v.goEmpty = function () { self.setState({ screen: 'layout' }); }; v.goWelcome = function () { self.setState({ screen: 'welcome', rawFix: false }); };
+    var bad = scen === 'importInvalid' && !s.importFixed;
+    v.importBad = bad; v.importOk = !bad; v.rawFix = s.rawFix; v.noRawFix = !s.rawFix; v.rawFixText = s.rawFixText;
+    v.importTitle = bad ? 'glance.yml has a problem' : 'Ready to import';
+    v.importSnippet = 'Line 7: tab character used for indentation\n\n  6 |           - type: clock\n> 7 | →   hour-format: 24h';
+    var mk = function (kind, t, d) { return { kind: kind, isOk: kind === 'ok', isAlert: kind === 'warn' || kind === 'err', isInfo: kind === 'info' || kind === 'skip', title: t, detail: d }; };
+    v.importChecks = bad ? [mk('err', 'YAML did not parse', 'Line 7: a tab is used for indentation. YAML only allows spaces.'), mk('skip', 'Glance config:validate not run', 'The file has to parse first.')]
+      : [mk('ok', 'YAML parsed', '3 pages, ' + countWidgets(samplePages('imported')) + ' widgets, theme settings found.'), mk('ok', 'Glance config:validate passed', 'Run with the Glance version the editor is pinned to.'), mk('warn', '1 $include file', '[INCLUDE_PATH]. How includes are handled is an open decision in the log.'), mk('info', '4 environment variables', '${JELLYFIN_URL}, ${IMMICH_URL} and 2 more. Kept exactly as written; the editor never resolves or stores their values.'), mk('info', 'Comments', 'Kept where they sit next to a value the editor preserves.')];
+    v.openRawFix = function () { self.setState({ rawFix: true }); }; v.onRawFix = function (e) { self.setState({ rawFixText: e.target.value }); };
+    v.recheck = function () { if (/\t/.test(s.rawFixText)) { self.say('Line 7 still has a tab character'); return; } self.setState({ importFixed: true, rawFix: false }); };
+    v.doImport = function () { UID = 100; var pg = samplePages('imported'); var th = defaultTheme(); self.setState({ pages: pg, saved: clone(pg), theme: th, savedTheme: clone(th), curPid: pg[0].id, screen: 'pages', changes: {}, versions: [{ n: 1, when: 'Just now', by: 'Import', summary: 'Imported from glance.yml', list: ['3 pages, ' + countWidgets(pg) + ' widgets'], snapshot: clone(pg), theme: clone(th) }] }); self.say('Imported. This is version 1.'); };
+    v.newName = s.newName; v.onNewName = function (e) { self.setState({ newName: e.target.value }); }; v.createDis = !String(s.newName).trim();
+    v.presets = PRESETS.map(function (pr, i) { return { label: pr[0], on: s.preset === i, cls: s.preset === i ? 'on' : '', blocks: pr[1].map(function (z) { return { size: z }; }), pick: function () { self.setState({ preset: i }); } }; });
+    v.createFirst = function () { UID += 1; var id = 'p' + UID; var np = { id: id, name: s.newName.trim(), slug: '', width: 'default', cv: false, hn: false, head: [], columns: PRESETS[s.preset][1].map(function (z) { return { size: z, widgets: [] }; }) }; var ch = {}; ch['page:' + id] = 'Created page “' + np.name + '” (' + PRESETS[s.preset][0].toLowerCase() + ')'; self.setState({ pages: [np], saved: [], curPid: id, screen: 'pages', changes: ch }); };
+
+    // page editor
+    v.noPage = s.pages.length === 0; v.hasPage = !!p;
+    v.pg = { widthOpts: [], name: '', widgetCount: '' }; v.cols = []; v.headCards = []; v.colTemplate = 'minmax(0,1fr)'; v.frameMax = '100%';
+    if (p) {
+      var n = p.columns.length, full = p.columns.filter(function (c) { return c.size === 'full'; }).length; var pi = s.pages.indexOf(p); var nW = 0; walkAll([p], function () { nW++; });
+      var pm = function (fn, key, msg) { self.pageMut(fn, key + ':' + p.id, msg); };
+      v.pg = { name: p.name, nameBad: !String(p.name).trim(), slug: p.slug, slugPh: (String(p.name).trim() || 'page').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') + ' (from name)', widgetCount: plural(nW, 'widget'),
+        onName: function (e) { var val = e.target.value; pm(function (x) { x.name = val; }, 'pname', 'Page renamed to “' + val + '”'); },
+        onSlug: function (e) { var val = e.target.value; pm(function (x) { x.slug = val; }, 'pslug', p.name + ' · slug'); },
+        cv: p.cv, cvCls: p.cv ? 'on' : '', toggleCv: function () { pm(function (x) { x.cv = !x.cv; }, 'pcv', p.name + ' · center vertically'); },
+        hn: p.hn, hnCls: p.hn ? 'on' : '', toggleHn: function () { pm(function (x) { x.hn = !x.hn; }, 'phn', p.name + ' · hide desktop navigation'); },
+        up: function () { self.mutate(function (pg) { var t = pg[pi]; pg[pi] = pg[pi - 1]; pg[pi - 1] = t; }, 'pageorder', 'Reordered pages'); }, down: function () { self.mutate(function (pg) { var t = pg[pi]; pg[pi] = pg[pi + 1]; pg[pi + 1] = t; }, 'pageorder', 'Reordered pages'); }, upDis: pi === 0, downDis: pi === s.pages.length - 1,
+        delDis: s.pages.length === 1, delWhy: s.pages.length === 1 ? 'Glance needs at least one page.' : '', del: function () { self.setState({ sheet: 'delPage' }); },
+        widthNote: n > 2, widthNoteText: 'Slim allows at most 2 columns. Remove a column to use it.',
+        widthOpts: ['default', 'slim', 'wide'].map(function (wd) { var dis = wd === 'slim' && n > 2 && p.width !== 'slim'; return { label: wd.charAt(0).toUpperCase() + wd.slice(1), on: p.width === wd, cls: p.width === wd ? 'on' : '', dis: dis, pick: function () { pm(function (x) { x.width = wd; }, 'pwidth', p.name + ' · width ' + wd); } }; }) };
+      v.frameMax = p.width === 'slim' ? '860px' : (p.width === 'wide' ? '100%' : '1120px');
+      v.frameTag = p.width.charAt(0).toUpperCase() + p.width.slice(1) + ' width · ' + plural(n, 'column') + ' · schematic, not to scale';
+      v.colTemplate = p.columns.map(function (c) { return c.size === 'small' ? 'minmax(200px, 260px)' : 'minmax(0, 1fr)'; }).join(' ');
+      var dk = s.dropKey;
+      var cards = function (arr, col) { return arr.map(function (w, i) { var loc = { pid: p.id, col: col, path: [i] }; var sel = !!(s.sel && sameLoc(s.sel, loc)); var key = 'w:' + col + ':' + i; return { gripLabel: 'Move ' + wname(w), dragStart: function (e) { self.startDrag(e, { kind: 'w', loc: loc }); }, dragEnd: function () { self.endDrag(); }, over: function (e) { self.dragOver(e, 'w', key); }, drop: function (e) { e.preventDefault(); e.stopPropagation(); self.dropWidget(col, i); }, name: wname(w), typeLabel: TL[w.type] || w.type, sum: summary(w), err: !!(s.showErrors && errIds[w.id]), sel: sel, cls: (sel ? 'sel' : '') + (dk === key ? ' dropbefore' : '') + (s.dragging === w.id ? ' dragging' : ''), open: function () { self.select(loc); }, upDis: i === 0, downDis: i === arr.length - 1, up: function () { self.moveW(loc, -1); }, down: function () { self.moveW(loc, 1); }, lDis: col <= 0, rDis: col < 0 || col >= n - 1, left: function () { self.moveCol(loc, -1); }, right: function () { self.moveCol(loc, 1); }, del: function () { self.delW(loc); } }; }); };
+      v.headCards = cards(p.head, -1); v.headEmpty = !p.head.length; v.addHead = function () { self.openAdd({ pid: p.id, col: -1 }); };
+      v.cols = p.columns.map(function (c, ci) {
+        var sizeOpts = ['small', 'full'].map(function (sz) { var dis = false, why = ''; if (sz !== c.size) { if (sz === 'full' && full >= 2) { dis = true; why = 'At most 2 columns can be full.'; } if (sz === 'small' && full <= 1) { dis = true; why = 'At least 1 column must be full.'; } } return { label: sz === 'small' ? 'Small · 300 px' : 'Full', on: c.size === sz, cls: c.size === sz ? 'on' : '', dis: dis, why: why, pick: function () { pm(function (x) { x.columns[ci].size = sz; }, 'csize' + ci, p.name + ' · column ' + (ci + 1) + ' set to ' + sz); } }; });
+        var note = sizeOpts.filter(function (o) { return o.dis; }).map(function (o) { return o.why; }).join(' ');
+        var rmDis = n === 1 || (c.size === 'full' && full === 1);
+        var ckey = 'c:' + ci, ekey = 'w:' + ci + ':end';
+        return { dropCls: dk === ckey ? 'dropcol' : '', endCls: s.dragging ? (dk === ekey ? 'show on' : 'show') : '',
+          dragStart: function (e) { self.startDrag(e, { kind: 'col', ci: ci }); }, dragEnd: function () { self.endDrag(); },
+          colOver: function (e) { self.dragOver(e, 'col', ckey); }, colDrop: function (e) { e.preventDefault(); if (self.dragSrc && self.dragSrc.kind === 'col') self.dropColumn(self.dragSrc.ci, ci); else if (self.dragSrc) self.dropWidget(ci, c.widgets.length); },
+          endOver: function (e) { self.dragOver(e, 'w', ekey); }, endDrop: function (e) { e.preventDefault(); e.stopPropagation(); self.dropWidget(ci, c.widgets.length); },
+          moveOpen: s.colMove === ci, grip: function () { self.setState({ colMove: s.colMove === ci ? null : ci }); },
+          label: 'Column ' + (ci + 1), sizeOpts: sizeOpts, hasNote: !!note, note: note, widgets: cards(c.widgets, ci), empty: !c.widgets.length,
+          add: function () { self.openAdd({ pid: p.id, col: ci }); },
+          leftDis: ci === 0, rightDis: ci === n - 1,
+          left: function () { pm(function (x) { var t = x.columns[ci]; x.columns[ci] = x.columns[ci - 1]; x.columns[ci - 1] = t; }, 'corder', p.name + ' · reordered columns'); self.setState({ sel: null }); },
+          right: function () { pm(function (x) { var t = x.columns[ci]; x.columns[ci] = x.columns[ci + 1]; x.columns[ci + 1] = t; }, 'corder', p.name + ' · reordered columns'); self.setState({ sel: null }); },
+          rmDis: rmDis, rmWhy: n === 1 ? 'A page needs at least one column.' : (rmDis ? 'This is the only full column.' : 'Remove column'),
+          remove: function () { var snap = self.snapshot(); var to = ci > 0 ? ci - 1 : 1; var k = c.widgets.length; pm(function (x) { var moved = x.columns[ci].widgets; x.columns[to].widgets = x.columns[to].widgets.concat(moved); x.columns.splice(ci, 1); }, 'crm' + ci, p.name + ' · removed column ' + (ci + 1)); self.setState({ sel: null }); self.say(k ? 'Column removed. Its ' + plural(k, 'widget') + ' moved to column ' + (to > ci ? to : to + 1) + '.' : 'Column removed', function () { self.restoreSnap(snap); }); } };
+      });
+      var maxCols = p.width === 'slim' ? 2 : 3; v.addColDis = n >= maxCols; v.addColWhy = p.width === 'slim' ? 'Slim pages allow at most 2 columns.' : 'A page holds at most 3 columns.';
+      v.addColumn = function () { pm(function (x) { x.columns.push({ size: 'small', widgets: [] }); }, 'cadd' + n, p.name + ' · added column ' + (n + 1)); };
+      v.doDelPage = function () { var rest = s.pages.filter(function (x) { return x.id !== p.id; }); self.mutate(function (pg) { pg.splice(pi, 1); }, 'pdel:' + p.id, 'Deleted page “' + p.name + '”', { curPid: rest[0] ? rest[0].id : null, sheet: null, sel: null }); };
+    }
+
+    // inspector
+    var ins = this.insVals(errIds); v.insOpen = !!ins; v.ins = ins || { fields: [], children: [], groups: [], dkRows: [] };
+
+    // add sheet
+    var t = s.addTarget || {}; var q = s.addQuery.trim().toLowerCase();
+    v.addQuery = s.addQuery; v.onAddQuery = function (e) { self.setState({ addQuery: e.target.value }); };
+    v.addWhere = t.parentType === 'group' ? 'Into a group' : (t.parentType === 'split-column' ? 'Into a split column' : (t.col < 0 ? 'Head widgets' : 'Column ' + ((t.col || 0) + 1)));
+    v.addTypes = TYPES.filter(function (x) { return !q || x[1].toLowerCase().indexOf(q) >= 0 || x[0].indexOf(q) >= 0 || x[2].toLowerCase().indexOf(q) >= 0; }).map(function (x) { var dis = t.parentType === 'group' && (x[0] === 'group' || x[0] === 'split-column'); return { label: x[1], cat: x[2], dis: dis, why: dis ? 'A group can’t contain this.' : (SCHEMA[x[0]] ? 'Form' : 'Common fields + YAML'), pick: function () { self.addType(x[0]); } }; });
+    v.addNone = !v.addTypes.length;
+
+    // sheets
+    var sh = s.sheet; v.sheetOpen = !!sh; v.closeSheet = function () { self.setState({ sheet: null }); };
+    v.sheetTitle = { imgs: 'Add images', add: 'Add widget', review: 'Review and save', checking: 'Checking', errors: 'Problems', saving: 'Saving', saved: 'Saved', discard: 'Discard changes', delPage: 'Delete page', icon: 'Find an icon' }[sh] || '';
+    v.shImgs = sh === 'imgs'; v.shAdd = sh === 'add'; v.shReview = sh === 'review'; v.shChecking = sh === 'checking'; v.shErrors = sh === 'errors'; v.shSaving = sh === 'saving'; v.shSaved = sh === 'saved'; v.shDiscard = sh === 'discard'; v.shDelPage = sh === 'delPage'; v.shIcon = sh === 'icon';
+    v.reviewTitle = 'Save ' + plural(nCh, 'change') + ' to Glance'; v.changeList = chList.map(function (x) { return { t: x }; });
+    v.startSave = function () { self.startSave(); };
+    var forPv = s.checkFor === 'preview';
+    v.checkingText = forPv ? 'Checking the draft before building a preview' : 'Checking the draft';
+    v.errNote = forPv ? 'No preview was built: Glance can only render a valid config. Nothing was written to glance.yml. Fix these, then press Preview again.' : 'glance.yml is unchanged and Glance keeps running the live version. Fix these, then save again.';
+    v.openPreview = function () { self.openPreview(); };
+    v.previewDis = nCh === 0 || s.pages.length === 0; v.previewWhy = nCh === 0 ? 'No unsaved changes to preview' : 'Preview the draft before it goes live';
+
+    // preview
+    var pvs = s.preview; v.pvOpen = !!(pvs && pvs.open && sEditor); v.pv = { devs: [], pages: [], head: [], cols: [] };
+    if (v.pvOpen) {
+      var ppg = s.pages.filter(function (x) { return x.id === pvs.pid; })[0] || s.pages[0];
+      var stale = pvs.sig !== this.sig();
+      var thv = s.theme; var bgp = hslParts(thv.background) || [240, 8, 9]; var prp = hslParts(thv.primary) || [43, 50, 70]; var lt = !!thv.light;
+      var txt = lt ? 'hsl(' + bgp[0] + ' 10% 18%)' : 'hsl(' + bgp[0] + ' 10% 80%)'; var mut = lt ? 'hsl(' + bgp[0] + ' 8% 38%)' : 'hsl(' + bgp[0] + ' 8% 62%)'; var pri = hslCss(prp);
+      var it = function (t, h) { return { t: t, cls: h ? 'pvi h' : 'pvi', color: h ? pri : txt }; };
+      var mockW = function (w) {
+        var p2 = w.props || {}; var items = [];
+        if (w.raw != null) items = [it('Rendered from this widget’s YAML')];
+        else if (w.type === 'bookmarks') (p2.groups || []).forEach(function (g) { var gp = hslParts(g.color); items.push({ t: (g.title || 'Untitled group').toUpperCase(), cls: 'pvi h', color: gp ? hslCss(gp) : pri }); g.links.forEach(function (l) { items.push(it(l.title || 'Untitled link')); }); });
+        else if (w.type === 'group') items = (w.children || []).map(function (c, i) { return it(wname(c), i === 0); });
+        else if (w.type === 'split-column') items = (w.children || []).map(function (c) { return it(wname(c)); });
+        else if (w.type === 'docker-containers') { var hbd = !!p2['hide-by-default'], map = p2.containers || {}; CONTAINERS.forEach(function (c) { var cfg = map[c.name] && map[c.name].hide; var vis = c.label ? false : (hbd ? cfg === false : cfg !== true); if (vis && !(p2['running-only'] && c.status !== 'running')) items.push(it(c.name)); }); }
+        else if (w.type === 'monitor') items = (p2.sites || []).map(function (x) { return it(x.title || 'Untitled site'); });
+        else if (w.type === 'weather') items = [it(p2.location || 'No location', true)];
+        else if (w.type === 'rss') items = (p2.feeds || []).map(function (f) { return it(f.title || f.url || 'Feed'); });
+        return { title: wname(w).toUpperCase(), items: items, noItems: !items.length };
+      };
+      var phone = pvs.device === 'phone';
+      var setPv = function (patch) { self.setState({ preview: Object.assign({}, self.state.preview, patch) }); };
+      v.pv = {
+        building: !!pvs.building, ready: !pvs.building,
+        status: pvs.building ? 'Building from the draft' : (stale ? 'Out of date: the draft changed after this was built' : 'Built from the current draft'), statusCls: stale && !pvs.building ? 'stale' : '',
+        devs: [['desktop', 'Desktop'], ['phone', 'Phone']].map(function (d) { return { label: d[1], on: pvs.device === d[0], cls: pvs.device === d[0] ? 'on' : '', pick: function () { setPv({ device: d[0] }); } }; }),
+        refresh: function () { self.startPreview(); }, back: function () { setPv({ open: false }); },
+        goLive: function () { self.setState({ sheet: 'review' }); }, liveDis: nCh === 0,
+        frameW: phone ? '390px' : '100%', pageMax: ppg.width === 'slim' ? '860px' : (ppg.width === 'wide' ? '100%' : '1200px'),
+        bg: pageBg(thv), card: surfaceCss(thv), text: txt, muted: mut,
+        pages: s.pages.map(function (x) { var on = x.id === ppg.id; return { name: x.name || 'Untitled page', cls: on ? 'on' : '', color: on ? pri : mut, current: on ? 'page' : 'false', pick: function () { setPv({ pid: x.id }); } }; }),
+        hasHead: ppg.head.length > 0, head: ppg.head.map(mockW),
+        colTemplate: phone ? 'minmax(0, 1fr)' : ppg.columns.map(function (c) { return c.size === 'small' ? '300px' : 'minmax(0, 1fr)'; }).join(' '),
+        cols: ppg.columns.map(function (c) { return { widgets: c.widgets.map(mockW), empty: !c.widgets.length }; })
+      };
+    }
+    var errs = s.errors || []; v.errTitle = plural(errs.length, 'problem') + ' found';
+    v.errRows = errs.map(function (e) { return { source: e.source, where: e.where, field: e.field, msg: e.msg, go: function () { self.gotoErr(e); } }; });
+    v.savedN = s.savedN; v.savedText = s.savedReach ? 'glance.yml is written and Glance reloaded. Its cached data was cleared, so widgets fetch fresh data on the next page load.' : 'glance.yml is written, but Glance did not respond, so the reload is not confirmed. The editor checks again when Glance is back.';
+    v.goHistoryClose = function () { self.setState({ sheet: null, screen: 'history', selVer: 0 }); };
+
+    // background image picker
+    var thI = s.theme; var curImgs = thI.images || [];
+    var addImgs = function (list, msg) { var a = curImgs.concat(list); self.setTheme('images', a, msg); self.setState({ sheet: null, srvSel: [], pixSel: [] }); self.say(msg.charAt(0).toUpperCase() + msg.slice(1)); };
+    var tree = SERVER_TREE[s.srvPath] || [];
+    var pixOk = !!s.pixKey;
+    v.ims = {
+      tabs: [['device', 'This device'], ['server', 'Server folder'], ['pixabay', 'Pixabay']].map(function (x) { var on = s.imgTab === x[0]; return { label: x[1], on: on, cls: on ? 'on' : '', pick: function () { self.setState({ imgTab: x[0] }); } }; }),
+      isDevice: s.imgTab === 'device', isServer: s.imgTab === 'server', isPix: s.imgTab === 'pixabay',
+      onFiles: function (e) { var fs = Array.prototype.slice.call((e.target && e.target.files) || []); var list = fs.length ? fs.map(function (f) { return { name: f.name, src: 'Uploaded from this device' }; }) : [{ name: 'photo-' + (UID += 1) + '.jpg', src: 'Uploaded from this device' }]; addImgs(list, 'uploaded ' + plural(list.length, 'image')); },
+      onFolder: function (e) { var fs = Array.prototype.slice.call((e.target && e.target.files) || []); var list = fs.length ? fs.map(function (f) { return { name: f.name, src: 'Uploaded folder' }; }) : [{ name: 'folder-image-1.jpg', src: 'Uploaded folder' }, { name: 'folder-image-2.jpg', src: 'Uploaded folder' }]; addImgs(list, 'uploaded ' + plural(list.length, 'image') + ' from a folder'); },
+      crumbs: (function () { var parts = s.srvPath === '/' ? [] : s.srvPath.split('/').filter(Boolean); var acc = ''; return [{ label: 'mounts', go: function () { self.setState({ srvPath: '/' }); } }].concat(parts.map(function (pt) { acc += '/' + pt; var to = acc; return { label: pt, go: function () { self.setState({ srvPath: to }); } }; })); })(),
+      entries: tree.map(function (en) { var full = (s.srvPath === '/' ? '' : s.srvPath) + '/' + en.name; var on = (s.srvSel || []).indexOf(full) >= 0;
+        if (en.dir) { var kids = (SERVER_TREE[full] || []).filter(function (k) { return !k.dir; }).length; return { isDir: true, isFile: false, name: en.name, sub: plural(kids, 'image'), cls: '', open: function () { self.setState({ srvPath: full }); },
+          useFolder: function () { addImgs([{ name: full, src: 'Server folder · ' + plural(kids, 'image') + ' · new files picked up on next save', count: kids, folder: true }], 'added folder ' + en.name); } }; }
+        return { isDir: false, isFile: true, name: en.name, sub: en.size, on: on, cls: on ? 'picked' : '', toggle: function () { var a = (s.srvSel || []).slice(); var k = a.indexOf(full); if (k >= 0) a.splice(k, 1); else a.push(full); self.setState({ srvSel: a }); } }; }),
+      noSel: !(s.srvSel || []).length, addSelLabel: (s.srvSel || []).length ? 'Add ' + plural(s.srvSel.length, 'image') : 'Select images',
+      addSel: function () { addImgs((s.srvSel || []).map(function (f) { return { name: f, src: 'Server folder' }; }), 'added ' + plural(s.srvSel.length, 'image') + ' from the server'); },
+      needKey: !pixOk, hasKey: pixOk, keyDraft: s.pixKeyDraft, onKey: function (e) { self.setState({ pixKeyDraft: e.target.value, pixKeyBad: false }); }, keyBad: !!s.pixKeyBad,
+      keyDis: !String(s.pixKeyDraft).trim() || s.pixKeyChecking, keyBtn: s.pixKeyChecking ? 'Checking key…' : 'Check and save key',
+      saveKey: function () { var k = String(s.pixKeyDraft).trim(); self.setState({ pixKeyChecking: true }); clearTimeout(self.t4); self.t4 = setTimeout(function () { if (k.length < 8) self.setState({ pixKeyChecking: false, pixKeyBad: true }); else self.setState({ pixKeyChecking: false, pixKey: k, pixKeyDraft: '' }); }, 700); },
+      keyMasked: pixOk ? '••••' + s.pixKey.slice(-4) : '', changeKey: function () { self.setState({ pixKey: '', pixKeyDraft: '' }); },
+      cats: PIX_CATS.map(function (c) { var on = (s.pixCats || []).indexOf(c) >= 0; return { label: c, on: on, cls: on ? 'on' : '', pick: function () { var a = (s.pixCats || []).slice(); var k = a.indexOf(c); if (k >= 0) a.splice(k, 1); else a.push(c); self.setState({ pixCats: a, pixState: null, pixSel: [] }); } }; }),
+      modes: [['feed', 'Keep a rotating set'], ['pick', 'Pick images myself']].map(function (m) { var on = s.pixMode === m[0]; return { label: m[1], on: on, cls: on ? 'on' : '', pick: function () { self.setState({ pixMode: m[0] }); } }; }),
+      isFeed: s.pixMode === 'feed', isPick: s.pixMode === 'pick',
+      counts: ['10 images', '20 images', '40 images'].map(function (x) { var on = s.pixCount === x; return { label: x, on: on, cls: on ? 'on' : '', pick: function () { self.setState({ pixCount: x }); } }; }),
+      refreshes: ['Daily', 'Weekly', 'Monthly', 'Never'].map(function (x) { var on = s.pixRefresh === x; return { label: x, on: on, cls: on ? 'on' : '', pick: function () { self.setState({ pixRefresh: x }); } }; }),
+      q: s.pixQ, onQ: function (e) { self.setState({ pixQ: e.target.value }); },
+      search: function () { self.setState({ pixState: 'loading', pixSel: [] }); clearTimeout(self.t4); self.t4 = setTimeout(function () { self.setState({ pixState: 'done' }); }, 800); },
+      loading: s.pixState === 'loading', hasResults: s.pixState === 'done',
+      results: [1, 2, 3, 4, 5, 6, 7, 8, 9].map(function (n) { var cat = (s.pixCats || [])[n % Math.max(1, (s.pixCats || []).length)] || 'Pixabay'; var id = 'pix-' + cat.toLowerCase() + '-' + n; var on = (s.pixSel || []).indexOf(id) >= 0; return { title: '[' + cat + ' photo ' + n + ']', by: 'by [photographer]', on: on, cls: on ? 'picked' : '', toggle: function () { var a = (s.pixSel || []).slice(); var k = a.indexOf(id); if (k >= 0) a.splice(k, 1); else a.push(id); self.setState({ pixSel: a }); } }; }),
+      pixGoDis: !pixOk || !(s.pixCats || []).length || (s.pixMode === 'pick' && !(s.pixSel || []).length),
+      pixGoLabel: !pixOk ? 'Add your API key first' : (!(s.pixCats || []).length ? 'Pick a category' : (s.pixMode === 'feed' ? 'Use this set' : ((s.pixSel || []).length ? 'Add ' + plural(s.pixSel.length, 'image') : 'Select images'))),
+      pixGo: function () {
+        if (s.pixMode === 'feed') { var n = parseInt(s.pixCount, 10); addImgs([{ name: 'Pixabay · ' + s.pixCats.join(', '), src: 'Rotating set · ' + n + ' images · swapped ' + s.pixRefresh.toLowerCase() + ' · fetched in the background', count: n, feed: true }], 'added a rotating Pixabay set'); }
+        else addImgs((s.pixSel || []).map(function (id) { return { name: id + '.jpg', src: 'Pixabay · by [photographer]' }; }), 'added ' + plural(s.pixSel.length, 'image') + ' from Pixabay');
+      }
+    };
+
+    // icon picker
+    var LIBS = [['si', 'Simple Icons'], ['sh', 'selfh.st'], ['di', 'Dashboard Icons'], ['mdi', 'Material Design Icons']];
+    var LIBNAME = {}; LIBS.forEach(function (x) { LIBNAME[x[0]] = x[1]; });
+    var itg = s.iconT || {}; var cur = itg.cur || '';
+    var mk = function (val, sub, chip) { var on = val === cur; return { name: val, sub: sub, chip: chip, on: on, cls: on ? 'on' : '', dis: false, pick: function () { self.goIcon(val); } }; };
+    var slug = String(itg.title || '').toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+    var sug = [];
+    if (slug) { ICONS.filter(function (x) { return x === slug || x.indexOf(slug) === 0 || slug.indexOf(x) === 0; }).forEach(function (x) { LIBS.forEach(function (lb) { sug.push(mk(lb[0] + ':' + x, LIBNAME[lb[0]], lb[0])); }); }); }
+    var u = String(itg.url || '');
+    if (/^\$\{/.test(u)) sug.push({ name: 'Site icon', sub: 'Not available: the URL is an environment variable the editor never resolves.', chip: 'web', dis: true, cls: 'off', on: false, pick: function () {} });
+    else if (/^https?:\/\//.test(u)) { var dom = u.replace(/^https?:\/\//, '').split(/[\/:]/)[0]; sug.push(mk('/assets/icons/' + dom + '.png', 'Site icon from ' + dom + ', downloaded to assets', 'web')); }
+    var q = s.iconQuery.trim().toLowerCase(); var libs = s.iconPrefix === 'all' ? LIBS : LIBS.filter(function (x) { return x[0] === s.iconPrefix; });
+    var libResults = []; ICONS.filter(function (x) { return !q || x.indexOf(q) >= 0; }).forEach(function (x) { libs.forEach(function (lb) { libResults.push(mk(lb[0] + ':' + x, LIBNAME[lb[0]], lb[0])); }); });
+    var wq = s.webQ || ''; var wslug = wq.toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'icon';
+    v.ic = {
+      forText: itg.title ? " · " + itg.title : '', current: cur || 'none', hasCurrent: !!cur, clear: function () { self.goIcon(''); },
+      tabs: [['sug', 'Suggested'], ['all', 'All libraries'], ['si', 'Simple Icons'], ['sh', 'selfh.st'], ['di', 'Dashboard Icons'], ['mdi', 'Material'], ['web', 'Web'], ['url', 'URL']].map(function (x) { var on = s.iconPrefix === x[0]; return { label: x[1], on: on, cls: on ? 'on' : '', pick: function () { self.setState({ iconPrefix: x[0] }); } }; }),
+      isSug: s.iconPrefix === 'sug', sug: sug, sugNone: !sug.length, sugIntro: itg.title ? "Matches for “" + itg.title + '” in every icon library, plus the site’s own icon when the URL allows it.' : 'Give the item a title to get suggestions.',
+      isLib: ['all', 'si', 'sh', 'di', 'mdi'].indexOf(s.iconPrefix) >= 0, libName: s.iconPrefix === 'all' ? 'all four libraries' : LIBNAME[s.iconPrefix] || '', libResults: libResults, libNone: !libResults.length,
+      isWeb: s.iconPrefix === 'web', webQ: wq, onWebQ: function (e) { self.setState({ webQ: e.target.value }); }, webDis: !wq.trim() || s.webState === 'loading',
+      webSearch: function () { self.setState({ webState: 'loading' }); clearTimeout(self.t3); self.t3 = setTimeout(function () { self.setState({ webState: 'done' }); }, 900); },
+      webLoading: s.webState === 'loading', webHas: s.webState === 'done', webIdle: !s.webState,
+      web: [1, 2, 3, 4, 5, 6].map(function (n) { var val = '/assets/icons/' + wslug + '-' + n + '.png'; return { name: '[Image result ' + n + ']', sub: '[source site] · [size]', chip: 'img', pick: function () { self.goIcon(val); self.say('Downloaded to Glance’s assets folder as ' + val); } }; })
+    };
+    v.iconQuery = s.iconQuery; v.onIconQuery = function (e) { self.setState({ iconQuery: e.target.value }); };
+    v.iconIsUrl = s.iconPrefix === 'url';
+    v.iconUrl = s.iconUrl; v.onIconUrl = function (e) { self.setState({ iconUrl: e.target.value }); }; v.iconUrlDis = !String(s.iconUrl).trim(); v.useIconUrl = function () { self.goIcon(s.iconUrl.trim()); };
+
+    // theme
+    var th = s.theme; var prim = hslParts(th.primary) || [43, 50, 70]; var bg = hslParts(th.background) || [240, 8, 9];
+    var opts = function (list, key, label) { return list.map(function (x) { return { label: x, on: th[key] === x, cls: th[key] === x ? 'on' : '', pick: function () { self.setTheme(key, x, label); } }; }); };
+    var imgs = th.images || []; var show = th.bgMode === 'slideshow';
+    v.th = { light: th.light, lightCls: th.light ? 'on' : '', toggleLight: function () { self.setTheme('light', !th.light, 'light theme'); },
+      contrast: th.contrast, textSat: th.textSat, onContrast: function (e) { self.setTheme('contrast', e.target.value, 'contrast multiplier'); }, onTextSat: function (e) { self.setTheme('textSat', e.target.value, 'text saturation multiplier'); },
+      gallery: THEMES.map(function (t) { var b = hslParts(t.bg), p1 = hslParts(t.pri); var on = norm(th.background) === t.bg && norm(th.primary) === t.pri; return { name: t.name, on: on, cls: on ? 'on' : '', bg: hslCss(b), pri: hslCss(p1), pos: hslCss(hslParts(t.pos || t.pri)), neg: hslCss(hslParts(t.neg || '0 70 70')), text: t.light ? '#1b2228' : '#e9eef2',
+        apply: function () { var nt = Object.assign({}, self.state.theme, { light: !!t.light, background: t.bg, primary: t.pri, positive: t.pos || '', negative: t.neg || '0 70 70', contrast: t.cm || '', textSat: t.ts || '' }); var ch = Object.assign({}, self.state.changes); ch['theme:start'] = 'Theme · started from ' + t.name; self.setState({ theme: nt, changes: ch, pk: null }); } }; }),
+      colors: COLORS.map(function (c) { var raw = th[c.key]; var eff = raw || (c.key === 'positive' ? th.primary : c.def); var pp = hslParts(eff) || [0, 0, 50]; var follow = c.key === 'positive' && !raw;
+        var tgt = { kind: 'theme', key: c.key, label: c.label.toLowerCase() };
+        var pickOpen = !!(s.pk && s.pk.target.kind === 'theme' && s.pk.target.key === c.key);
+        return { key: c.key, label: c.label, usedFor: c.used, swatch: hslCss(pp), shown: follow ? 'same as primary' : norm(eff),
+          hasFollow: c.key === 'positive', follow: follow, followCls: follow ? 'on' : '', pickFollow: function () { self.setTheme('positive', '', 'positive follows primary'); },
+          swatches: self.swatches(c.pal, follow ? null : eff, function (val) { self.setTheme(c.key, val, c.label.toLowerCase()); }),
+          openPicker: function () { self.openPicker(tgt, eff); }, pickOpen: pickOpen, pk: pickOpen ? self.pickerVals() : {},
+          isMine: !follow && s.myColors.indexOf(norm(eff)) >= 0 && c.pal.indexOf(norm(eff)) < 0, removeMine: function () { self.setState({ myColors: s.myColors.filter(function (x) { return x !== norm(eff); }) }); },
+          resetDis: (raw || '') === c.def, reset: function () { self.setTheme(c.key, c.def, c.label.toLowerCase() + ' reset'); } }; }),
+      bgModes: [['none', 'Colour only'], ['image', 'Image'], ['slideshow', 'Slideshow']].map(function (m) { var on = (th.bgMode || 'none') === m[0]; return { label: m[1], on: on, cls: on ? 'on' : '', pick: function () { self.setTheme('bgMode', m[0], 'background ' + m[1].toLowerCase()); } }; }),
+      bgNone: (th.bgMode || 'none') === 'none', bgAny: (th.bgMode || 'none') !== 'none', isShow: show,
+      imgLabel: show ? 'Images in the slideshow (at least 2)' : 'Image', noImages: !imgs.length,
+      images: imgs.map(function (im, i) { var nm = im.name || im; var on = show || th.imgSel === i; return { name: nm, on: on, cls: on ? '' : 'dimmed', sub: (im.src ? im.src + ' · ' : '') + (show ? 'Slide ' + (i + 1) : (th.imgSel === i ? 'In use' : 'Tap to use')), pick: function () { if (!show) self.setTheme('imgSel', i, 'background image'); },
+        upDis: i === 0, downDis: i === imgs.length - 1,
+        up: function () { var a = imgs.slice(); var t = a[i]; a[i] = a[i - 1]; a[i - 1] = t; self.setTheme('images', a, 'slideshow order'); },
+        down: function () { var a = imgs.slice(); var t = a[i]; a[i] = a[i + 1]; a[i + 1] = t; self.setTheme('images', a, 'slideshow order'); },
+        del: function () { var a = imgs.slice(); a.splice(i, 1); self.setTheme('images', a, 'removed ' + nm); if (th.imgSel >= a.length) self.setTheme('imgSel', 0, 'background image'); } }; }),
+      addImage: function () { self.setState({ sheet: 'imgs', imgTab: s.imgTab || 'device', srvSel: [], pixSel: [] }); },
+      intervals: opts(['1 min', '5 min', '15 min', '1 hour'], 'interval', 'slideshow interval'),
+      orders: opts(['In order', 'Shuffle'], 'order', 'slideshow order'), needsScript: th.order === 'Shuffle',
+      transitions: opts(['Fade', 'Cut'], 'trans', 'slideshow transition'),
+      fits: opts(['Fill (crop)', 'Whole image'], 'fit', 'image fit'),
+      surfaces: opts(['Solid', 'See-through'], 'surface', 'widget surfaces'),
+      dim: th.dim, dimText: th.dim + '%', onDim: function (e) { self.setTheme('dim', Number(e.target.value), 'image dim'); },
+      blur: th.blur, blurText: th.blur + ' px', onBlur: function (e) { self.setTheme('blur', Number(e.target.value), 'image blur'); },
+      presets: th.presets.map(function (ps, i) { var pp = hslParts(ps.primary) || prim; return { name: ps.name, swatch: hslCss(pp), onName: function (e) { var a = clone(th.presets); a[i].name = e.target.value; self.setTheme('presets', a, 'preset name'); }, del: function () { var a = clone(th.presets); a.splice(i, 1); self.setTheme('presets', a, 'preset deleted'); } }; }),
+      noPresets: !th.presets.length,
+      addPreset: function () { var a = clone(th.presets); a.push({ name: 'preset-' + (a.length + 1), background: th.background, primary: th.primary, positive: th.positive, negative: th.negative, light: th.light }); self.setTheme('presets', a, 'preset added'); },
+      prevBg: pageBg(th), cardCss: surfaceCss(th), primaryCss: hslCss(prim), textCss: th.light ? 'hsl(' + bg[0] + ' 10% 18%)' : 'hsl(' + bg[0] + ' 10% 80%)', mutedCss: th.light ? 'hsl(' + bg[0] + ' 8% 38%)' : 'hsl(' + bg[0] + ' 8% 62%)',
+      posCss: hslCss(hslParts(th.positive) || prim), negCss: hslCss(hslParts(th.negative) || [0, 70, 70]) };
+
+    // history
+    v.histEmpty = !s.versions.length; v.histEmptyTail = scen === 'noFile' ? '.' : ', and keeps the file it replaces as version 0.';
+    v.versions = s.versions.map(function (x, i) { return { n: x.n, summary: x.summary, when: x.when, by: x.by, ext: !!x.ext, live: i === 0, cls: s.selVer === i ? 'on' : '', select: function () { self.setState({ selVer: i }); } }; });
+    var sv = s.selVer != null ? s.versions[s.selVer] : null; v.verSel = !!sv; v.verNone = !sv && s.versions.length > 0;
+    v.vs = { list: [] };
+    if (sv) {
+      var isLive = s.selVer === 0; var dw = countWidgets(sv.snapshot) - countWidgets(s.pages);
+      v.vs = { n: sv.n, summary: sv.summary, when: sv.when, by: sv.by, counts: plural(sv.snapshot.length, 'page') + ', ' + plural(countWidgets(sv.snapshot), 'widget'), list: sv.list.map(function (x) { return { t: x }; }), live: isLive,
+        diffNote: isLive ? (nCh ? 'Your draft has ' + plural(nCh, 'unsaved change') + ' on top of this.' : 'The draft matches this version.') : 'Compared with the draft: ' + (dw === 0 ? 'same number of widgets' : (dw > 0 ? plural(dw, 'more widget') : plural(-dw, 'fewer widget', 'fewer widgets'))) + '. The build shows a full YAML diff here.',
+        restore: function () { var ch = Object.assign({}, s.changes); ch.restore = 'Restored version ' + sv.n + ' as the draft'; self.setState({ pages: clone(sv.snapshot), theme: clone(sv.theme), changes: ch, screen: 'pages', curPid: sv.snapshot[0] ? sv.snapshot[0].id : null, sel: null, selVer: null }); self.say('Version ' + sv.n + ' loaded as the draft. Save to make it live.'); } };
+    }
+
+    // toast
+    v.hasToast = !!s.toast; v.toastText = s.toast ? s.toast.text : ''; v.toastUndo = !!(s.toast && s.toast.undo); v.undo = function () { if (s.toast && s.toast.undo) s.toast.undo(); };
+    return v;
+  }
+}
+</script>
+</body>
+</html>

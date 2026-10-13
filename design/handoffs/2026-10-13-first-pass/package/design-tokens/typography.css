@@ -1,0 +1,77 @@
+/* Type — two families, and a scale read off the designs by role.
+
+   The scale is wide because the panel is viewed from two distances: a metre
+   away when you are operating it, and across a room when you are not. The
+   132px clock and the 12px mono label serve those two cases.
+
+   Sizes are named for what they label, not t-shirt sizes, because that is
+   how the designs use them. */
+
+:root {
+  --font-ui:   'Nunito Sans', 'Avenir Next', 'Segoe UI', system-ui, sans-serif;
+  --font-mono: 'IBM Plex Mono', 'Courier New', monospace;
+
+  /* ── display: read from across the room ────────────────────────────── */
+  --t-clock:    132px;  /* idle screen clock                              */
+  --t-handoff:   76px;  /* handoff transition                             */
+  --t-title:     58px;  /* now playing track title                        */
+  --t-monogram:  40px;  /* artist initials, no photo                      */
+
+  /* ── headings ──────────────────────────────────────────────────────── */
+  --t-h1:        34px;
+  --t-h2:        30px;  /* library card titles                            */
+  --t-artist:    29px;  /* the artist name under a track title            */
+  --t-h3:        26px;
+  --t-h4:        25px;
+
+  /* ── body ──────────────────────────────────────────────────────────── */
+  --t-lead:      22px;
+  --t-body-lg:   20px;
+  --t-body:      19px;  /* list rows, setting labels                      */
+  --t-body-sm:   17px;
+  --t-note:      14px;  /* the explanatory note under a setting label     */
+
+  /* ── mono: times, labels, technical values ─────────────────────────── */
+  --t-mono-lg:   16px;  /* elapsed / remaining                            */
+  --t-mono:      15px;  /* setting values, crumbs                         */
+  --t-label-lg:  14px;
+  --t-label:     13px;  /* the standard section label                     */
+  --t-label-sm:  12px;
+  --t-micro:     11px;
+
+  /* ── weight ────────────────────────────────────────────────────────────
+     Three only. Body copy is unweighted; 600 for labels and row titles;
+     700 for display type and anything that must win. */
+  --w-body:      400;  /* @kind font */
+  --w-semibold:  600;  /* @kind font */
+  --w-bold:      700;  /* @kind font */
+
+  /* ── tracking ──────────────────────────────────────────────────────────
+     Display type tightens; mono labels open up. The uppercase mono label is
+     the single most repeated type treatment in the designs (93 uses), and
+     0.20em is its default. */
+  --track-display: -0.015em;
+  --track-tight:   -0.01em;
+  --track-label:    0.20em;
+  --track-label-sm: 0.16em;
+  --track-pill:     0.14em;
+  --track-wide:     0.22em;
+  --track-mono:     0.06em;
+
+  /* ── leading ───────────────────────────────────────────────────────── */
+  --lh-display: 1.06;  /* @kind font */
+  --lh-title:   1.30;  /* @kind font */
+  --lh-body:    1.35;  /* @kind font */
+  --lh-note:    1.50;  /* @kind font */
+}
+
+/* The uppercase mono label, as one rule. Reach for this rather than
+   respelling the four properties — it is the design's most repeated idiom. */
+.gx-label {
+  font-family: var(--font-mono);
+  font-size: var(--t-label-sm);
+  font-weight: var(--w-semibold);
+  letter-spacing: var(--track-label);
+  text-transform: uppercase;
+  color: var(--ink-quiet);
+}

@@ -1,0 +1,26 @@
+/* Motion — a Raspberry Pi 4 budget.
+
+   Transform and opacity only. Never animate layout, filter or backdrop-filter,
+   and never run two regions at once. Everything below is measured from the
+   designs; the primary ease appears six times and is the default for anything
+   that moves on screen. */
+
+:root {
+  --ease:       cubic-bezier(0.2, 0.8, 0.2, 1);  /* @kind other */
+  --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);   /* @kind other */
+
+  --dur-press:   140ms;  /* @kind other */
+  --dur-fade:    180ms;  /* @kind other */
+  --dur:         200ms;  /* @kind other */
+  --dur-state:   220ms;  /* @kind other */
+  --dur-screen:  260ms;  /* @kind other */
+  --dur-slow:    320ms;  /* @kind other */
+  --dur-settle:  400ms;  /* @kind other */
+
+  /* ── ground blur ───────────────────────────────────────────────────────
+     Set once and left alone. These are static values, never transitioned:
+     animating a 70px blur drops frames on a Pi 4. */
+  --blur-ground:  70px;  /* @kind other */
+  --blur-art:     72px;  /* @kind other */
+  --blur-backdrop: 3px;  /* @kind other */
+}

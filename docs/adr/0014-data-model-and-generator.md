@@ -1,6 +1,6 @@
 # 0014. Data model (schema v1) and YAML generator
 
-- **Status:** proposed (non-UX; implemented in the Phase 1 PR, and merging that PR accepts it)
+- **Status:** accepted (merged with Phase 1); generator role superseded in part by ADR-0015
 - **Date:** 2026-10-13
 - **Decider:** PM
 - **UX impact:** no. It is internal structure. It does set *what* the UI can edit, but how is a Phase 4 design question.
@@ -56,5 +56,8 @@ No real env vars or secrets are needed. This proves the approach ADR-0008 step 2
 - Not covered by the go-yaml property test: `${secret:…}` (needs /run/secrets, i.e. root). It is covered by the yaml-parser property test.
 - Not verified: `custom-css-file` and other paths that Glance may check at startup but not in `config:validate`; widgets beyond the modelled ten.
 
+## Superseded in part (2026-10-13)
+The model, rules, validation and encoding rules stand. Writing a *whole new file* from the model is now limited to Start empty and to new content; edits to an imported file are spliced into its text (ADR-0015, design D-38).
+
 ## Decision record
-_Pending: accepted by merging the Phase 1 PR._
+Accepted 2026-10-13 by merging PR #3.

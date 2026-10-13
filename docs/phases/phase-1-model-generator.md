@@ -1,6 +1,6 @@
-# Phase 1: Data model and YAML generator (current phase)
+# Phase 1: Data model and YAML generator (done; merged in PR #3)
 
-**Status:** implemented on branch `phase-1/model-generator`. PR open, awaiting PM review.
+**Status:** merged (PR #3). The generator role is superseded in part by ADR-0015 (design D-38).
 **Depends on:** ADR-0001, 0003, 0006, 0009 (accepted). Introduces ADR-0014 (non-UX; accepted by merging).
 **No UI** beyond a one-line placeholder page and `/healthz`.
 
