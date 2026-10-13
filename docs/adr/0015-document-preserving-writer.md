@@ -40,5 +40,20 @@
   - the real-Glance render test from Phase 1, applied to spliced output.
 - A **feasibility spike** comes first (Phase 2a). If splicing proves too fragile, I'll come back with a new ADR before going further.
 
+## Spike results (Phase 2a, 2026-10-13)
+Throwaway code, not committed: `.spike/` is in `.gitignore`.
+- **Operations tried:** change a scalar (keeps its inline comment), delete a list item (with the comment lines directly
+  above it), insert a new item, move an item with its comments to another list (re-indented as a block).
+- **Fuzz:** 6 seeds × 300 random sequences of 4 operations, on Glance's upstream example and on a fixture with comments
+  everywhere. **0 structural mismatches.** 360 outputs validated by the pinned binary: all passed. Values use the Phase 1 encoders.
+- **Bug found and fixed in the spike:** the `yaml` library's `range[2]` (node end) can run into the next item's `- ` line when
+  the item ends with trailing comment lines, so a delete swallowed the next item's first line. An item's extent is now
+  computed from indentation (following lines that are blank or deeper than the dash), with trailing blank lines left in place.
+- **Not covered by the spike, to do in 2b:** flow collections (`[a, b]`, `{…}`); adding a key that doesn't exist yet
+  (e.g. the first `widgets:` of an empty column); map-entry add and remove inside a widget; replacing a multi-line block scalar;
+  tabs or odd indentation; `$include`-merged input; anchors and aliases. Each gets a fixture. Anything the splicer can't
+  handle falls back to regenerating that subtree, with a warning (decision item 4).
+- **Conclusion:** feasible. Proceed with 2b on this design.
+
 ## Decision record
 _Pending._

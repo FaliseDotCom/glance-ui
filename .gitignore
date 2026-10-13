@@ -11,3 +11,4 @@ data/
 /glance.yml
 .svelte-kit/
 build/
+.spike/
