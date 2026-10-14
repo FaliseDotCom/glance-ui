@@ -239,3 +239,9 @@ overwrites labels with map values. **Do:** treat source reading as a hypothesis 
   (an html widget has none visible).
 - A fixed background layer sized `inset: 0` follows the window's height, which changes on phones as the address bar
   moves; `100lvh` doesn't.
+
+## The image's CA certificates (2026-10-14, found by the PM in v1.0.0)
+- `node:24-slim` has no `ca-certificates`. Node carries its own CA store, so the editor fetched fine, but Glance (Go)
+  reads the system's and every HTTPS widget failed with "x509: certificate signed by unknown authority". The tests
+  used Glance on the dev machine (which has certificates) or offline widgets, so none noticed. `test/all-in-one.sh`
+  now checks the bundle and a real HTTPS fetch (weather) from Glance inside the image.
