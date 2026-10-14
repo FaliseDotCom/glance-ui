@@ -30,6 +30,8 @@ export interface EditorOptions {
    * Like the proxy, it answers only GET. "dead": a Docker URL nothing answers at (design 03 "Docker socket unreachable").
    */
   docker?: FakeContainer[] | "dead";
+  /** A second stand-in Docker, another server's (ADR-0026): only in the seed, as `{{REMOTE_DOCKER_URL}}`. */
+  remoteDocker?: FakeContainer[];
   /** Stand-ins for the icon finder's sources (test/support/icon-sources.ts); the seed's `{{ICON_SITE}}` is their URL. */
   icons?: boolean;
   /** A Glance assets folder: ASSETS_DIR for the editor, `{{ASSETS_DIR}}` in the seed (for `server: assets-path`). */
@@ -62,6 +64,8 @@ export interface Editor {
   previewPath: string | null;
   /** Every request the stand-in Docker API received ("GET /containers/json?all=true"). */
   dockerRequests: string[];
+  /** Requests the second stand-in Docker received (remoteDocker). */
+  remoteRequests: string[];
   /** The assets folder (null without `assets`). */
   assetsDir: string | null;
   /** The mounted server folders' paths, by name. */
@@ -122,6 +126,8 @@ export const test = base.extend<{ opts: EditorOptions; editor: Editor }>({
     let glancePort: number | null = null;
     let previewPath: string | null = null;
     const dockerRequests: string[] = [];
+    const remoteRequests: string[] = [];
+    let remote: { server: Server; url: string } | null = null;
     let docker: { server: Server; url: string } | null = null;
     let icons: IconSourcesStandIn | null = null;
     let pixabay: PixabayStandIn | null = null;
@@ -132,11 +138,12 @@ export const test = base.extend<{ opts: EditorOptions; editor: Editor }>({
       if (opts.icons) icons = await startIconSources();
       if (opts.pixabay) pixabay = await startPixabay();
       if (Array.isArray(opts.docker)) docker = await fakeDocker(opts.docker, dockerRequests);
+      if (opts.remoteDocker) remote = await fakeDocker(opts.remoteDocker, remoteRequests);
       // "dead": a port the OS just gave out, with nothing listening (fetch refuses some low ports outright).
       const dockerUrl = opts.docker === "dead" ? `tcp://127.0.0.1:${await port()}` : docker?.url ?? "";
       if (opts.seed !== undefined) {
         glancePort = await port();
-        writeFileSync(configPath, opts.seed.replaceAll("{{GLANCE_PORT}}", String(glancePort)).replaceAll("{{DOCKER_URL}}", dockerUrl)
+        writeFileSync(configPath, opts.seed.replaceAll("{{GLANCE_PORT}}", String(glancePort)).replaceAll("{{DOCKER_URL}}", dockerUrl).replaceAll("{{REMOTE_DOCKER_URL}}", remote?.url ?? "")
           .replaceAll("{{ASSETS_DIR}}", assetsDir ?? "").replaceAll("{{ICON_SITE}}", icons?.url ?? ""));
       }
       const env: Record<string, string> = {
@@ -202,7 +209,7 @@ export const test = base.extend<{ opts: EditorOptions; editor: Editor }>({
       const url = `http://127.0.0.1:${editorPort}`;
       await waitFor(`${url}/healthz`, e, () => log);
       await use({
-        url, configPath, glancePort, previewPath, dockerRequests, assetsDir, serverFolders, pixabayRequests: pixabay?.requests ?? null,
+        url, configPath, glancePort, previewPath, dockerRequests, remoteRequests, assetsDir, serverFolders, pixabayRequests: pixabay?.requests ?? null,
         iconSources: icons ? { url: icons.url, requests: icons.requests } : null,
         live: () => readFileSync(configPath, "utf8"),
         write: (text) => writeFileSync(configPath, text),
@@ -212,6 +219,8 @@ export const test = base.extend<{ opts: EditorOptions; editor: Editor }>({
       for (const c of children) c.kill();
       docker?.server.closeAllConnections();
       docker?.server.close();
+      remote?.server.closeAllConnections();
+      remote?.server.close();
       await icons?.close();
       await pixabay?.close();
       try { chmodSync(configDir, 0o755); } catch { /* already gone */ }

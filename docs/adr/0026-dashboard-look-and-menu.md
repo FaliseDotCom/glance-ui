@@ -124,6 +124,19 @@ As proposed, with the PM's answers:
    and Unraid icon (http(s) only); other labels still never leave the server.
 6. Built from this text, without a design pass.
 
+## Follow-up: another server's Docker (PM, 2026-10-14: "Yes. Build it.")
+- Glance v0.8.6 reads a widget's `sock-path` as a remote Docker when it starts with `tcp://`, `http://` or `https://`
+  (widget-docker-containers.go 295, docs `sock-path`). The editor's Containers section always listed the editor's own
+  Docker instead, so a widget for another server showed the wrong containers.
+- Now the section lists the containers at the widget's own address when it is remote, with the same one request
+  (`GET /containers/json?all=true`); a Unix socket path, or none, still uses the editor's connection (ADR-0005).
+- Guards: the editor asks only an address that a Docker containers widget in the draft names (nested ones too), and
+  never one with a placeholder (`${…}`, never resolved).
+- The other server should run a read-only proxy (the pinned docker-socket-proxy with `CONTAINERS=1 POST=0`), as the
+  editor can't tell a proxy from an open Docker API; it only ever lists.
+- Tested: `packages/server/test/remote-docker.test.ts`; `test/e2e/containers.spec.ts` "Another server's Docker" with
+  two stand-in Dockers (the editor's own isn't asked; Glance agrees after Save).
+
 ## Tested
 - `packages/editing/test/look.test.ts`, `packages/server/test/background.test.ts`, `docker.test.ts`: the settings, the CSS
   (lvh, blurred copy, top, no lines), the script tags, presets, the container map and icon lookups.

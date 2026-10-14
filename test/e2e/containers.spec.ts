@@ -175,3 +175,31 @@ test.describe("Container settings (ADR-0026)", () => {
     await g.close();
   });
 });
+
+// A widget for another server's Docker: the section lists that server's containers, not the editor's own (ADR-0026
+// follow-up). The editor's own Docker (DOCKER_PROXY_URL) and the other server's are two different stand-ins here.
+test.describe("Another server's Docker", () => {
+  test.use({ opts: { seed: fixture("remote-docker.yml"), glance: true, docker: [{ name: "local-only" }], remoteDocker: [{ name: "nas-plex" }, { name: "nas-sonarr" }] } });
+
+  test("the section lists the containers at the widget's socket path; hiding one there is what Glance shows", async ({ page, editor }) => {
+    await importSeed(page, editor.url);
+    await page.locator(".wcard").getByRole("button", { name: /^Other server, / }).click();
+    const ins = inspector(page);
+    await expect(ins.getByText(/2 of 2 containers shown\. The list comes from the Docker at http:\/\/127\.0\.0\.1:\d+;/)).toBeVisible();
+    await expect(row(page, "nas-plex")).toBeVisible();
+    await expect(ins.getByText("local-only")).toHaveCount(0);
+    expect(editor.remoteRequests).toContain("GET /containers/json?all=true");
+    expect(editor.dockerRequests).toEqual([]);
+    await eye(page, "nas-sonarr").click();
+    if (isPhone(page)) await ins.getByRole("button", { name: "Back to layout" }).click();
+    await page.getByRole("button", { name: "Save", exact: true }).click();
+    await page.getByRole("dialog", { name: "Review and save" }).getByRole("button", { name: "Check and save" }).click();
+    await expect(page.getByRole("heading", { name: "Version 1 is live" })).toBeVisible();
+    const g = await page.context().newPage();
+    await g.goto(`http://127.0.0.1:${editor.glancePort}/`);
+    await g.locator(".content-ready").waitFor({ state: "attached" });
+    await expect(g.getByText("nas-plex")).toBeVisible();
+    await expect(g.getByText("nas-sonarr")).toHaveCount(0);
+    await g.close();
+  });
+});
