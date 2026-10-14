@@ -4,9 +4,10 @@
      reason and no Add. Previews load from GitHub at the pinned commit. -->
 <script lang="ts">
   import type { ListRef } from "@glance-editor/editing";
-  import { api, type CommunityList, type CommunityWidget } from "../client/api.ts";
+  import { api, type CommunityList, type CommunityWidget, type ValueInfo } from "../client/api.ts";
   import type { App } from "../client/app.svelte.ts";
   import Icon from "./Icon.svelte";
+  import ValueField from "./ValueField.svelte";
 
   let { app, target }: { app: App; target: ListRef } = $props();
 
@@ -40,13 +41,31 @@
     open = await api.communityWidget(dir).catch((e: Error) => { loadError = e.message; return null; });
     if (open) variant = Math.max(0, open.variants.findIndex((v) => v.check.ok));
   }
+  // ADR-0029: the values the variant needs, filled in here and stored in .env when it's added.
+  let infos = $state<ValueInfo[] | null>(null);
+  let typed = $state<Record<string, string | null>>({});
+  $effect(() => {
+    const names = open?.variants[variant]?.variables ?? [];
+    infos = null;
+    typed = {};
+    if (!names.length) return;
+    void api.values(names).then((l) => (infos = l.values.filter((x) => names.includes(x.name)))).catch(() => (infos = []));
+  });
   async function add() {
     if (!open) return;
     const v = open.variants[variant];
     if (!v?.check.ok) return;
     adding = true;
-    addError = (await app.addCommunityWidget(target, v.yaml, open.title)) ?? "";
-    adding = false;
+    addError = "";
+    const values = Object.fromEntries(Object.entries(typed).filter((e): e is [string, string] => typeof e[1] === "string" && e[1] !== ""));
+    try {
+      if (Object.keys(values).length) await api.setValues(values);
+      addError = (await app.addCommunityWidget(target, v.yaml, open.title)) ?? "";
+    } catch (e) {
+      addError = `Couldn't store the values: ${(e as Error).message}`;
+    } finally {
+      adding = false;
+    }
   }
   const v = $derived(open?.variants[variant]);
 </script>
@@ -82,12 +101,29 @@
     {/if}
     {#if v}
       {#if v.variables.length}
-        <div class="notice">
-          <span><strong>Needs {v.variables.length === 1 ? "a value" : `${v.variables.length} values`}:</strong> <span class="mono">{v.variables.map((n) => `\${${n}}`).join(", ")}</span></span>
-          <span class="help" style="margin: 0">Add them to .env next to glance.yml, or as variables in the container's settings. The editor keeps them as written; Review warns about any without a value.</span>
+        <div class="stack" style="gap: 8px">
+          <span class="flabel" style="margin: 0">{v.variables.length === 1 ? "The value it needs" : `The ${v.variables.length} values it needs`}</span>
+          <p class="help" style="margin: 0">Stored in .env next to glance.yml when you add the widget, not in glance.yml. Leave one empty to fill it in later on the Values screen.</p>
+          {#if infos === null}
+            <p class="note pulse" style="margin: 0">Checking which are set…</p>
+          {:else}
+            {#each v.variables as name (name)}
+              {@const info = infos.find((x) => x.name === name)}
+              {@const id = `cwv-${name}`}
+              <div class="field" style="margin: 0">
+                <label class="flabel mono" for={id} style="margin: 0">{name}</label>
+                {#if info?.container && !info.set}
+                  <p class="help" style="margin: 0">Set in the container's settings.</p>
+                {:else if info}
+                  <ValueField {info} {id} bind:text={typed[name]} />
+                {/if}
+              </div>
+            {/each}
+          {/if}
         </div>
       {/if}
       <span class="flabel" style="margin: 0">YAML, added exactly as written</span>
+      <!-- svelte-ignore a11y_no_noninteractive_tabindex (a scrollable region needs keyboard access: axe scrollable-region-focusable) -->
       <pre class="pre cwyaml" tabindex="0" role="region" aria-label={`YAML of ${open.title}`}>{v.yaml}</pre>
       {#if !v.check.ok}<p class="errtxt" style="margin: 0">Can't be added: {v.check.message}</p>{/if}
       {#if addError}<p class="errtxt" role="alert" style="margin: 0">{addError}</p>{/if}

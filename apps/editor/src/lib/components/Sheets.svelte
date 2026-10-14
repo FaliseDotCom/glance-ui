@@ -161,7 +161,8 @@
           <span class="flabel" style="margin: 0">{plural(warnings.length, "thing")} to check (saving still works)</span>
           <div class="stack" style="gap: 8px">
             {#each warnings as w, i (i)}
-              <div class="erow warning"><span class="grow"><span class="mono" style="font-size: 12px; color: var(--ink-quiet)">{where(w, app.draft)}</span><span class="note">{w.message}</span></span></div>
+              <div class="erow warning"><span class="grow"><span class="mono" style="font-size: 12px; color: var(--ink-quiet)">{where(w, app.draft)}</span><span class="note">{w.message}</span></span>
+                {#if w.code === "placeholder.unset"}<button type="button" class="btn" onclick={() => { close(); app.screen = "values"; }}>Set values</button>{/if}</div>
             {/each}
           </div>
         {/if}

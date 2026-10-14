@@ -12,6 +12,7 @@
   import History from "#lib/components/History.svelte";
   import Inspector from "#lib/components/Inspector.svelte";
   import ThemeScreen from "#lib/components/ThemeScreen.svelte";
+  import ValuesScreen from "#lib/components/ValuesScreen.svelte";
   import Sheets from "#lib/components/Sheets.svelte";
   import Toast from "#lib/components/Toast.svelte";
   import Preview from "#lib/components/Preview.svelte";
@@ -23,7 +24,7 @@
     const t = setInterval(() => void app.checkGlance(), 60_000);
     return () => clearInterval(t);
   });
-  const editing = $derived(app.screen === "pages" || app.screen === "theme" || app.screen === "history");
+  const editing = $derived(app.screen === "pages" || app.screen === "theme" || app.screen === "values" || app.screen === "history");
   const inspecting = $derived(app.screen === "pages" && !!app.sel && !!app.selWidget);
 </script>
 
@@ -55,6 +56,8 @@
           <History {app} />
         {:else if app.screen === "theme"}
           <ThemeScreen {app} />
+        {:else if app.screen === "values"}
+          <ValuesScreen {app} />
         {:else if app.page}
           {#key app.page._id}<PageEditor {app} page={app.page} />{/key}
         {:else}

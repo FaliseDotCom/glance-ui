@@ -9,7 +9,7 @@ import {
 } from "@glance-editor/editing";
 import { api, type Change, type DraftState, type GlanceStatus, type ImportCheck, type Problem, type UploadCheck, type VersionSummary } from "./api.ts";
 
-export type Screen = "loading" | "welcome" | "import" | "layout" | "pages" | "theme" | "history";
+export type Screen = "loading" | "welcome" | "import" | "layout" | "pages" | "theme" | "values" | "history";
 
 export type Sheet =
   | { kind: "review" }

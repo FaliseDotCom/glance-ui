@@ -5,6 +5,13 @@ All notable changes are recorded here. The format follows Keep a Changelog; vers
 
 ## [Unreleased]
 
+## [1.2.0] - 2026-10-15
+### Added
+- **Fill in the values a widget needs, right where you add it.** A community widget's address, key or password is
+  asked for when you add it, and kept in `.env` next to glance.yml (not in glance.yml). A new **Values** screen lists
+  every value your dashboard uses, with set, replace, remove and an eye for hidden ones; Review's "no value" warning
+  links to it.
+
 ## [1.1.0] - 2026-10-14
 ### Added
 - **Community widgets.** Add widget has a Community tab: the widgets Glance users share in glanceapp/community-widgets,

@@ -47,3 +47,4 @@ One file per decision: `NNNN-short-title.md`, copied from [0000-template.md](000
 | [0026](0026-dashboard-look-and-menu.md) | Five findings from the first install: lines, background jumps, an Edit link, theme choices, container icons | accepted (PM, 2026-10-14) | **yes** |
 | [0027](0027-fill-in-container-icons-and-links.md) | Fill in container icons and links from what the containers carry | accepted (PM, 2026-10-14) | **yes** |
 | [0028](0028-community-widgets.md) | Community widgets, ready to pick | accepted (PM, 2026-10-14) | **yes** |
+| [0029](0029-values-in-the-editor.md) | Values for ${VARIABLES}, set in the editor | accepted (PM, 2026-10-15) | **yes** |

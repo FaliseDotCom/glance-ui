@@ -14,6 +14,8 @@ COPY apps/editor/package.json apps/editor/
 RUN npm ci --no-audit --no-fund
 COPY glance.version tsconfig.base.json ./
 COPY packages packages
+# The server reads .env the way the container does (ADR-0029): one parser, shared with image/start.ts.
+COPY image/dotenv.ts image/
 COPY apps/editor apps/editor
 RUN npm -w apps/editor run build
 

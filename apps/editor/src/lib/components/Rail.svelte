@@ -1,4 +1,4 @@
-<!-- Desktop left rail (D-02): pages with reorder arrows on the active one, Add page, then Theme and History. -->
+<!-- Desktop left rail (D-02): pages with reorder arrows on the active one, Add page, then Theme, Values (ADR-0029) and History. -->
 <script lang="ts">
   import { GALLERY, addPage, isGalleryTheme, movePage, plural, widgetCount } from "@glance-editor/editing";
   import type { App } from "../client/app.svelte.ts";
@@ -36,6 +36,9 @@
   <div class="rule" style="margin-top: 16px"><span class="lbl">Site</span></div>
   <button type="button" class="navbtn" class:on={app.screen === "theme"} aria-current={app.screen === "theme" ? "page" : undefined} onclick={() => (app.screen = "theme")}>
     Theme<span class="navmeta">{themeMeta}</span>
+  </button>
+  <button type="button" class="navbtn" class:on={app.screen === "values"} aria-current={app.screen === "values" ? "page" : undefined} onclick={() => (app.screen = "values")}>
+    Values<span class="navmeta">{"${NAME}"} values in .env</span>
   </button>
   <button type="button" class="navbtn" class:on={app.screen === "history"} aria-current={app.screen === "history" ? "page" : undefined} onclick={() => (app.screen = "history")}>
     History<span class="navmeta">{verMeta}</span>

@@ -94,6 +94,12 @@ desc=".env is readable by its owner only";                check test "$(stat -c 
 docker exec "$name" sh -c 'echo "PAGE_NAME=Changed" > /data/config/.env'
 for _ in $(seq 1 40); do curl -fsS "http://127.0.0.1:$gport/" 2>/dev/null | grep -q '<title>Changed' && break; sleep 0.5; done
 desc="a changed .env restarts Glance with it";            check bash -c "curl -fsS http://127.0.0.1:$gport/ | grep -q '<title>Changed'"
+# ADR-0029: a value stored from the editor reaches Glance; glance.yml keeps the placeholder.
+curl -fsS -X POST "${origin[@]}" --data '{"set":{"PAGE_NAME":"Set in the editor"}}' "$base/api/values" > "$work/values.json"
+for _ in $(seq 1 40); do curl -fsS "http://127.0.0.1:$gport/" 2>/dev/null | grep -q '<title>Set in the editor' && break; sleep 0.5; done
+desc="a value stored in the editor reaches Glance";        check bash -c "curl -fsS http://127.0.0.1:$gport/ | grep -q '<title>Set in the editor'"
+desc="…and glance.yml still has the placeholder";         check grep -q 'name: ${PAGE_NAME}' "$work/data2/config/glance.yml"
+desc="…and the editor never got it in its environment";   check test "$(docker exec -u 99:100 "$name" sh -c "grep -ac 'Set in the editor' /proc/$editor_pid/environ; true")" = 0
 desc="container stops cleanly";                           check bash -c "docker stop -t 10 $name >/dev/null && test \"\$(docker inspect -f '{{.State.ExitCode}}' $name)\" = 0"
 
 docker rm "$name" >/dev/null

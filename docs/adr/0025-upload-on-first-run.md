@@ -1,6 +1,7 @@
 # 0025. Upload your Glance folder as a .zip on the first-run screen
 
-- **Status:** accepted by the PM, 2026-10-14: option C (a .zip). Built as described under Decision.
+- **Status:** accepted by the PM, 2026-10-14: option C (a .zip). Built as described under Decision. Since ADR-0029 the
+  editor can show and set values in `.env` (the Values screen).
 - **Date:** 2026-10-14
 - **Decider:** PM
 - **UX impact:** yes: a new way in on the first-run screen (design 03), and what the editor does with your assets

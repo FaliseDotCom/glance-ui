@@ -136,8 +136,9 @@ async function main(): Promise<void> {
   log(existsSync(SOCKET) ? "Docker socket found: the editor can list containers (read only)" : "no Docker socket mounted: Docker widgets and the Containers section won't list anything");
 
   const editorEnv: NodeJS.ProcessEnv = Object.fromEntries(PASS_TO_EDITOR.filter((k) => process.env[k] !== undefined).map((k) => [k, process.env[k]]));
-  // The names (never the values) of Glance's variables, so the editor can tell which ${VAR}s have no value (ADR-0025).
-  editorEnv.GLANCE_ENV_NAMES = Object.keys(glanceEnv()).join(",");
+  // The names (never the values) of the container's own variables, so the editor can tell which ${VAR}s have no value
+  // (ADR-0025). .env is read by the editor itself, as it changes (ADR-0029).
+  editorEnv.GLANCE_ENV_NAMES = Object.keys(process.env).join(",");
   // Photo folders for backgrounds (D-59), /photos unless set: only those actually mounted, so none listed if empty.
   editorEnv.SERVER_FOLDERS = (process.env.SERVER_FOLDERS ?? "/photos").split(",").map((x) => x.trim()).filter((x) => x && existsSync(x)).join(",");
   Object.assign(editorEnv, {

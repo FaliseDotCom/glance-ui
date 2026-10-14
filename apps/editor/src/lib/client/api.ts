@@ -1,8 +1,9 @@
 // The editor's JSON API (docs/api.md). Mutations send JSON from this origin, as ADR-0004 requires.
 import type { DashboardT, WidgetT } from "@glance-editor/model";
-import type { CommunityWidget, Change, ContainersResult, DownloadResult, FolderEntry, PixabayHit, DraftState, IconHit, LibraryStatus, SiteIcon, WebResult, WebSearch, GlanceStatus, ImportCheck, PreviewCheck, PreviewResult, Problem, SaveResult, UploadCheck, VersionSummary } from "@glance-editor/server";
+import type { CommunityWidget, ValueInfo, Change, ContainersResult, DownloadResult, FolderEntry, PixabayHit, DraftState, IconHit, LibraryStatus, SiteIcon, WebResult, WebSearch, GlanceStatus, ImportCheck, PreviewCheck, PreviewResult, Problem, SaveResult, UploadCheck, VersionSummary } from "@glance-editor/server";
 
-export type { PixabayHit, CommunityWidget };
+export type { PixabayHit, CommunityWidget, ValueInfo };
+export type ValuesList = { applies: boolean; values: ValueInfo[] };
 export type CommunityList = { source: string; license: string; commit: string; glance: string; widgets: (Omit<CommunityWidget, "variants"> & { variants: Omit<CommunityWidget["variants"][number], "yaml">[] })[] };
 export type { Change, ContainersResult, DownloadResult, DraftState, IconHit, LibraryStatus, SiteIcon, WebResult, WebSearch, GlanceStatus, ImportCheck, PreviewCheck, PreviewResult, Problem, SaveResult, UploadCheck, VersionSummary };
 export type VersionDetail = VersionSummary & { text: string; pages: number | null; widgets: number | null };
@@ -40,6 +41,10 @@ export const api = {
   previewInfo: () => call<{ configured: boolean }>("GET", "/api/preview"),
   previewCheck: () => call<PreviewCheck>("POST", "/api/preview/check"),
   preview: () => call<PreviewResult>("POST", "/api/preview"),
+  /** ADR-0029: values for ${VARIABLES} in .env: the list (no values), one value (the eye), and set or remove. */
+  values: (names: string[] = []) => call<ValuesList>("GET", `/api/values${names.length ? `?names=${encodeURIComponent(names.join(","))}` : ""}`),
+  value: (name: string) => call<{ value: string | null }>("GET", `/api/values/${encodeURIComponent(name)}`),
+  setValues: (set: Record<string, string | null>) => call<ValuesList>("POST", "/api/values", { set }),
   /** ADR-0028: the community widgets bundled with this release (without YAML), and one with its variants' YAML. */
   community: () => call<CommunityList>("GET", "/api/community"),
   communityWidget: (dir: string) => call<CommunityWidget>("GET", `/api/community/${encodeURIComponent(dir)}`),
