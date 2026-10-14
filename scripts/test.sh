@@ -10,6 +10,7 @@ echo "== typecheck";                npm run --silent typecheck
 echo "== dependency licenses";      npm run --silent licenses > /dev/null
 echo "== Glance source data";       node scripts/glance-source-data.ts --check
 echo "== Glance license in image";  (source glance.version; echo "$GLANCE_LICENSE_SHA256  third_party/glance/LICENSE" | sha256sum -c --quiet) # ADR-0013
+echo "== Community Apps files";     d="$(mktemp -d)" && scripts/render-community-apps.sh example/glance-ui example/unraid-templates 1.0.0 "$d" > /dev/null && rm -rf "$d"
 echo "== unit + Glance tests";      npx vitest run
 echo "== UI end to end";            npx playwright test # builds the editor; desktop and 390 px phone (test/e2e)
 echo "== shellcheck"
