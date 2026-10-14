@@ -34,7 +34,7 @@ Draft notes for **v1.0.0**, for the PM to approve before the release (ADR-0007).
 - **Dashboard look and menu.** Switch off the lines between list items; offer any of Glance's published themes in the
   dashboard's theme picker; add an Edit link to the dashboard's menu that opens the editor on the page you're on.
 - **Container settings.** Give each Docker container an icon (from the icon finder, including the icon Unraid uses for
-  it), a name, a link and a description.
+  it), a name, a link and a description. A widget can show another server's containers, through a read-only proxy there.
 - **Backgrounds that stay put on phones,** and for a whole image, a blurred copy of it or the top of the screen.
 - **One container to install.** The editor, Glance, the preview and everything they need come as one container, with
   an Unraid template (icon, description, two ports, one folder). Updates show in Unraid's Docker tab.

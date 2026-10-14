@@ -13,16 +13,23 @@
   let { app, wref, w, disabled }: { app: App; wref: WidgetRef; w: ModelWidgetT; disabled: boolean } = $props();
 
   let result = $state<ContainersResult | null>(null);
-  // Ask Docker again whenever another docker-containers widget is opened.
+  // Ask Docker again whenever another docker-containers widget is opened, or its socket path changes. A path to another
+  // server's Docker (tcp://, http(s)://) is asked directly, once the draft with it has reached the server.
   const wid = $derived(w._id);
+  const sock = $derived(typeof (w as Record<string, unknown>)["sock-path"] === "string" ? String((w as Record<string, unknown>)["sock-path"]) : "");
+  const remote = $derived(/^(tcp|https?):\/\//.test(sock));
   $effect(() => {
     void wid;
+    const path = sock;
     result = null;
     let live = true;
-    api.containers()
-      .then((r) => { if (live) result = r; })
-      .catch((e: Error) => { if (live) result = { status: "unreachable", message: e.message }; });
-    return () => { live = false; };
+    const t = setTimeout(() => {
+      void app.settle()
+        .then(() => api.containers(path || undefined))
+        .then((r) => { if (live) result = r; })
+        .catch((e: Error) => { if (live) result = { status: "unreachable", message: e.message }; });
+    }, path ? 400 : 0);
+    return () => { live = false; clearTimeout(t); };
   });
 
   const docker = $derived(result?.status === "ok" ? result.containers : null);
@@ -64,7 +71,7 @@
   <p class="note pulse" style="margin: 0">Asking Docker for its containers…</p>
 {:else}
   {#if result.status === "ok"}
-    <p class="help" style="margin: 0 0 6px">{list.shown} of {list.rows.length} containers shown. The list comes from the Docker socket; hiding writes to this widget’s containers map in glance.yml.</p>
+    <p class="help" style="margin: 0 0 6px">{list.shown} of {list.rows.length} containers shown. The list comes from {remote ? `the Docker at ${sock}` : "this server's Docker"}; hiding writes to this widget’s containers map in glance.yml.</p>
   {:else}
     <div class="notice" role="status" style="margin-bottom: 6px">
       <span><strong>Can't reach the Docker socket.</strong> Containers already named in the widget's map are still listed and can be toggled; new ones can't be discovered.</span>
