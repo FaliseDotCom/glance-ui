@@ -26,6 +26,8 @@ LABEL org.opencontainers.image.title="Glance Editor" \
 # Unmodified glance binary (AGPL-3.0, source: github.com/glanceapp/glance at the commit above), used only for
 # `config:validate` (ADR-0001, ADR-0013).
 COPY --from=glance /app/glance /usr/local/bin/glance
+COPY third_party/glance/LICENSE third_party/glance/README.md /usr/share/doc/glance/
+COPY LICENSE /usr/share/doc/glance-editor/LICENSE
 WORKDIR /app
 COPY --from=build /src/apps/editor/build build
 RUN echo '{"type":"module"}' > package.json

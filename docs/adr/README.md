@@ -40,4 +40,5 @@ One file per decision: `NNNN-short-title.md`, copied from [0000-template.md](000
 | [0019](0019-preview-glance.md) | The preview Glance: a second container, served by the editor under /preview | accepted (PR #10) | no |
 | [0020](0020-icon-finder.md) | The icon finder: name lists, web sources, downloads into Glance's assets folder | accepted (PR #12) | no |
 | [0021](0021-background-files.md) | Background: the editor's own section in glance.yml, and its CSS file in Glance's assets folder | accepted (PR #13) | no |
-| [0022](0022-pixabay.md) | Pixabay: key on the server, cached search, downloaded picks, a local rotating set | proposed (accepted on merge) | no (one D-62 reading to confirm) |
+| [0022](0022-pixabay.md) | Pixabay: key on the server, cached search, downloaded picks, a local rotating set | accepted (PR #14) | no (one D-62 reading to confirm) |
+| [0023](0023-deployment.md) | Deployment on Unraid | **proposed: needs your decision** | **yes** |

@@ -4,7 +4,7 @@ A no-code web editor that owns the entire Glance (glanceapp/glance) config. Dash
 data model; `glance.yml` is generated on every explicit Save and is output only. Existing config is imported once.
 
 @docs/handoff.md
-@docs/phases/phase-10-backgrounds.md
+@docs/phases/phase-11-deployment.md
 
 ## Roles
 - **PM/QA (repo owner):** merges every PR, approves every release note, decides everything with UX impact.

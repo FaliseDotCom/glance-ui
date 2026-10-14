@@ -1,11 +1,11 @@
-# Phase 10: Backgrounds, server folders, Pixabay (current phase)
+# Phase 10: Backgrounds, server folders, Pixabay
 
 **Status:** in two PRs. **10a** (background image and slideshow, this device, server folders): merged (PR #13).
-**10b** (Pixabay, plus two fixes to 10a): branch `phase-10/pixabay`, PR open; merged by Claude once CI is green.
+**10b** (Pixabay, plus two fixes to 10a): merged (PR #14).
 **Design:** design pass 1 (ADR-0016): flow 9 step 4, D-52, D-53, D-59, D-60 (10a); D-61, D-62 (10b, decided
 2026-10-13: 1280 px; a local pool, downloaded only when you press "Get new images"); design 03 "Background
 incomplete", "Server folder empty or not mounted", "Image upload fails", "Pixabay key rejected or limit reached".
-**Architecture:** ADR-0021 (accepted, PR #13), ADR-0022 (Pixabay; non-UX; accepted on merge).
+**Architecture:** ADR-0021 (accepted, PR #13), ADR-0022 (Pixabay; accepted, PR #14).
 
 ## Acceptance criteria (plan v2)
 | Criterion | Status | Evidence |

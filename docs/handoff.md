@@ -1,11 +1,11 @@
 # Handoff
 
 The single place to see where the project stands. Updated at the end of every work session and every PR.
-Last updated: 2026-10-14 (Phase 10b PR opened).
+Last updated: 2026-10-14 (Phase 11 preparation PR opened; waiting for your decisions).
 
 ## Current state
-- **Phase:** 10b (Pixabay) **PR open**; Claude merges it when CI is green. 10a merged (PR #13). Then Phase 11, which
-  needs your decisions (deployment) and your hands (install, cutover).
+- **Phase:** 11 (deployment). Preparation PR open for you; **waiting for your decisions in ADR-0023** and your
+  approval of the v1.0.0 release notes. Phases 0 to 10 are merged.
 - **Merging:** you allowed Claude to merge the remaining phases' PRs, unless something needs your decision or
   agreement (CLAUDE.md rule 1). Live host, cutover and release notes stay with you.
 - **Phase plan:** approved 2026-10-13.
@@ -40,6 +40,10 @@ Last updated: 2026-10-14 (Phase 10b PR opened).
 ## Needs user decision
 Nothing below may be built on until you decide. ★ = affects user experience.
 
+- ★ **[ADR-0023](adr/0023-deployment.md) Deployment on Unraid:** option A (four Unraid templates on one network,
+  recommended), B (Compose Manager Plus) or C (a script); plus 7 questions (folders, ports, environment, access,
+  outbound internet, image hosting). Nothing is deployed until you decide.
+- ★ **v1.0.0 release notes:** draft in `CHANGELOG.md` (Unreleased). Approve or edit; then you push the `v1.0.0` tag.
 - ★ **D-62 reading (confirm, or say otherwise):** in a slideshow, every image of a Pixabay set is a slide, so the
   set's daily/weekly/monthly switch only matters when the background is a single image (ADR-0022). Built this way;
   the alternative (a slideshow showing part of the set and swapping) is a small change.
@@ -169,11 +173,15 @@ Nothing below may be built on until you decide. ★ = affects user experience.
 - The real-binary tests caught a validator bug that my own model-based tests missed. Both kinds of test are kept.
 
 ## Next steps
-1. Claude: merge Phase 10b when CI is green, then prepare Phase 11 (deployment ADR, runbooks) and stop for your decisions.
+1. You: decide ADR-0023 and approve the release notes (Phase 11 preparation PR).
+2. Claude: then finalise the runbook for the chosen option; you install side by side, compare, rehearse the fallback,
+   cut over.
 2. You, any time, on the dev editor (:18190): Theme → Background → Image → "Use Glance's assets folder" → Add
    images; and a bookmark link's icon → Find.
 
 ## Session log
+- 2026-10-14: PR #14 (Phase 10b) merged by Claude, after fixing a test teardown hang CI found.
+- 2026-10-14: Phase 11 prepared: ADR-0023 (proposed), runbook drafts, release workflow, Glance license in the image, v1.0.0 notes draft. PR opened; not merged (decisions pending).
 - 2026-10-14: PR #13 (Phase 10a) merged by Claude. Phase 10b implemented (Pixabay; two 10a fixes); dev Glance checked and restored; PR opened. ADR-0022.
 - 2026-10-14: PR #12 (Phase 9) merged by Claude. Phase 10a implemented (background image and slideshow); PR opened. ADR-0021 (non-UX).
 - 2026-10-14: PR #11 (Phase 8) merged. PM allowed Claude to merge the remaining phases. Phase 9 implemented (icon finder); PR opened. ADR-0020 (non-UX).

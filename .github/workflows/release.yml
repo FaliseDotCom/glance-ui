@@ -1,0 +1,40 @@
+name: Release
+# Publishes the editor image to GitHub Container Registry when a version tag (vX.Y.Z) is pushed. Tags are created by
+# the PM after approving the release notes (ADR-0007); Claude never pushes tags.
+on:
+  push:
+    tags: ["v*.*.*"]
+
+permissions:
+  contents: read
+
+jobs:
+  image:
+    name: Publish editor image
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Build
+        run: |
+          image="ghcr.io/${GITHUB_REPOSITORY_OWNER,,}/glance-editor"
+          echo "IMAGE=$image" >> "$GITHUB_ENV"
+          scripts/build-editor-image.sh "$image:${GITHUB_REF_NAME#v}" \
+            --label "org.opencontainers.image.source=https://github.com/${GITHUB_REPOSITORY}" \
+            --label "org.opencontainers.image.version=${GITHUB_REF_NAME#v}" \
+            --label "org.opencontainers.image.revision=${GITHUB_SHA}"
+      - name: Check the image (starts, licenses present)
+        run: |
+          docker run --rm --entrypoint sh "$IMAGE:${GITHUB_REF_NAME#v}" -c 'test -s /usr/share/doc/glance/LICENSE && test -s /usr/share/doc/glance-editor/LICENSE'
+          docker run -d --name rel -p 127.0.0.1:3000:3000 "$IMAGE:${GITHUB_REF_NAME#v}"
+          for i in $(seq 1 30); do curl -fsS http://127.0.0.1:3000/healthz && break; sleep 1; done
+          docker rm -f rel
+      - name: Push
+        env:
+          TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "$TOKEN" | docker login ghcr.io -u "$GITHUB_ACTOR" --password-stdin
+          docker push "$IMAGE:${GITHUB_REF_NAME#v}"
