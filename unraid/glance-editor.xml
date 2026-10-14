@@ -16,7 +16,7 @@
   <Icon>https://raw.githubusercontent.com/{{REPO}}/v{{VERSION}}/unraid/glance-editor.png</Icon>
   <ExtraParams/>
   <PostArgs/>
-  <Requires>Nothing else to install. To keep your current Glance dashboard, copy its glance.yml into the config folder inside the data folder before the first start, and choose Import in the editor. Guide: https://github.com/{{REPO}}/blob/v{{VERSION}}/docs/runbooks/install.md</Requires>
+  <Requires>Nothing else to install. To keep your current Glance dashboard, open the editor (WebUI) and upload a .zip of your Glance folder on the first screen; its include files, assets and .env come with it. Guide: https://github.com/{{REPO}}/blob/v{{VERSION}}/docs/runbooks/install.md</Requires>
   <Config Name="Editor" Target="3000" Default="8090" Mode="tcp" Description="The editor (WebUI)." Type="Port" Display="always" Required="true" Mask="false">8090</Config>
   <Config Name="Dashboard" Target="8080" Default="8080" Mode="tcp" Description="Your Glance dashboard. Use another port if something else, like your current Glance, already uses this one." Type="Port" Display="always" Required="true" Mask="false">8080</Config>
   <Config Name="Data" Target="/data" Default="/mnt/user/appdata/glance-editor" Mode="rw" Description="Everything in one folder: config/glance.yml (your dashboard), assets/ (icons and backgrounds), editor/ (every saved version and the settings). Include it in your backups." Type="Path" Display="always" Required="true" Mask="false">/mnt/user/appdata/glance-editor</Config>

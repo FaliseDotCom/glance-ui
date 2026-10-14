@@ -1,0 +1,14 @@
+<?xml version="1.0"?>
+<CommunityApplications>
+  <Profile>
+**Glance Editor**: your [Glance](https://github.com/glanceapp/glance) dashboard and a no-code editor for it, in one container.
+
+Build pages, columns and widgets, pick a theme, icons and a background, add community widgets, and preview everything before it goes live, all in the browser and without writing YAML. Glance itself is included, at the version the editor is tested with.
+
+Glance is the work of the glanceapp/glance project and its contributors; this repository only adds the editor around it.
+
+Support and questions: [GitHub issues](https://github.com/{{REPO}}/issues). Source, screenshots and install guide: [github.com/{{REPO}}](https://github.com/{{REPO}}).
+  </Profile>
+  <Icon>https://raw.githubusercontent.com/{{CA_REPO}}/main/icon.png</Icon>
+  <WebPage>https://github.com/{{REPO}}</WebPage>
+</CommunityApplications>
