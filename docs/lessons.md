@@ -251,3 +251,6 @@ overwrites labels with map values. **Do:** treat source reading as a hypothesis 
   icons and links) never reached main or v1.0.0, though the 1.0.0 notes describe them. Before pushing to a PR's branch,
   check it is still open; before tagging a release, check that every commit the notes describe is an ancestor of the tag
   (`git merge-base --is-ancestor <commit> <tag>`).
+- `.gitignore`'s `data/` (meant for editor data) also matched `packages/server/data/`: the community widgets snapshot
+  stayed local and CI's typecheck caught it. Check `git status` for files a commit should include but doesn't
+  (`git check-ignore -v <file>`).
