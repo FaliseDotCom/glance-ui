@@ -1,13 +1,13 @@
-<!-- Desktop left rail (D-02): pages with reorder arrows on the active one, Add page, then History.
-     Theme joins the rail in Phase 6. -->
+<!-- Desktop left rail (D-02): pages with reorder arrows on the active one, Add page, then Theme and History. -->
 <script lang="ts">
-  import { addPage, movePage, plural, widgetCount } from "@glance-editor/editing";
+  import { GALLERY, addPage, isGalleryTheme, movePage, plural, widgetCount } from "@glance-editor/editing";
   import type { App } from "../client/app.svelte.ts";
   import Icon from "./Icon.svelte";
   let { app }: { app: App } = $props();
 
   const pages = $derived(app.draft?.pages ?? []);
   const verMeta = $derived(app.liveVersion !== null ? `Live: version ${app.liveVersion}` : "No versions yet");
+  const themeMeta = $derived(GALLERY.find((t) => isGalleryTheme(app.draft?.theme, t))?.name ?? "Your own colours");
 
   function add() {
     let id = "";
@@ -34,6 +34,9 @@
   {/each}
   <button type="button" class="btn ghost" style="justify-content: flex-start; color: var(--ink-muted)" onclick={add}><Icon name="plus" />Add page</button>
   <div class="rule" style="margin-top: 16px"><span class="lbl">Site</span></div>
+  <button type="button" class="navbtn" class:on={app.screen === "theme"} aria-current={app.screen === "theme" ? "page" : undefined} onclick={() => (app.screen = "theme")}>
+    Theme<span class="navmeta">{themeMeta}</span>
+  </button>
   <button type="button" class="navbtn" class:on={app.screen === "history"} aria-current={app.screen === "history" ? "page" : undefined} onclick={() => (app.screen = "history")}>
     History<span class="navmeta">{verMeta}</span>
   </button>

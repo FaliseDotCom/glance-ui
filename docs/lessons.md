@@ -3,6 +3,22 @@
 Things learned the hard way or by surprise. Newest first. Each entry: date, what happened, what to do.
 Auto memory is machine-local. This file is the record.
 
+### 2026-10-14: Things that bit while building the widget editor (Phase 6)
+- **Edit the copy, not the live state.** `app.mutate(fn)` hands `fn` a copy of the draft. Move buttons and drag first
+  called `moveWidget(app.draft!, …)`, which changed the live object and then had it replaced by the unchanged copy, so
+  moves silently did nothing. Caught by the drag test, not by typecheck. **Do:** the function passed to `mutate` only
+  touches its argument.
+- **An unnamed container query finds the nearest container.** Making `.canvas` a container (for the inspector-open
+  column sizes) would have switched every `@container (max-width: 760px)` phone rule inside it to the canvas width.
+  **Do:** name containers (`app`, `canvas`) and always query by name.
+- **Svelte drops whitespace at the edge of a block.** `{label}{#if required} <span>Required</span>{/if}` renders
+  "LabelRequired", so the field's accessible name ran together. **Do:** `{" "}` inside the block.
+- **Two writers must agree.** The YAML override (D-12) was written as typed by the document writer, but Start empty
+  saves through the generator, which ignored it. Found by a server test. **Do:** any new model feature that changes
+  output is tested through both `writeDraft` and `generate`.
+- **The design's three columns don't fit next to a 420 px inspector at 1280 px.** The prototype squeezes a full column
+  to about 100 px. Found by the 44 px target check. The schematic now keeps a minimum column width and scrolls sideways.
+
 ### 2026-10-13: `config:validate` is not the whole of "Glance will load it"
 validate runs the YAML parse, the page/column rules and every widget's `initialize()`, but not `newApplication`. A page
 whose slug is `login` or `logout` (also when derived from the name "Login") passes validate, then Glance refuses to start

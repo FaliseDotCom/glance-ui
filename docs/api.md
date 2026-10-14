@@ -1,4 +1,4 @@
-# Editor HTTP API (Phases 3 and 5)
+# Editor HTTP API (Phases 3, 5 and 6)
 
 JSON in, JSON out. **Mutating requests** (anything but GET) need `Origin` naming the editor's own host and
 `Content-Type: application/json` (ADR-0004). Send `{}` when there is no body. Errors: `{ "error": "…" }` with 4xx/5xx.
@@ -16,9 +16,15 @@ JSON in, JSON out. **Mutating requests** (anything but GET) need `Origin` naming
 | GET | `/api/versions` | | `[{ number, createdAt, source, changes, applied, live }]`, newest first |
 | GET | `/api/versions/:n` | | the version, with its `text` and its `pages` and `widgets` counts (null if it can't be read) |
 | POST | `/api/versions/:n/restore` | `{}` | state, version loaded into the draft; nothing is written (D-31) |
+| POST | `/api/widget/text` | `{ widgetId }` | `{ text }`: the widget's YAML tab (D-12). Exactly what a save would write for it (its text in the rendered file, comments included), or its override. The stored draft is used, so send pending edits first |
+| POST | `/api/widget/parse` | `{ text, widgetId }` | `{ ok: true, widget, notes }` or `{ ok: false, message, line }`: reads YAML typed in the YAML tab as the importer reads a widget (unknown keys kept, listed in `notes`). Nothing is stored; the client applies it with `_yaml: { text, form }` |
+| GET | `/api/colours` | | `{ colours }`: "My colours" (D-51), stored by the editor, never in glance.yml |
+| PUT | `/api/colours` | `{ colours }` | `{ colours }`, de-duplicated; each must be "H S L" (whole numbers, hue ≤ 360) |
 | GET | `/healthz` | | liveness and glance binary presence |
 
 `reload` is `reloaded` (Glance loaded the new file; D-29), `not-confirmed` (it didn't within 10 s), or `not-checked`
-(no `GLANCE_URL`, or Glance unreachable). `problems[].location` = `{ pageId, column | "head", widgetIds, field, index }` for Go to (D-28).
+(no `GLANCE_URL`, or Glance unreachable). `problems[].location` = `{ pageId, column | "head", widgetIds, field, index, path }` for Go to (D-28); `path` is the
+full path inside the widget, e.g. `["groups", 0, "links", 1, "url"]`. A widget with `_yaml` (a YAML override) is
+written as `_yaml.text`, as typed.
 A Glance validation message names only a widget type; the editor finds the widget (the first match in Glance's order
 that Glance rejects on its own) and puts it in `location`. A write that fails stores no version (`error`, "Nothing changed").

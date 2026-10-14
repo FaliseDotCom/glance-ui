@@ -66,3 +66,50 @@ test.describe("layout controls", () => {
     await expect(page.getByRole("region", { name: "Column 2", exact: true }).locator(".wname", { hasText: "Clock" })).toBeVisible();
   });
 });
+
+test.describe("widgets by keyboard (Phase 6)", () => {
+  test.use({ opts: { seed: fixture("home.yml") } });
+  test("add a widget, fill it in, move it with the grip's buttons and delete it, without the mouse", async ({ page, editor }) => {
+    await page.goto(editor.url);
+    await page.getByRole("button", { name: /Import glance\.yml/ }).click();
+    await page.getByRole("button", { name: /^Import \d+ pages?$/ }).click();
+    const add = page.getByRole("region", { name: "Column 1", exact: true }).getByRole("button", { name: "Add widget" });
+    await add.focus();
+    await page.keyboard.press("Enter");
+    const sheet = page.getByRole("dialog", { name: "Add widget" });
+    await expect(sheet.getByLabel("Search widget types")).toBeFocused();
+    await page.keyboard.type("reddit");
+    await page.keyboard.press("Tab");
+    await expect(sheet.getByRole("button", { name: /^Reddit/ })).toBeFocused();
+    await page.keyboard.press("Enter");
+    // The inspector takes focus on its heading; Tab reaches the form.
+    const ins = page.getByRole("complementary", { name: "Widget settings" });
+    await expect(ins.getByRole("heading", { name: "Reddit" })).toBeFocused();
+    const sub = ins.getByRole("textbox", { name: /^Subreddit/ });
+    for (let i = 0; i < 12 && !(await sub.evaluate((el) => el === document.activeElement)); i++) await page.keyboard.press("Tab");
+    await expect(sub).toBeFocused();
+    await page.keyboard.type("selfhosted");
+    await expect(page.locator(".wcard", { hasText: "r/selfhosted" })).toBeVisible();
+
+    const close = ins.getByRole("button", { name: (page.viewportSize()?.width ?? 1280) < 760 ? "Back to layout" : "Close settings" });
+    await close.focus();
+    await page.keyboard.press("Enter");
+    await expect(ins).toBeHidden();
+
+    // The grip opens move buttons; the keyboard stays on the card as it moves.
+    const card = page.locator(".wcard", { hasText: "r/selfhosted" });
+    const grip = card.getByRole("button", { name: "Move Reddit" });
+    await grip.focus();
+    await page.keyboard.press("Enter");
+    const up = card.getByRole("button", { name: "Move up" });
+    await up.focus();
+    await page.keyboard.press("Enter");
+    await expect(up).toBeFocused();
+    await expect(page.getByRole("region", { name: "Column 1", exact: true }).locator(".wcard").nth(1)).toContainText("Reddit");
+    await card.getByRole("button", { name: "Delete Reddit" }).focus();
+    await page.keyboard.press("Enter");
+    await expect(page.getByText("Deleted Reddit from the draft")).toBeVisible();
+    await expect(page.locator(".wcard", { hasText: "Reddit" })).toHaveCount(0);
+    expect(editor.live()).not.toContain("reddit");
+  });
+});

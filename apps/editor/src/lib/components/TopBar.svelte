@@ -7,7 +7,7 @@
   const statusText = $derived(
     app.glance === "reachable" ? "Glance reachable" : app.glance === "unreachable" ? "Glance not responding" : "Glance status not checked",
   );
-  const inEditor = $derived(app.screen === "pages" || app.screen === "history");
+  const inEditor = $derived(app.screen === "pages" || app.screen === "theme" || app.screen === "history");
   const hasChanges = $derived(app.changeCount > 0 || app.restored);
 </script>
 

@@ -1,5 +1,5 @@
 // The editor's JSON API (docs/api.md). Mutations send JSON from this origin, as ADR-0004 requires.
-import type { DashboardT } from "@glance-editor/model";
+import type { DashboardT, WidgetT } from "@glance-editor/model";
 import type { Change, DraftState, GlanceStatus, ImportCheck, Problem, SaveResult, VersionSummary } from "@glance-editor/server";
 
 export type { Change, DraftState, GlanceStatus, ImportCheck, Problem, SaveResult, VersionSummary };
@@ -29,4 +29,9 @@ export const api = {
   version: (n: number) => call<VersionDetail>("GET", `/api/versions/${n}`),
   restore: (n: number) => call<DraftState>("POST", `/api/versions/${n}/restore`),
   glance: () => call<{ status: GlanceStatus }>("GET", "/api/glance"),
+  widgetText: (widgetId: string) => call<{ text: string }>("POST", "/api/widget/text", { widgetId }),
+  parseWidget: (text: string, widgetId: string) =>
+    call<{ ok: true; widget: WidgetT; notes: string[] } | { ok: false; message: string; line: number | null }>("POST", "/api/widget/parse", { text, widgetId }),
+  colours: () => call<{ colours: string[] }>("GET", "/api/colours"),
+  setColours: (colours: string[]) => call<{ colours: string[] }>("PUT", "/api/colours", { colours }),
 };

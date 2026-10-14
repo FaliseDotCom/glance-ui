@@ -1,11 +1,15 @@
 // The editor's client state: one draft (kept on the server, D-46), its change list and problems, the current screen,
-// the open sheet and the toast. Every edit replaces the whole draft on the server (PUT /api/draft), in order.
+// the open sheet and the toast, the widget open in the inspector, and "My colours". Every edit replaces the whole draft
+// on the server (PUT /api/draft), in order.
 
-import type { DashboardT, PageT } from "@glance-editor/model";
-import { deletePage, plural } from "@glance-editor/editing";
+import type { DashboardT, PageT, WidgetT } from "@glance-editor/model";
+import {
+  addWidget, deleteWidget, deletePage, editWidget, findWidget, parentOf, plural, typeLabel, widgetAt, widgetName,
+  type ListRef, type WidgetRef,
+} from "@glance-editor/editing";
 import { api, type Change, type DraftState, type GlanceStatus, type ImportCheck, type Problem, type VersionSummary } from "./api.ts";
 
-export type Screen = "loading" | "welcome" | "import" | "layout" | "pages" | "history";
+export type Screen = "loading" | "welcome" | "import" | "layout" | "pages" | "theme" | "history";
 
 export type Sheet =
   | { kind: "review" }
@@ -16,7 +20,8 @@ export type Sheet =
   | { kind: "loadFile" }
   | { kind: "error"; message: string }
   | { kind: "discard" }
-  | { kind: "deletePage"; pageId: string };
+  | { kind: "deletePage"; pageId: string }
+  | { kind: "add"; target: ListRef };
 
 export interface Toast {
   text: string;
@@ -29,6 +34,33 @@ export interface Highlight {
   field?: string;
   column?: number | "head";
   widgetIds?: string[];
+  /** Inside the widget: the field path, e.g. ["groups", 0, "links", 1, "url"]. */
+  path?: (string | number)[];
+}
+
+/**
+ * A value typed into a field that the draft can't hold (design 03 "Field invalid while typing"): the text stays in the
+ * field, outlined, with a one-line rule; it blocks Save, not editing.
+ */
+export interface InputError {
+  text: string;
+  message: string;
+  label: string;
+  location: Problem["location"];
+}
+
+/** Desktop drag (D-15): what is being dragged and where it would land. */
+export type Drag =
+  | { kind: "widget"; id: string; column: number | "head"; target: { column: number | "head"; index: number } | null }
+  | { kind: "column"; index: number; target: number | null };
+
+/** The colour picker (D-20): one open at a time, for a theme colour or a bookmark group. */
+export interface Picker {
+  target: string;
+  h: number;
+  s: number;
+  l: number;
+  hex: string | null;
 }
 
 const clone = <T>(x: T): T => structuredClone(x);
@@ -57,6 +89,18 @@ export class App {
   fixText = $state<string | null>(null);
   busy = $state(false);
   loadError = $state<string | null>(null);
+  /** The widget open in the inspector (D-04), and its tab (D-12). */
+  sel = $state<WidgetRef | null>(null);
+  insTab = $state<"settings" | "yaml">("settings");
+  /** D-19: one bookmark link open at a time ("groupId/linkId"). */
+  openLink = $state<string | null>(null);
+  /** D-15: the widget whose grip was tapped, showing its move buttons. */
+  movesFor = $state<string | null>(null);
+  inputErrors = $state<Record<string, InputError>>({});
+  drag = $state<Drag | null>(null);
+  picker = $state<Picker | null>(null);
+  /** D-51: kept by the editor, shown in every colour row and in bookmark groups. */
+  colours = $state<string[]>([]);
 
   private toastTimer: ReturnType<typeof setTimeout> | undefined;
   private queue: Promise<unknown> = Promise.resolve();
@@ -73,7 +117,17 @@ export class App {
     return this.changes.length;
   }
   get errors(): Problem[] {
-    return [...this.problems.filter((p) => p.severity === "error"), ...this.glanceProblems];
+    return [...this.problems.filter((p) => p.severity === "error"), ...this.glanceProblems, ...this.typedProblems];
+  }
+  /** Values typed into fields that can't be stored, as problems (they block Save; Go to finds them). */
+  get typedProblems(): Problem[] {
+    return Object.values(this.inputErrors)
+      .filter((e) => !e.location.widgetIds || (this.draft && findWidget(this.draft, e.location.widgetIds[e.location.widgetIds.length - 1]!)))
+      .map((e) => ({ source: "editor" as const, severity: "error" as const, code: "field.invalid", message: e.message, location: e.location }));
+  }
+  /** The widget open in the inspector, if it still exists. */
+  get selWidget(): WidgetT | undefined {
+    return this.draft && this.sel ? widgetAt(this.draft, this.sel) : undefined;
   }
   get changesLabel(): string {
     return this.restored && this.changes.length === 0 ? `Restored version ${this.baseVersion}` : plural(this.changeCount, "unsaved change");
@@ -83,6 +137,7 @@ export class App {
     try {
       await this.reload();
       void this.checkGlance();
+      void api.colours().then((r) => (this.colours = r.colours)).catch(() => undefined);
     } catch (e) {
       this.loadError = (e as Error).message;
     }
@@ -99,6 +154,7 @@ export class App {
     if (!this.draft) this.screen = "welcome";
     else if (this.screen === "loading" || this.screen === "welcome" || this.screen === "import" || this.screen === "layout") this.screen = "pages";
     if (this.draft && !this.draft.pages.some((p) => p._id === this.pageId)) this.pageId = this.draft.pages[0]?._id ?? null;
+    if (this.sel && !this.selWidget) this.sel = null;
   }
 
   async reload() {
@@ -117,6 +173,67 @@ export class App {
     this.pageId = this.draft?.pages[0]?._id ?? null;
     this.sheet = null;
     this.say(`Deleted page “${name}” from the draft`);
+  }
+
+  // ---- widgets (D-04, D-05, D-12, D-15 to D-18) -------------------------------------------------------------------
+
+  /** Open a widget in the inspector. */
+  select(r: WidgetRef, tab: "settings" | "yaml" = "settings") {
+    this.sel = r;
+    this.insTab = tab;
+    this.openLink = null;
+    this.picker = null;
+    this.screen = "pages";
+    this.pageId = r.pageId;
+  }
+
+  closeInspector() {
+    this.sel = null;
+    this.picker = null;
+  }
+
+  /** Add widget (D-18): the inspector opens on the new widget. */
+  addWidgetTo(target: ListRef, type: string) {
+    let r: WidgetRef | null = null;
+    this.mutate((d) => (r = addWidget(d, target, type)));
+    this.sheet = null;
+    if (r) this.select(r);
+  }
+
+  /** D-17: immediate, with Undo. The inspector moves to the parent (or closes). */
+  deleteWidgetAt(r: WidgetRef) {
+    const w = this.draft && widgetAt(this.draft, r);
+    if (!w) return;
+    const name = widgetName(w, typeLabel(w.type));
+    const inside = this.sel && this.sel.ids.length >= r.ids.length && r.ids.every((id, i) => this.sel!.ids[i] === id);
+    this.mutate((d) => deleteWidget(d, r), { toast: `Deleted ${name} from the draft`, undo: true });
+    if (inside) this.sel = r.ids.length > 1 ? { ...parentOf(r), ids: r.ids.slice(0, -1) } : null;
+  }
+
+  /** Change the open widget (or any widget) in place. */
+  editWidget(r: WidgetRef, fn: (w: WidgetT) => void, opts: { toast?: string; undo?: boolean } = {}) {
+    this.mutate((d) => editWidget(d, r, fn), opts);
+  }
+
+  /** Record (or with null, clear) a value typed into a field that the draft can't hold. */
+  setInputError(key: string, e: InputError | null) {
+    if (e) this.inputErrors = { ...this.inputErrors, [key]: e };
+    else if (key in this.inputErrors) {
+      const { [key]: _gone, ...rest } = this.inputErrors;
+      this.inputErrors = rest;
+    }
+  }
+
+  /** D-51: saving a colour to "My colours", or removing one. Stored by the editor's server, never in glance.yml. */
+  async setColours(list: string[]) {
+    const before = this.colours;
+    this.colours = list;
+    try {
+      this.colours = (await api.setColours(list)).colours;
+    } catch (e) {
+      this.colours = before;
+      this.say(`Couldn't store your colours: ${(e as Error).message}`);
+    }
   }
 
   async checkGlance(): Promise<GlanceStatus> {
@@ -222,6 +339,12 @@ export class App {
   // ---- save (D-26 to D-32) --------------------------------------------------------------------------------------
 
   async save(acceptOutside?: number) {
+    // Values typed into fields that can't be stored block Save before anything is sent (design 03).
+    if (this.typedProblems.length) {
+      this.showErrors = true;
+      this.sheet = { kind: "problems" };
+      return;
+    }
     this.sheet = { kind: "checking" };
     await this.settle();
     let r;
@@ -263,6 +386,7 @@ export class App {
 
   async discard(message = "Draft discarded") {
     await this.settle();
+    this.inputErrors = {};
     this.apply(await api.discard());
     this.versions = await api.versions();
     this.glanceProblems = [];
@@ -274,6 +398,8 @@ export class App {
 
   async restore(n: number) {
     await this.settle();
+    this.inputErrors = {};
+    this.sel = null;
     this.apply(await api.restore(n));
     this.glanceProblems = [];
     this.showErrors = false;
@@ -281,14 +407,34 @@ export class App {
     this.say(`Version ${n} loaded as the draft. Save to make it live.`);
   }
 
-  /** D-28 Go to: open the page and point at the field, column or widget. */
+  /**
+   * D-28 Go to: open the page and point at the field, column or widget. A widget opens in the inspector with the field
+   * highlighted; a problem Glance reported opens its YAML tab (design 03 "Save blocked by Glance"). Theme problems open
+   * the Theme screen.
+   */
   goTo(p: Problem) {
     const loc = p.location;
     this.sheet = null;
+    if (!loc.pageId && loc.field?.startsWith("theme")) {
+      this.screen = "theme";
+      this.highlight = null;
+      return;
+    }
     this.screen = "pages";
     if (loc.pageId) {
       this.pageId = loc.pageId;
-      this.highlight = { pageId: loc.pageId, ...(loc.field ? { field: loc.field } : {}), ...(loc.column !== undefined ? { column: loc.column } : {}), ...(loc.widgetIds ? { widgetIds: loc.widgetIds } : {}) };
+      this.highlight = {
+        pageId: loc.pageId, ...(loc.field ? { field: loc.field } : {}), ...(loc.column !== undefined ? { column: loc.column } : {}),
+        ...(loc.widgetIds ? { widgetIds: loc.widgetIds } : {}), ...(loc.path ? { path: loc.path } : {}),
+      };
+      if (loc.widgetIds?.length && loc.column !== undefined) {
+        this.select({ pageId: loc.pageId, column: loc.column, ids: loc.widgetIds }, p.source === "glance" ? "yaml" : "settings");
+        const path = loc.path ?? [];
+        const gi = path[0] === "groups" && typeof path[1] === "number" ? path[1] : undefined;
+        const li = path[2] === "links" && typeof path[3] === "number" ? path[3] : undefined;
+        const w = this.selWidget as { groups?: { _id: string; links?: { _id: string }[] }[] } | undefined;
+        if (gi !== undefined && li !== undefined && w?.groups?.[gi]?.links?.[li]) this.openLink = `${w.groups[gi]._id}/${w.groups[gi].links![li]!._id}`;
+      } else this.sel = null;
     } else this.highlight = null;
   }
 }

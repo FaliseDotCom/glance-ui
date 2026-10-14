@@ -1,8 +1,9 @@
 <!-- Dialogs (design §4 and 03): Review → Checking → Problems or Saved; the outside-change choice (D-32); Discard (D-33);
-     Delete page (D-17). Centred modal on desktop, bottom sheet on a phone. -->
+     Delete page (D-17); Add widget (D-18). Centred modal on desktop, bottom sheet on a phone. -->
 <script lang="ts">
-  import { WIDGETS, widgetFields, type DashboardT, type WidgetT } from "@glance-editor/model";
-  import { changeText, plural, widgetCount, widgetName } from "@glance-editor/editing";
+  import { tick } from "svelte";
+  import { WIDGETS, type DashboardT, type WidgetT } from "@glance-editor/model";
+  import { THEME_LABELS, addOptions, changeText, fieldPathLabel, listLabel, plural, widgetAt, widgetCount, widgetName } from "@glance-editor/editing";
   import type { Problem } from "../client/api.ts";
   import type { App } from "../client/app.svelte.ts";
   import Icon from "./Icon.svelte";
@@ -11,7 +12,7 @@
   const sheet = $derived(app.sheet);
   const titles: Record<string, string> = {
     review: "Review and save", checking: "Checking", problems: "Problems", saved: "Saved", conflict: "Changed outside the editor",
-    loadFile: "Load the file", error: "Not saved", discard: "Discard changes", deletePage: "Delete page",
+    loadFile: "Load the file", error: "Not saved", discard: "Discard changes", deletePage: "Delete page", add: "Add widget",
   };
   const close = () => (app.sheet = null);
 
@@ -23,6 +24,7 @@
   function where(p: Problem, d: DashboardT | null): string {
     const loc = p.location;
     const page = d?.pages.find((x) => x._id === loc.pageId);
+    if (!page && loc.field?.startsWith("theme")) return "Theme";
     if (!page) return loc.field ? `Settings › ${loc.field}` : "Whole config";
     const parts = [page.name || "Untitled page"];
     if (loc.column === "head") parts.push("Head widgets");
@@ -40,14 +42,23 @@
   function fieldLabel(p: Problem, d: DashboardT | null): string {
     const f = p.location.field;
     if (!f) return p.source === "glance" ? "Glance's message" : "Layout";
-    if (!p.location.widgetIds?.length) return f === "name" ? "Page name" : f === "slug" ? "Slug" : f;
-    const page = d?.pages.find((x) => x._id === p.location.pageId);
-    let list: WidgetT[] | undefined = p.location.column === "head" ? page?.["head-widgets"] : typeof p.location.column === "number" ? page?.columns[p.location.column]?.widgets : undefined;
-    let w: WidgetT | undefined;
-    for (const id of p.location.widgetIds) { w = list?.find((x) => x._id === id); list = (w as { widgets?: WidgetT[] } | undefined)?.widgets; }
-    const top = f.split(".")[0]!;
-    return (w && widgetFields(w.type).find((x) => x.key === top)?.label) ?? f;
+    if (f.startsWith("theme.")) return THEME_LABELS[f.slice(6) as keyof typeof THEME_LABELS] ?? f.slice(6);
+    if (!p.location.widgetIds?.length || !d || !p.location.pageId || p.location.column === undefined) return f === "name" ? "Page name" : f === "slug" ? "Slug" : f;
+    const w = widgetAt(d, { pageId: p.location.pageId, column: p.location.column, ids: p.location.widgetIds });
+    return w ? fieldPathLabel(w.type, p.location.path ?? [f]) : f;
   }
+
+  // Add widget (D-18): a searchable list; types not allowed in the target are disabled with the reason.
+  let addQuery = $state("");
+  let addInput = $state<HTMLInputElement>();
+  const addTarget = $derived(sheet?.kind === "add" ? sheet.target : null);
+  const addParentType = $derived(addTarget && addTarget.parentIds.length && app.draft ? widgetAt(app.draft, { ...addTarget, ids: addTarget.parentIds })?.type ?? null : null);
+  const addList = $derived(addTarget ? addOptions(addParentType, addQuery) : []);
+  $effect(() => {
+    if (!addTarget) return;
+    addQuery = "";
+    void tick().then(() => addInput?.focus());
+  });
 
   const savedText = (reload: string) =>
     reload === "reloaded"
@@ -98,7 +109,25 @@
 {#if sheet}
   <div class="scrim">
     <div class="sheet" role="dialog" aria-modal="true" aria-label={titles[sheet.kind]} tabindex="-1" bind:this={dialog}>
-      {#if sheet.kind === "review"}
+      {#if sheet.kind === "add" && app.draft}
+        <div class="row between" style="align-items: flex-start">
+          <div><span class="lbl">{listLabel(app.draft, sheet.target)}</span><h2 class="h2">{addParentType === "group" ? "Add tab" : "Add widget"}</h2></div>
+          <button type="button" class="ib" aria-label="Close" onclick={close}><Icon name="close" size={20} /></button>
+        </div>
+        <label class="sr" for="addq">Search widget types</label>
+        <input id="addq" class="input" placeholder="Search widget types" bind:value={addQuery} bind:this={addInput} autocomplete="off" />
+        <div class="tlist" role="list" aria-label="Widget types">
+          {#each addList as t (t.type)}
+            <div role="listitem">
+              <button type="button" class="trow" disabled={t.disabled} onclick={() => app.addWidgetTo(sheet.target, t.type)}>
+                <span><span class="wname">{t.label}</span>{#if t.why}<span class="wsum" style="white-space: normal">{t.why}</span>{/if}</span>
+                <span class="tlabel">{t.category}</span>
+              </button>
+            </div>
+          {/each}
+          {#if !addList.length}<div class="empty">No widget type matches.</div>{/if}
+        </div>
+      {:else if sheet.kind === "review"}
         <span class="lbl">Save</span>
         <h2 class="h2">Save {plural(Math.max(changeLines.length, 1), "change")} to Glance</h2>
         <ul class="checks">{#each changeLines as t, i (i)}<li><span class="mono grow" style="white-space: normal">{t}</span></li>{/each}</ul>
@@ -133,7 +162,7 @@
                 <span style="font-weight: 700; color: var(--ink)">{fieldLabel(e, app.draft)}</span>
                 <span class={e.source === "glance" ? "glance" : "note"}>{e.message}</span>
               </span>
-              {#if e.location.pageId}<button type="button" class="btn" onclick={() => app.goTo(e)}>Go to</button>{/if}
+              {#if e.location.pageId || e.location.field?.startsWith("theme")}<button type="button" class="btn" onclick={() => app.goTo(e)}>Go to</button>{/if}
             </div>
           {/each}
           {#if app.errors.length === 0}<p class="note">All fixed. Save again to write glance.yml.</p>{/if}
