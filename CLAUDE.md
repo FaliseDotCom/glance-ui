@@ -4,7 +4,7 @@ A no-code web editor that owns the entire Glance (glanceapp/glance) config. Dash
 data model; `glance.yml` is generated on every explicit Save and is output only. Existing config is imported once.
 
 @docs/handoff.md
-@docs/phases/phase-7-preview.md
+@docs/phases/phase-8-docker-containers.md
 
 ## Roles
 - **PM/QA (repo owner):** merges every PR, approves every release note, decides everything with UX impact.
@@ -74,6 +74,9 @@ data model; `glance.yml` is generated on every explicit Save and is output only.
   Never hand-roll YAML for placeholders: use the generator. Edits to an imported file are spliced, not regenerated (ADR-0015).
 - `config:validate` doesn't run `newApplication`: a page slug `login`/`logout` passes validate but Glance won't load it
   (rule `page.reserved-slug`). Glance's reload stamp has 1 s resolution.
+- docker-containers: the map's entry replaces a container's `glance.*` labels; `hide` hides only for `true`/`yes`.
+  Docker's `all=false` (Running only) includes paused containers. The editor lists containers only through the
+  read-only socket proxy (`/docker-proxy.version`, ADR-0005), never the socket.
 - `server.base-url` prefixes every link and script path Glance writes, but not its routes: a proxy that strips the
   prefix serves it under a path (the preview at `/preview`, ADR-0019). An unset env var in a placeholder fails the load.
 - Glance's theme defaults (v0.8.6 main.css): background 240 8 9, primary 43 50 70, positive = primary, negative 0 70 70.

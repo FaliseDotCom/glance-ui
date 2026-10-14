@@ -19,3 +19,4 @@ echo "== upstream example";        test/upstream-example.sh
 echo "== Glance CLI behaviour";    test/glance-cli.sh
 echo "== hot-reload behaviour";    test/glance-reload.sh
 echo "== docker-containers";       test/glance-docker.sh
+echo "== Docker socket proxy";     test/docker-proxy.sh # with GLANCE_EDITOR_IMAGE set, also the editor image

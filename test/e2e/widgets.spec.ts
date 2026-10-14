@@ -373,7 +373,7 @@ test.describe("states", () => {
     await expect(sheet).toBeHidden();
   });
 
-  test("an unknown widget type is kept as written and edited in YAML; the containers section points to YAML for now", async ({ page, editor }) => {
+  test("an unknown widget type is kept as written and edited in YAML; without Docker the containers section says so", async ({ page, editor }) => {
     await importSeed(page, editor.url);
     const state = await (await page.request.get(`${editor.url}/api/state`)).json();
     state.draft.pages[0].columns[0].widgets.push({ _id: "future", type: "future-widget", _raw: { title: "Later" } });
@@ -384,6 +384,7 @@ test.describe("states", () => {
     await expect(inspector(page).getByText("Glance v0.8.6 has no widget type “future-widget”.")).toBeVisible();
     await closeInspector(page);
     await card(page, "Docker containers").getByRole("button", { name: /^Docker containers, / }).click();
-    await expect(inspector(page).getByText(/The containers list .* isn't built yet/)).toBeVisible();
+    await expect(inspector(page).getByText("Can't reach the Docker socket.")).toBeVisible(); // design 03
+    await expect(inspector(page).getByText("The editor has no Docker connection set up.")).toBeVisible();
   });
 });

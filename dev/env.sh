@@ -8,12 +8,15 @@ set -euo pipefail
 DEV_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 # shellcheck source=../glance.version
 source "$DEV_ROOT/glance.version"
+# shellcheck source=../docker-proxy.version
+source "$DEV_ROOT/docker-proxy.version"
 
 DEV_LABEL="glance-editor-dev=1"
 DEV_NETWORK="glance-editor-dev"
 DEV_GLANCE="glance-editor-dev-glance"
 DEV_EDITOR="glance-editor-dev-editor"
 DEV_PREVIEW="glance-editor-dev-preview"   # the preview Glance (ADR-0019): no published port, reached through the editor
+DEV_DOCKER_PROXY="glance-editor-dev-docker-proxy" # the editor's read-only Docker connection (ADR-0005): no published port
 
 # Bind address: 0.0.0.0 makes the services reachable from the LAN (the PM's choice). Set DEV_BIND=127.0.0.1 to keep them local.
 DEV_BIND="${DEV_BIND:-0.0.0.0}"

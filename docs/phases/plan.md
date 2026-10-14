@@ -12,13 +12,13 @@ Glance v0.8.6, on desktop and at 390 px.
 | ----- | ---- | ---------------- | ------ |
 | 0 | Setup | none | ✅ merged (#1, #2) |
 | 1 | Data model and generator | none | ✅ merged (#3) |
-| 2 | Import + document-preserving writer (no UI) | D-14, D-34–D-38 | next |
-| 3 | Server core: drafts, versions, save pipeline, API (no UI) | D-26–D-33, D-46, D-29 | |
-| 4 | Widget schema for all 27 types | D-11, D-58, handoff §3 | |
-| 5 | UI 1: shell, pages and columns, Save/Review/Problems, History, first run | D-01–D-10, D-17, D-26–D-35 (UI), D-40–D-44 | |
-| 6 | UI 2: widgets, inspector and forms, YAML override, bookmarks, theme | D-11–D-20, D-50, D-51, D-57, D-63 | |
-| 7 | Preview Glance | D-39, D-47–D-49 | |
-| 8 | Docker containers section (via the proxy) | D-22–D-24, ADR-0005 | |
+| 2 | Import + document-preserving writer (no UI) | D-14, D-34–D-38 | ✅ merged (#5) |
+| 3 | Server core: drafts, versions, save pipeline, API (no UI) | D-26–D-33, D-46, D-29 | ✅ merged (#6) |
+| 4 | Widget schema for all 27 types | D-11, D-58, handoff §3 | ✅ merged (#7) |
+| 5 | UI 1: shell, pages and columns, Save/Review/Problems, History, first run | D-01–D-10, D-17, D-26–D-35 (UI), D-40–D-44 | ✅ merged (#8) |
+| 6 | UI 2: widgets, inspector and forms, YAML override, bookmarks, theme | D-11–D-20, D-50, D-51, D-57, D-63 | ✅ merged (#9) |
+| 7 | Preview Glance | D-39, D-47–D-49 | ✅ merged (#10) |
+| 8 | Docker containers section (via the proxy) | D-22–D-24, ADR-0005 | PR open |
 | 9 | Icon finder | D-21, D-54–D-56 | D-56 decided: Iconify + Openverse |
 | 10 | Backgrounds, server folders, Pixabay | D-52, D-53, D-59–D-62 | D-61/D-62 decided (1280 px; local pool) |
 | 11 | Packaging, Unraid deployment, cutover, v1.0.0 | ADR-0006/0007/0008, deployment ADR | |

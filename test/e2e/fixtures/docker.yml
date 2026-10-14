@@ -1,0 +1,17 @@
+# Test dashboard for flow "Hide a container". The widget reads the test's stand-in Docker API, as the editor does.
+server:
+  host: 127.0.0.1
+  port: {{GLANCE_PORT}}
+
+pages:
+  - name: Home
+    columns:
+      - size: full
+        widgets:
+          - type: docker-containers
+            sock-path: {{DOCKER_URL}}
+            containers:
+              glance-editor: # the editor itself
+                hide: true
+              jellyfin:
+                name: Jellyfin # display name, kept when the eye is pressed

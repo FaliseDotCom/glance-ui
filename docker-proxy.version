@@ -1,0 +1,7 @@
+# Pinned Docker socket proxy (ADR-0005): the editor lists containers through it and never sees the socket.
+# Tecnativa/docker-socket-proxy v0.5.0 (released 2026-07-27), by digest. Change only through a PR.
+DOCKER_PROXY_VERSION=v0.5.0
+DOCKER_PROXY_IMAGE=tecnativa/docker-socket-proxy:v0.5.0@sha256:1f5038b54f06c3e18422902cf00ba21803d1c97805aae032e5e6673d532d3459
+# What the editor needs and nothing else: the containers section, GET and HEAD only (POST=0 is the image's default,
+# set here so it can't be lost). EVENTS, PING and VERSION are on by default in the image; the editor uses none of them.
+DOCKER_PROXY_ENV="CONTAINERS=1 POST=0 EVENTS=0 PING=0 VERSION=0"

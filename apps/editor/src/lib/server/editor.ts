@@ -14,6 +14,7 @@ export function getEditor(): Promise<Editor> {
     glanceVersion: env.GLANCE_VERSION ?? "unknown",
     previewConfigPath: env.PREVIEW_CONFIG || undefined,
     previewGlanceUrl: env.PREVIEW_GLANCE_URL || undefined,
+    dockerUrl: env.DOCKER_PROXY_URL || undefined,
   }).then((e) => {
     // ADR-0008: a daily snapshot of the editor's data (retention handled in the store).
     timer ??= setInterval(() => e.dailyBackup(), 24 * 60 * 60 * 1000);

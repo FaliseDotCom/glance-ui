@@ -119,7 +119,7 @@ export function widgetSummary(w: WidgetLike): string {
     case "clock": return list("timezones", "time zone");
     case "repository": return typeof w.repository === "string" ? w.repository : "";
     case "search": return typeof w["search-engine"] === "string" ? w["search-engine"] : "";
-    case "docker-containers": return list("containers", "container setting");
+    case "docker-containers": return w["hide-by-default"] === true ? "Hidden unless switched on" : "All shown unless hidden"; // prototype
     default: return "";
   }
 }

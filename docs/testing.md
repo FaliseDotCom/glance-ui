@@ -3,9 +3,10 @@
 ## Safety: the harness never touches the live dashboard
 - Every container the harness starts is named `glance-editor-test-*` and labelled `glance-editor-test=1`.
   Cleanup only removes containers with that label.
-- Ports are `127.0.0.1:18080` (smoke) and `127.0.0.1:18081` (reload). They are never published on other interfaces.
-- No Docker socket is mounted into test containers, except in `test/glance-docker.sh`: there the socket is mounted
-  read-only into a test Glance that only lists containers, and the throwaway containers it lists carry the test label.
+- Ports are `127.0.0.1:18080` (smoke), `127.0.0.1:18081` (reload) and others in the 18xxx range (one per script). They are never published on other interfaces.
+- No Docker socket is mounted into test containers, except in `test/glance-docker.sh` (read-only, into a test Glance
+  that only lists containers) and `test/docker-proxy.sh` (read-only, into the pinned socket proxy, which refuses every
+  write). The throwaway containers they list carry the test label.
   CLI checks run with `--network none`.
 - Configs come only from `test/fixtures/`, copied to a fresh `mktemp -d`. Nothing reads or writes the live config path.
 - If `DOCKER_HOST` is set, the harness refuses to run (so it can't be pointed at the Glance host by accident).
@@ -20,16 +21,17 @@
 | `npx vitest run packages/document/test/widget-schema.test.ts` | Every widget schema against the real binary: required and docs-required fields, enum options (strict vs soft), every key's existence (wrong-typed value must fail), cross-field rules, import → generate of each sample, built-in themes | ~3 s |
 | `node scripts/glance-source-data.ts --check` | The checked-in widget type list and themes match Glance's source at the pinned commit (needs network; part of `scripts/test.sh`) | ~1 s |
 | `npx vitest run` | Model rules, placeholder parser, generator (incl. a 2,000-run property test), validation and render tests against the **real pinned binary** (`GLANCE_BIN`, extracted from the image by `scripts/fetch-glance-binary.sh`) | ~5 s |
-| `npx playwright test` | The editor UI end to end (`test/e2e`): builds the app, then per test a temp config dir, a real Glance on it and the built editor. Flows 1, 2, 3, 4, 6, 7, 8 (Preview, with a second real Glance as the preview Glance) and 9 (colours), the YAML override, keyboard-only widget editing, and every Phase 5, 6 and 7 error/empty state, at 1280 px and 390 px, with axe (WCAG 2.1 A/AA) and a 44 px target check on each screen. `E2E_SKIP_BUILD=1` reuses the last build; `E2E_SCREENSHOTS=<dir>` saves screenshots. Part of `scripts/test.sh` | ~40 s |
+| `npx playwright test` | The editor UI end to end (`test/e2e`): builds the app, then per test a temp config dir, a real Glance on it and the built editor. Flows 1, 2, 3, 4, 5 (Hide a container, with a stand-in for the Docker socket proxy that the real Glance reads too), 6, 7, 8 (Preview, with a second real Glance as the preview Glance) and 9 (colours), the YAML override, keyboard-only widget editing, and every Phase 5 to 8 error/empty state, at 1280 px and 390 px, with axe (WCAG 2.1 A/AA) and a 44 px target check on each screen. `E2E_SKIP_BUILD=1` reuses the last build; `E2E_SCREENSHOTS=<dir>` saves screenshots. Part of `scripts/test.sh` | ~40 s |
 | `test/validate-fixtures.sh` | `glance config:validate` passes every `fixtures/valid/*` and fails every `fixtures/invalid/*` | ~3 s |
 | `test/upstream-example.sh` | Glance's own example config at the pinned commit: download, checksum, `config:validate` | ~2 s |
 | `test/glance-cli.sh` | `config:print` keeps placeholders and comments literal and inlines includes; a comment header validates | ~2 s |
 | `test/glance-reload.sh` | Hot-reload, invalid-config handling, atomic rename, includes, file-vs-directory mount | ~15 s |
 | `test/glance-docker.sh` | docker-containers widget: the `containers` map beats a `glance.hide` label (design D-23) | ~5 s |
+| `test/docker-proxy.sh` | The pinned Docker socket proxy with the editor's settings (`/docker-proxy.version`): lists containers; refuses POST (create, stop, kill, exec), DELETE and the API sections the editor doesn't use (403); a Glance pointed at it lists the same containers. With `GLANCE_EDITOR_IMAGE` set (CI), the editor image lists them through it and passes on only `glance.*` labels | ~10 s |
 | `test/editor-api.sh` | The editor **image** end to end: a Glance container watches the config dir the editor writes; import, edit, save (reload confirmed), versions, restore, `Origin`/JSON checks. Needs `GLANCE_EDITOR_IMAGE` (CI sets it) | ~15 s |
 | `test/glance-smoke.sh [config]` | Starts Glance and fails if it exits or never serves (exit code is ignored, see lessons). Uses `test/fixtures/model/v2/sample.env` and `secrets/` for placeholders | ~6 s |
 
-The Glance image comes from `/glance.version` (tag plus digest). Requirements: Docker, curl, bash 4+.
+The Glance image comes from `/glance.version`, the socket proxy from `/docker-proxy.version` (tag plus digest). Requirements: Docker, curl, bash 4+.
 
 ## Fixtures
 - `test/fixtures/valid/`: must pass `config:validate`. `sample.yml` is the CI smoke config and covers every structure

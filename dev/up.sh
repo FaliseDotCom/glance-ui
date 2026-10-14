@@ -42,6 +42,16 @@ docker run -d --name "$DEV_PREVIEW" --label "$DEV_LABEL" --network "$DEV_NETWORK
   "$GLANCE_IMAGE" >/dev/null
 log "dev preview Glance: internal only, served by the editor under /preview"
 
+# The editor's Docker connection (ADR-0005): the pinned read-only socket proxy, on the dev network only. The editor
+# never gets the socket itself.
+docker rm -f "$DEV_DOCKER_PROXY" >/dev/null 2>&1 || true
+mapfile -t proxy_env < <(for kv in $DOCKER_PROXY_ENV; do printf '%s\n' -e "$kv"; done)
+docker run -d --name "$DEV_DOCKER_PROXY" --label "$DEV_LABEL" --network "$DEV_NETWORK" \
+  --restart unless-stopped "${proxy_env[@]}" \
+  -v /var/run/docker.sock:/var/run/docker.sock:ro \
+  "$DOCKER_PROXY_IMAGE" >/dev/null
+log "dev Docker proxy: internal only, read-only ($DOCKER_PROXY_VERSION)"
+
 # Editor slot. There is no editor image until Phase 1, so it is skipped until one exists.
 EDITOR_IMAGE="${EDITOR_IMAGE:-glance-editor:dev}"
 if docker image inspect "$EDITOR_IMAGE" >/dev/null 2>&1; then
@@ -55,6 +65,7 @@ if docker image inspect "$EDITOR_IMAGE" >/dev/null 2>&1; then
     -e GLANCE_URL="http://$DEV_GLANCE:8080/" \
     -e PREVIEW_CONFIG=/preview-config/glance.yml \
     -e PREVIEW_GLANCE_URL="http://$DEV_PREVIEW:8080/" \
+    -e DOCKER_PROXY_URL="tcp://$DEV_DOCKER_PROXY:2375" \
     "$EDITOR_IMAGE" >/dev/null
   log "dev editor:  http://<this-host>:$DEV_EDITOR_PORT/"
 else

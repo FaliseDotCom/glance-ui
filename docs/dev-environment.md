@@ -10,11 +10,12 @@ It is **not** the test harness (`docs/testing.md`) and **not** the live dashboar
 | Binding | `0.0.0.0` (LAN), configurable | `127.0.0.1` only |
 | Ports | Glance `18180`, editor `18190` | `18080`, `18081` |
 | Config | `~/.local/share/glance-editor-dev/glance-config/` (directory mount) | temp dirs |
-| Docker socket | Glance and preview Glance: host socket `:ro` (mirrors a standard install). Editor: via socket proxy (Phase 6, ADR-0005) | none |
+| Docker socket | Glance and preview Glance: host socket `:ro` (mirrors a standard install). Editor: never; it lists containers through the read-only socket proxy (ADR-0005) | the proxy test only (`:ro`) |
 
 ## Commands
 - `dev/up.sh`: validates the dev config with the pinned Glance, then (re)creates the containers: the dev Glance, the
-  preview Glance (ADR-0019; no published port, the editor serves it under `/preview`) and the editor. Seeds the config
+  preview Glance (ADR-0019; no published port, the editor serves it under `/preview`), the Docker socket proxy (ADR-0005;
+  pinned in `/docker-proxy.version`, read-only, no published port) and the editor. Seeds the config
   from `test/fixtures/valid/sample.yml` on first run only. Starts the editor if an image `glance-editor:dev` exists
   (from Phase 1).
 - `dev/status.sh`: shows the containers and the config path.
@@ -32,11 +33,13 @@ Overrides via env: `DEV_BIND`, `DEV_GLANCE_PORT`, `DEV_EDITOR_PORT`, `DEV_STATE`
 | `GLANCE_VERSION` | set at build from `/glance.version` | same |
 | `PREVIEW_CONFIG` | unset (no Preview button) | `/preview-config/glance.yml` (`~/.local/share/glance-editor-dev/preview-config`, shared with the preview Glance) |
 | `PREVIEW_GLANCE_URL` | unset | `http://glance-editor-dev-preview:8080/` (same Docker network) |
+| `DOCKER_PROXY_URL` | unset (the Containers section says it can't reach Docker; names already in the map can still be toggled) | `tcp://glance-editor-dev-docker-proxy:2375` (same Docker network) |
 
 The API is described in `docs/api.md`. Until the UI exists, you can try it with curl (mutations need `-H "Origin: http://<host>:18190" -H "Content-Type: application/json"`).
 
 ## Notes
 - The dev machine's address is deliberately not in the repo (the repo is public). Open `http://<dev-host>:18180/`.
 - No authentication by design (ADR-0004). Keep these ports off the internet: no port-forwarding on the router.
-- The dev Glance shows **this host's** containers in the docker-containers widget, because it has the socket.
+- The dev Glance shows **this host's** containers in the docker-containers widget, because it has the socket. The
+  editor's Containers section lists the same host's containers through the proxy.
 - Resetting: `dev/down.sh && rm -rf ~/.local/share/glance-editor-dev && dev/up.sh`.

@@ -13,6 +13,7 @@ import {
   type WidgetYamlResult,
 } from "@glance-editor/document";
 import { describeChanges, type Change } from "./changes.ts";
+import { listContainers, type ContainersResult } from "./docker.ts";
 import { backup, openDb, type Db } from "./db.ts";
 import { pastStamp, readLive, reloadStamp, sha256, waitForReload, writeLiveAtomically, type ReloadResult } from "./live.ts";
 import { migrateModel } from "./migrations.ts";
@@ -33,6 +34,8 @@ export interface EditorConfig {
   previewConfigPath?: string | undefined;
   /** The preview Glance's URL as seen from the editor; the editor serves it under /preview (ADR-0019). */
   previewGlanceUrl?: string | undefined;
+  /** The read-only Docker socket proxy as seen from the editor (`tcp://…` or `http://…`, ADR-0005). Optional. */
+  dockerUrl?: string | undefined;
 }
 
 export type VersionSource = "import" | "editor" | "outside";
@@ -462,6 +465,13 @@ export class Editor {
       return { ok: false, problems: [{ source: "glance", severity: "error", code: "glance.unavailable", message: `Glance's validator couldn't run, so nothing was written: ${(e as Error).message}`, location: {} }] };
     }
     return { ok: true, out, render };
+  }
+
+  // ---- Docker containers (D-22 to D-24, ADR-0005) ---------------------------------------------------------------------
+
+  /** The containers the editor's Docker connection reports, for the Containers section. Read only. */
+  containers(): Promise<ContainersResult> {
+    return listContainers(this.cfg.dockerUrl);
   }
 
   // ---- preview (handoff §4b, D-39, D-47 to D-49; ADR-0019) ------------------------------------------------------------
