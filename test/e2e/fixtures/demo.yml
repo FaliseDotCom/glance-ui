@@ -1,0 +1,51 @@
+# A demo dashboard for the README's screenshots (test/e2e/readme.spec.ts). Example values only.
+server:
+  host: 127.0.0.1
+  port: {{GLANCE_PORT}}
+  assets-path: {{ASSETS_DIR}}
+
+pages:
+  - name: Home
+    columns:
+      - size: small
+        widgets:
+          - type: clock
+            hour-format: 24h
+          - type: calendar
+          - type: to-do
+      - size: full
+        widgets:
+          - type: search
+            search-engine: duckduckgo
+          - type: bookmarks
+            title: Services
+            groups:
+              - title: Media
+                links:
+                  - title: Jellyfin
+                    url: http://media.lan/
+                    icon: si:jellyfin
+                  - title: Immich
+                    url: http://photos.lan/
+                    icon: si:immich
+              - title: Home
+                links:
+                  - title: Home Assistant
+                    url: http://home.lan/
+                    icon: si:homeassistant
+                  - title: Paperless
+                    url: http://docs.lan/
+                    icon: si:paperlessngx
+          - type: docker-containers
+            sock-path: {{DOCKER_URL}}
+      - size: small
+        widgets:
+          - type: html
+            title: Notes
+            source: <p>Backups run nightly at 03:00.</p>
+  - name: Ops
+    columns:
+      - size: full
+        widgets:
+          - type: html
+            source: <p>Ops notes</p>

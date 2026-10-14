@@ -1,7 +1,8 @@
 # Glance (bundled binary)
 
-The editor image contains the **unmodified** `glance` binary from the pinned Glance image (see `/glance.version`),
-used only to run `glance config:validate` (ADR-0001, ADR-0013).
+The editor image contains the **unmodified** `glance` binary from the pinned Glance image (see `/glance.version`).
+It runs your dashboard and the preview dashboard in the all-in-one container (ADR-0024), and the editor uses it for
+`glance config:validate` and `config:print` (ADR-0001, ADR-0013).
 
 - Project: Glance, https://github.com/glanceapp/glance
 - License: GNU Affero General Public License v3.0 (`LICENSE` in this folder, the text at the pinned commit)
