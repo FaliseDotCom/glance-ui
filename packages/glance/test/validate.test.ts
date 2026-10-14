@@ -70,6 +70,12 @@ describe("typed placeholder dummies", () => {
     const r = await validate(dash([col("full")], { name: "${A_VAR}${A_VAR}" }));
     expect(r.output).toBe("");
   });
+  it("a placeholder as a URL's port gets a number: Glance's custom-api parses its URL (ADR-0028)", async () => {
+    expect(substituteForValidation("url: http://${HOST}:${PORT}/api?k=${KEY}")).toBe("url: http://glance-editor-placeholder:1/api?k=glance-editor-placeholder");
+    expect(substituteForValidation("a: ${A}:${B}")).toBe("a: glance-editor-placeholder:glance-editor-placeholder"); // not a URL: unchanged
+    const config = "pages:\n  - name: P\n    columns:\n      - size: full\n        widgets:\n          - type: custom-api\n            url: http://${HOST}:${PORT}/api\n            template: x\n";
+    expect((await validateConfig(config)).ok).toBe(true);
+  });
   it("the validation copy keeps escapes and literals, and replaces substitutable placeholders", () => {
     expect(substituteForValidation("a \\${X} ${lower} ${foo:B} ${A}${B}")).toBe("a \\${X} ${lower} ${foo:B} glance-editor-placeholder\\${B}");
   });

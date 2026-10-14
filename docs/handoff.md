@@ -189,6 +189,7 @@ Nothing below may be built on until you decide. ★ = affects user experience.
 3. Claude: prepare the Community Apps submission (template repository layout, `ca_profile.xml`); you submit it.
 
 ## Session log
+- 2026-10-14: Found that PR #18 was merged before its last two commits were pushed: another server's containers and Fill in icons and links are missing from v1.0.0. They go into v1.0.1 with the certificate fix (notes for approval).
 - 2026-10-14: v1.0.0 bug found by the PM: no CA certificates in the image, so HTTPS widgets failed. Fixed for v1.0.1 (notes for approval).
 - 2026-10-14: **v1.0.0 released** (notes approved by the PM; tag pushed at the PM's request). `:1.0.0` and `:latest` published; the release page shows the notes; the template points at `:latest`; `test/all-in-one.sh` passed on the published image.
 - 2026-10-14: PR #18 merged by the PM. v1.0.0 release notes finalised in the release PR, for the PM's approval; then the `v1.0.0` tag.

@@ -245,3 +245,9 @@ overwrites labels with map values. **Do:** treat source reading as a hypothesis 
   reads the system's and every HTTPS widget failed with "x509: certificate signed by unknown authority". The tests
   used Glance on the dev machine (which has certificates) or offline widgets, so none noticed. `test/all-in-one.sh`
   now checks the bundle and a real HTTPS fetch (weather) from Glance inside the image.
+
+## Merged before the last pushes (2026-10-14)
+- PR #18 was merged while Claude kept pushing to its branch: the last two commits (another server's containers, Fill in
+  icons and links) never reached main or v1.0.0, though the 1.0.0 notes describe them. Before pushing to a PR's branch,
+  check it is still open; before tagging a release, check that every commit the notes describe is an ancestor of the tag
+  (`git merge-base --is-ancestor <commit> <tag>`).

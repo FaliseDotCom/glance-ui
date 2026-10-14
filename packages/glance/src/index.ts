@@ -32,7 +32,10 @@ export function substituteForValidation(yaml: string, hints: ReadonlyMap<string,
   // first match consumed the character it needed) can be found and escaped: otherwise Glance's own pass over this copy
   // would substitute it (found by the Phase 2 property test).
   const marked = substitute(yaml, (_kind, _name, text) => dummyFor(hints.get(text)) + SEP, { keepEscapes: true });
-  return marked.replaceAll(SEP + "${", "\\${").replaceAll(SEP, "");
+  // A placeholder as a URL's port (`http://${HOST}:${PORT}/api`) needs a number there, or Glance's URL parsing refuses
+  // the stand-in (custom-api's "invalid port", found with the community widgets, ADR-0028).
+  const ports = marked.replace(new RegExp(`(//[^\\s/?#:]*):${DUMMY.string}${SEP}(?=[/?#"'\\s]|$)`, "gm"), `$1:1${SEP}`);
+  return ports.replaceAll(SEP + "${", "\\${").replaceAll(SEP, "");
 }
 
 function dummyFor(hint: PlaceholderHint | undefined): string {
