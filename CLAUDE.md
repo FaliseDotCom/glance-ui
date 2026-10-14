@@ -4,7 +4,7 @@ A no-code web editor that owns the entire Glance (glanceapp/glance) config. Dash
 data model; `glance.yml` is generated on every explicit Save and is output only. Existing config is imported once.
 
 @docs/handoff.md
-@docs/phases/phase-6-widgets-theme.md
+@docs/phases/phase-7-preview.md
 
 ## Roles
 - **PM/QA (repo owner):** merges every PR, approves every release note, decides everything with UX impact.
@@ -74,6 +74,8 @@ data model; `glance.yml` is generated on every explicit Save and is output only.
   Never hand-roll YAML for placeholders: use the generator. Edits to an imported file are spliced, not regenerated (ADR-0015).
 - `config:validate` doesn't run `newApplication`: a page slug `login`/`logout` passes validate but Glance won't load it
   (rule `page.reserved-slug`). Glance's reload stamp has 1 s resolution.
+- `server.base-url` prefixes every link and script path Glance writes, but not its routes: a proxy that strips the
+  prefix serves it under a path (the preview at `/preview`, ADR-0019). An unset env var in a placeholder fails the load.
 - Glance's theme defaults (v0.8.6 main.css): background 240 8 9, primary 43 50 70, positive = primary, negative 0 70 70.
 - Glance's docs overstate "required" for 17 widget fields and differ from v0.8.6 on some defaults (lessons, ADR-0018).
   The binary is the reference: `packages/document/test/widget-schema.test.ts`.

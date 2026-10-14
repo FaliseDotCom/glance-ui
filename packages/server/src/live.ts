@@ -20,10 +20,10 @@ export async function readLive(path: string): Promise<string | null> {
  * rename it over the live file. Glance picks up the rename when its config *directory* is mounted (ADR-0009, tested).
  * The file is never deleted (Glance stops watching a deleted file).
  */
-export async function writeLiveAtomically(path: string, text: string): Promise<void> {
+export async function writeLiveAtomically(path: string, text: string, opts: { keepPrev?: boolean } = {}): Promise<void> {
   const dir = dirname(path);
   const tmp = join(dir, `.${basename(path)}.editor-${randomBytes(6).toString("hex")}.tmp`);
-  if (await exists(path)) await copyFile(path, `${path}.prev`);
+  if ((opts.keepPrev ?? true) && (await exists(path))) await copyFile(path, `${path}.prev`);
   const fh = await open(tmp, "w", await modeOf(path));
   try {
     await fh.writeFile(text, "utf8");
@@ -55,6 +55,16 @@ export async function reloadStamp(glanceUrl: string, timeoutMs = 2000): Promise<
   } catch {
     return null;
   }
+}
+
+/**
+ * Glance's stamp has 1 s resolution (lessons, Phase 5). Before a write that must be told apart from the last load, wait
+ * until the clock is past the stamp's second, so a successful reload always changes it.
+ */
+export async function pastStamp(stamp: string | null): Promise<void> {
+  if (stamp === null) return;
+  const ms = (Number(stamp) + 1) * 1000 - Date.now();
+  if (ms > 0 && ms <= 1000) await new Promise((r) => setTimeout(r, ms + 20));
 }
 
 export type ReloadResult = "reloaded" | "not-confirmed" | "not-checked";

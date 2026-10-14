@@ -3,6 +3,24 @@
 Things learned the hard way or by surprise. Newest first. Each entry: date, what happened, what to do.
 Auto memory is machine-local. This file is the record.
 
+### 2026-10-14: Things that bit while building Preview (Phase 7)
+- **Glance reloads only when the file's bytes change** (v0.8.6 `config.go` 367). Refresh of an unchanged draft wrote
+  the same text, Glance didn't reload, and the editor reported a failed build. Every test changed the draft between
+  builds, so only the dev environment showed it. **Do:** each preview build ends with a build-time comment; test
+  "same input twice" for anything that waits on a reload.
+- **SvelteKit redirects `/x/` to `/x`, and Glance's routes need the slash.** The proxied page loaded but stayed empty:
+  `/preview/api/pages/home/content/` got a 308 to the slashless path, which Glance doesn't route. **Do:** a proxy route
+  exports `trailingSlash = "ignore"`.
+- **SvelteKit's form-CSRF check also refuses same-origin body-less POSTs** (adapter-node doesn't know the app origin;
+  see Phase 3 below). Glance's theme picker posts exactly that. The check is off (`csrf.trustedOrigins: ["*"]`); the
+  editor's hook checks Origin against Host on every non-GET. **Do:** test any proxied POST through the built app.
+- **Focus to return to must be read before the editor goes inert.** Making the editor behind the preview `inert` blurs
+  the focused Preview button in the same update, so the preview's own effect found nothing to return to. **Do:** record
+  the opener in the action that opens the overlay.
+- **The prototype and the written flow disagreed** (rebuild on Preview vs "out of date until Refresh"). The written
+  flow and the handoff were followed, and the difference recorded in the phase file. **Do:** when they differ, the
+  numbered flows and the handoff text win over prototype code, and say so in the PR.
+
 ### 2026-10-14: Things that bit while building the widget editor (Phase 6)
 - **Edit the copy, not the live state.** `app.mutate(fn)` hands `fn` a copy of the draft. Move buttons and drag first
   called `moveWidget(app.draft!, …)`, which changed the live object and then had it replaced by the unchanged copy, so

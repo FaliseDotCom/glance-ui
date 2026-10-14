@@ -14,6 +14,7 @@
   import ThemeScreen from "#lib/components/ThemeScreen.svelte";
   import Sheets from "#lib/components/Sheets.svelte";
   import Toast from "#lib/components/Toast.svelte";
+  import Preview from "#lib/components/Preview.svelte";
 
   const app = new App();
   onMount(() => {
@@ -29,6 +30,8 @@
 <svelte:head><title>Glance Editor</title></svelte:head>
 
 <div class="app">
+  <!-- While the preview is open, the editor behind it is out of reach (keyboard and screen readers). -->
+  <div style="display: contents" inert={!!app.preview?.open}>
   <TopBar {app} />
   {#if app.loadError}
     <div class="center"><div class="welcome">
@@ -63,6 +66,8 @@
     </div>
     <Tabs {app} />
   {/if}
+  </div>
+  {#if app.preview && editing}<Preview {app} />{/if}
   <Sheets {app} />
   <Toast {app} />
 </div>

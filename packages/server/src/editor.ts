@@ -1,7 +1,7 @@
 // The editor's server core (plan v2, Phase 3). Design references: handoff §2 (draft), §4 (save pipeline), §5 (versions);
 // D-26 to D-35, D-46. No HTTP here: apps/editor's routes call these methods.
 
-import { rm, writeFile } from "node:fs/promises";
+import { mkdir, rm, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import {
   checkDashboard, hasErrors, parseDashboard, SCHEMA_VERSION, type ColumnT, type DashboardT, type WidgetT,
@@ -14,7 +14,7 @@ import {
 } from "@glance-editor/document";
 import { describeChanges, type Change } from "./changes.ts";
 import { backup, openDb, type Db } from "./db.ts";
-import { readLive, reloadStamp, sha256, waitForReload, writeLiveAtomically, type ReloadResult } from "./live.ts";
+import { pastStamp, readLive, reloadStamp, sha256, waitForReload, writeLiveAtomically, type ReloadResult } from "./live.ts";
 import { migrateModel } from "./migrations.ts";
 import { fromGlance, fromIssue, widgetCandidates, widgetErrorChain, type Location, type Problem } from "./problems.ts";
 
@@ -29,6 +29,10 @@ export interface EditorConfig {
   glanceVersion: string;
   now?: () => Date;
   reloadTimeoutMs?: number;
+  /** The preview Glance's own config file (ADR-0019). Never glance.yml. */
+  previewConfigPath?: string | undefined;
+  /** The preview Glance's URL as seen from the editor; the editor serves it under /preview (ADR-0019). */
+  previewGlanceUrl?: string | undefined;
 }
 
 export type VersionSource = "import" | "editor" | "outside";
@@ -81,6 +85,56 @@ export type SaveResult =
   | { status: "saved"; version: number; reload: ReloadResult; warnings: string[]; draft: DashboardT }
   | { status: "error"; message: string };
 
+export type PreviewCheck = { ok: true; problems: [] } | { ok: false; problems: Problem[] };
+
+export type PreviewResult =
+  | { status: "not-configured" }
+  | { status: "problems"; problems: Problem[] }
+  | { status: "built" }
+  | { status: "failed"; message: string };
+
+/** The path the editor serves the preview Glance under (its proxy route, and the preview's server.base-url). */
+export const PREVIEW_BASE = "/preview";
+
+const NO_DRAFT: Problem = { source: "editor", severity: "error", code: "draft.none", message: "There is nothing to save yet.", location: {} };
+
+/**
+ * The preview's server section (ADR-0019): base-url under the editor's /preview route; the port from the preview URL;
+ * the host only when the URL is a loopback address (the test harness), otherwise every interface (a container).
+ */
+export function previewServer(url: string): { host: string | undefined; port: number; "base-url": string } {
+  const u = new URL(url);
+  const port = Number(u.port || (u.protocol === "https:" ? 443 : 80));
+  const loopback = u.hostname === "127.0.0.1" || u.hostname === "localhost" || u.hostname === "[::1]";
+  return { host: loopback ? u.hostname : undefined, port, "base-url": PREVIEW_BASE };
+}
+
+/** The preview Glance's config until the first Preview: one empty page. */
+export function previewSeed(url: string): string {
+  const s = previewServer(url);
+  return [
+    "# Written by Glance Editor for its preview Glance (ADR-0019). Replaced on every Preview; never glance.yml.",
+    "server:",
+    ...(s.host ? [`  host: ${s.host}`] : []),
+    `  port: ${s.port}`,
+    `  base-url: ${s["base-url"]}`,
+    "pages:",
+    "  - name: Preview",
+    "    columns:",
+    "      - size: full",
+    "        widgets: []",
+    "",
+  ].join("\n");
+}
+
+async function waitForStamp(url: string, until: number): Promise<"reloaded" | "not-confirmed"> {
+  while (Date.now() < until) {
+    if ((await reloadStamp(url)) !== null) return "reloaded";
+    await new Promise((r) => setTimeout(r, 300));
+  }
+  return "not-confirmed";
+}
+
 /** The six valid layouts offered by Start empty (D-34; design prototype PRESETS). */
 export const START_LAYOUTS: Record<string, ColumnT["size"][]> = {
   "one-full": ["full"],
@@ -129,6 +183,7 @@ export class Editor {
   static async open(cfg: EditorConfig): Promise<Editor> {
     const e = new Editor(openDb(cfg.dataDir, cfg.now), cfg);
     await e.recordOutsideChange();
+    await e.seedPreview().catch(() => undefined);
     return e;
   }
 
@@ -344,28 +399,10 @@ export class Editor {
     const changes = describeChanges(this.refModel(row), draft);
     if (changes.length === 0 && row.ref_text !== "") return { status: "nothing" };
 
-    // 1. The editor's schema check.
-    const issues = checkDashboard(draft);
-    if (hasErrors(issues)) return { status: "problems", problems: issues.filter((i) => i.severity === "error").map((i) => fromIssue(i, draft)) };
-
-    // 2. Serialise: splice into the base file, or generate for Start empty.
-    const render = (d: DashboardT) =>
-      row.base_text ? writeDraft(row.base_text, d) : { text: generate(d, { glanceVersion: this.cfg.glanceVersion }).yaml, warnings: [] as string[], mode: "regenerated" as const };
-    const out = render(draft);
-
-    // 3. Glance's own config:validate. If it fails, or can't run, nothing is written (D-27).
-    try {
-      const hints = toGlanceJson(draft).placeholderHints;
-      const v = await validateConfig(
-        draft.server?.["assets-path"] === undefined
-          ? out.text
-          : (assetsDir: string) => render({ ...draft, server: { ...draft.server, "assets-path": assetsDir } }).text,
-        { hints, glanceBin: this.cfg.glanceBin },
-      );
-      if (!v.ok) return { status: "problems", problems: [fromGlance(v.output, draft, await this.locateGlanceError(v.output, draft))] };
-    } catch (e) {
-      return { status: "problems", problems: [{ source: "glance", severity: "error", code: "glance.unavailable", message: `Glance's validator couldn't run, so nothing was written: ${(e as Error).message}`, location: {} }] };
-    }
+    // 1–3. The editor's schema check, serialise, Glance's own config:validate.
+    const checked = await this.checkDraft(row, draft);
+    if (!checked.ok) return { status: "problems", problems: checked.problems };
+    const out = checked.out;
 
     // 4. Changed outside the editor since the draft began? Store that version first, then ask (D-32).
     const live = await readLive(this.cfg.configPath);
@@ -395,6 +432,90 @@ export class Editor {
     const fresh = importText(out.text).dashboard ?? draft;
     this.putDraft(fresh, out.text, number, sha256(out.text));
     return { status: "saved", version: number, reload, warnings: out.warnings, draft: fresh };
+  }
+
+  /**
+   * Save pipeline steps 1–3 (handoff §4), shared by Save and Preview (D-47): the editor's schema check, then serialise
+   * (splice into the base file, or generate for Start empty), then Glance's own config:validate. Nothing is written.
+   */
+  private async checkDraft(row: DraftRow, draft: DashboardT): Promise<
+    { ok: true; out: { text: string; warnings: string[] }; render: (d: DashboardT) => { text: string; warnings: string[] } } | { ok: false; problems: Problem[] }
+  > {
+    const issues = checkDashboard(draft);
+    if (hasErrors(issues)) return { ok: false, problems: issues.filter((i) => i.severity === "error").map((i) => fromIssue(i, draft)) };
+
+    const render = (d: DashboardT) =>
+      row.base_text ? writeDraft(row.base_text, d) : { text: generate(d, { glanceVersion: this.cfg.glanceVersion }).yaml, warnings: [] as string[] };
+    const out = render(draft);
+
+    // If validation fails, or can't run, nothing is written (D-27).
+    try {
+      const hints = toGlanceJson(draft).placeholderHints;
+      const v = await validateConfig(
+        draft.server?.["assets-path"] === undefined
+          ? out.text
+          : (assetsDir: string) => render({ ...draft, server: { ...draft.server, "assets-path": assetsDir } }).text,
+        { hints, glanceBin: this.cfg.glanceBin },
+      );
+      if (!v.ok) return { ok: false, problems: [fromGlance(v.output, draft, await this.locateGlanceError(v.output, draft))] };
+    } catch (e) {
+      return { ok: false, problems: [{ source: "glance", severity: "error", code: "glance.unavailable", message: `Glance's validator couldn't run, so nothing was written: ${(e as Error).message}`, location: {} }] };
+    }
+    return { ok: true, out, render };
+  }
+
+  // ---- preview (handoff §4b, D-39, D-47 to D-49; ADR-0019) ------------------------------------------------------------
+
+  /** Is a preview Glance configured (PREVIEW_CONFIG and PREVIEW_GLANCE_URL)? */
+  get previewConfigured(): boolean {
+    return !!(this.cfg.previewConfigPath && this.cfg.previewGlanceUrl);
+  }
+
+  /** D-47: the same checks as Save, without building anything. */
+  async checkForPreview(): Promise<PreviewCheck> {
+    const row = this.draftRow();
+    if (!row) return { ok: false, problems: [NO_DRAFT] };
+    const r = await this.checkDraft(row, this.loadDraftModel(row));
+    return r.ok ? { ok: true, problems: [] } : r;
+  }
+
+  /**
+   * Handoff §4b: check the draft (steps 1–3 of Save), write it to the preview Glance's own config file (never
+   * glance.yml), and wait until the preview Glance has loaded it. The only change to the draft's text is the server
+   * section, so the preview Glance listens where the editor expects it and its links carry the editor's /preview path.
+   */
+  async preview(): Promise<PreviewResult> {
+    if (!this.previewConfigured) return { status: "not-configured" };
+    const row = this.draftRow();
+    if (!row) return { status: "problems", problems: [NO_DRAFT] };
+    const draft = this.loadDraftModel(row);
+    const checked = await this.checkDraft(row, draft);
+    if (!checked.ok) return { status: "problems", problems: checked.problems };
+
+    const url = this.cfg.previewGlanceUrl!;
+    // Glance reloads only when the file's bytes change (v0.8.6 config.go 367, read 2026-10-14), so a build of an
+    // unchanged draft would never load. The build time in a closing comment makes every build, and so every Refresh, a
+    // reload: widgets fetch fresh data, as design 04 describes.
+    const body = checked.render({ ...draft, server: { ...draft.server, ...previewServer(url) } }).text;
+    const text = `${body.endsWith("\n") ? body : `${body}\n`}# Glance Editor preview build ${this.now().toISOString()}\n`;
+    const before = await reloadStamp(url);
+    await pastStamp(before);
+    try {
+      await writeLiveAtomically(this.cfg.previewConfigPath!, text, { keepPrev: false });
+    } catch (e) {
+      return { status: "failed", message: `Couldn't write the preview's config: ${(e as Error).message}` };
+    }
+    // A preview Glance that isn't answering yet (still starting) counts as loaded once it answers with any stamp.
+    const until = Date.now() + (this.cfg.reloadTimeoutMs ?? 10_000);
+    const result = before === null ? await waitForStamp(url, until) : await waitForReload(url, before, until - Date.now());
+    return result === "reloaded" ? { status: "built" } : { status: "failed", message: "The preview Glance didn't load the draft in time." };
+  }
+
+  /** On start: a preview config file must exist before the preview Glance starts (it exits on a missing file). */
+  private async seedPreview(): Promise<void> {
+    if (!this.previewConfigured || (await readLive(this.cfg.previewConfigPath!)) !== null) return;
+    await mkdir(dirname(this.cfg.previewConfigPath!), { recursive: true });
+    await writeFile(this.cfg.previewConfigPath!, previewSeed(this.cfg.previewGlanceUrl!), "utf8");
   }
 
   /**

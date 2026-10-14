@@ -1,13 +1,14 @@
 # Handoff
 
 The single place to see where the project stands. Updated at the end of every work session and every PR.
-Last updated: 2026-10-14 (Phase 6 PR opened).
+Last updated: 2026-10-14 (Phase 7 PR opened).
 
 ## Current state
-- **Phase:** 6 (UI 2: widgets and theme) **PR open**, waiting for your review. Phase 5 merged (PR #8).
+- **Phase:** 7 (Preview Glance) **PR open**, waiting for your review. Phase 6 merged (PR #9).
 - **Phase plan:** approved 2026-10-13.
 - **Pinned Glance:** v0.8.6, by digest (`/glance.version`).
-- **Dev environment:** dev Glance on :18180 and the editor container on :18190, on the dev machine (`docs/dev-environment.md`).
+- **Dev environment:** dev Glance on :18180, the editor container on :18190, and a preview Glance reached only through the
+  editor, on the dev machine (`docs/dev-environment.md`).
 - **Feature code:**
   - Phase 1: model, rules, generator, validation.
   - Phase 2: import and edit-in-place writer.
@@ -17,7 +18,9 @@ Last updated: 2026-10-14 (Phase 6 PR opened).
     Review/Problems/Go to, History with Restore, Discard, undo toasts; desktop and phone.
   - Phase 6: widgets and theme. Widget cards with grips (drag on desktop, move buttons everywhere), Add widget, the
     inspector (generated form for every type, Children, YAML tab with overrides), Bookmarks, the Theme screen, My colours.
-  - The dev editor on :18190 runs this branch (Phase 6) against the dev Glance.
+  - Phase 7: Preview. The draft, checked like Save, built on a separate preview Glance and shown full screen in the
+    editor at desktop or phone width; "Out of date" until Refresh; Save and go live. glance.yml is never touched.
+  - The dev editor on :18190 runs this branch (Phase 7) against the dev Glance and its preview Glance.
 
 ## Needs user decision
 Nothing below may be built on until you decide. ★ = affects user experience.
@@ -50,6 +53,15 @@ _No decisions open._
 - The docker label-vs-map precedence is still **untested** (the source suggests the map wins).
 - Dev Glance confirmed reachable from another LAN device (by you, 2026-10-13).
 - Correction: the Phase 0 docs called the dev machine's Docker "rootless". It is rootful. Fixed in lessons and ADR-0009.
+
+## Phase 7 findings
+- Preview works inside the editor: the editor serves the preview Glance under its own address (`/preview`), using
+  Glance's `base-url` setting, so framing is never blocked and the preview Glance needs no port of its own (ADR-0019,
+  no decision needed).
+- The preview Glance substitutes `${VAR}`s from its own environment. In the real install (Phase 11) it needs the same
+  environment, assets folder and Docker access as live Glance, or widgets that use them show errors in the preview.
+- Design detail followed from the written flow: pressing Preview again after an edit shows the previous build marked
+  "Out of date" until you press Refresh (the prototype rebuilt at once). Details in the phase file.
 
 ## Phase 6 findings
 - A widget can now be edited as YAML and is written exactly as you typed it, comments and `${VAR}`s included. Keys
@@ -104,12 +116,12 @@ _No decisions open._
 - The real-binary tests caught a validator bug that my own model-based tests missed. Both kinds of test are kept.
 
 ## Next steps
-1. You: review and merge the Phase 6 PR. Try adding and editing widgets, bookmarks and the theme on the dev editor
-   (:18190), on desktop and phone. It runs this branch now.
-2. Claude: Phase 7, Preview: a second Glance at the pinned version, the preview screen (desktop/phone width,
-   "Out of date", Refresh, Save and go live).
+1. You: review and merge the Phase 7 PR. Try Preview on the dev editor (:18190): make a change, Preview, switch
+   pages and width, go back, change something, see "Out of date", Refresh, Save and go live. It runs this branch now.
+2. Claude: Phase 8, Docker containers section: socket proxy (ADR-0005), container list, eye toggles.
 
 ## Session log
+- 2026-10-14: PR #9 (Phase 6) merged. Phase 7 implemented (preview Glance, proxy, preview screen); PR opened. ADR-0019 (non-UX).
 - 2026-10-14: PR #8 (Phase 5) merged. Phase 6 implemented (widgets, inspector, YAML overrides, bookmarks, theme); PR opened.
 - 2026-10-13: Phase 5 implemented (first screens, UI tests at two widths); PR opened. ADR-0018 accepted (option B).
 - 2026-10-13: PR #7 (Phase 4) merged.

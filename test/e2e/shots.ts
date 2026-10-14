@@ -3,10 +3,10 @@ import { mkdirSync } from "node:fs";
 import { join } from "node:path";
 import type { Page } from "@playwright/test";
 
-export async function shot(page: Page, name: string) {
+export async function shot(page: Page, name: string, opts: { fullPage?: boolean } = {}) {
   const dir = process.env.E2E_SCREENSHOTS;
   if (!dir) return;
   mkdirSync(dir, { recursive: true });
   const project = (page.viewportSize()?.width ?? 1280) < 760 ? "phone" : "desktop";
-  await page.screenshot({ path: join(dir, `${name}-${project}.png`), fullPage: project === "desktop" ? false : true });
+  await page.screenshot({ path: join(dir, `${name}-${project}.png`), fullPage: opts.fullPage ?? project === "phone" });
 }

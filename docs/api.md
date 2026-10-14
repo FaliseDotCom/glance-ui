@@ -1,7 +1,8 @@
-# Editor HTTP API (Phases 3, 5 and 6)
+# Editor HTTP API (Phases 3, 5, 6 and 7)
 
 JSON in, JSON out. **Mutating requests** (anything but GET) need `Origin` naming the editor's own host and
-`Content-Type: application/json` (ADR-0004). Send `{}` when there is no body. Errors: `{ "error": "…" }` with 4xx/5xx.
+`Content-Type: application/json` (ADR-0004). Send `{}` when there is no body. Under `/preview` only the `Origin`
+check applies (ADR-0019). Errors: `{ "error": "…" }` with 4xx/5xx.
 
 | Method | Path | Body | Returns |
 | ------ | ---- | ---- | ------- |
@@ -20,6 +21,10 @@ JSON in, JSON out. **Mutating requests** (anything but GET) need `Origin` naming
 | POST | `/api/widget/parse` | `{ text, widgetId }` | `{ ok: true, widget, notes }` or `{ ok: false, message, line }`: reads YAML typed in the YAML tab as the importer reads a widget (unknown keys kept, listed in `notes`). Nothing is stored; the client applies it with `_yaml: { text, form }` |
 | GET | `/api/colours` | | `{ colours }`: "My colours" (D-51), stored by the editor, never in glance.yml |
 | PUT | `/api/colours` | `{ colours }` | `{ colours }`, de-duplicated; each must be "H S L" (whole numbers, hue ≤ 360) |
+| GET | `/api/preview` | | `{ configured }`: a preview Glance is set up (`PREVIEW_CONFIG` and `PREVIEW_GLANCE_URL`, ADR-0019) |
+| POST | `/api/preview/check` | `{}` | `{ ok, problems }`: Save's checks 1-3 on the stored draft (D-47). Nothing is written |
+| POST | `/api/preview` | `{}` | `problems` · `built` · `failed` (`message`) · `not-configured`: checks again, writes the draft to the preview Glance's own config (never glance.yml) and waits for it to load (handoff §4b) |
+| any | `/preview/…` | | the preview Glance itself (pages, its API, static files), forwarded by the editor. Its links carry `/preview` (`server.base-url`). 404 when not set up |
 | GET | `/healthz` | | liveness and glance binary presence |
 
 `reload` is `reloaded` (Glance loaded the new file; D-29), `not-confirmed` (it didn't within 10 s), or `not-checked`

@@ -146,13 +146,18 @@
           <button type="button" class="btn ghost" onclick={close}>Keep editing</button>
           <button type="button" class="btn pri" onclick={() => app.save()}>Check and save</button>
         </div>
+      {:else if sheet.kind === "checking" && sheet.for === "preview"}
+        <span class="lbl">Preview</span><h2 class="h2 pulse">Checking the draft before building a preview</h2>
+        <p class="help">The preview is built only if both checks pass. glance.yml is never written by Preview.</p>
       {:else if sheet.kind === "checking"}
         <span class="lbl">Save</span><h2 class="h2 pulse">Checking the draft</h2>
         <p class="help">glance.yml is written only if both checks pass.</p>
       {:else if sheet.kind === "problems"}
-        <span class="lbl">Not saved</span>
+        <span class="lbl">{sheet.for === "preview" ? "No preview" : "Not saved"}</span>
         <h2 class="h2">{plural(app.errors.length, "problem")} found</h2>
-        <p class="note">glance.yml is unchanged and Glance keeps running the live version. Fix these, then save again.</p>
+        <p class="note">{sheet.for === "preview"
+          ? "No preview was built: Glance can only render a valid config. Nothing was written to glance.yml. Fix these, then press Preview again."
+          : "glance.yml is unchanged and Glance keeps running the live version. Fix these, then save again."}</p>
         <div class="stack" style="gap: 8px">
           {#each app.errors as e, i (i)}
             <div class="erow">
@@ -165,7 +170,7 @@
               {#if e.location.pageId || e.location.field?.startsWith("theme")}<button type="button" class="btn" onclick={() => app.goTo(e)}>Go to</button>{/if}
             </div>
           {/each}
-          {#if app.errors.length === 0}<p class="note">All fixed. Save again to write glance.yml.</p>{/if}
+          {#if app.errors.length === 0}<p class="note">{sheet.for === "preview" ? "All fixed. Press Preview again to build it." : "All fixed. Save again to write glance.yml."}</p>{/if}
         </div>
         <div class="sheetfoot"><button type="button" class="btn ghost" onclick={close}>Close</button></div>
       {:else if sheet.kind === "saved"}

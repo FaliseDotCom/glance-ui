@@ -292,6 +292,18 @@ fieldset.subcard { padding: 10px 12px; }
   .btn, .ib, .track, .knob { transition: none; }
 }
 
+/* preview (design 04, D-39, D-48): full screen over the editor, below sheets so Review and Problems open over it */
+.pvwrap { position: fixed; inset: 0; z-index: 35; background: var(--bg-desk); display: flex; flex-direction: column; }
+.pvwrap[hidden] { display: none; }
+.pvwrap:focus { outline: none; }
+.pvbar { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding: 10px 16px; background: var(--bg-panel); border-bottom: 1px solid var(--line); }
+.pvstatus { font-family: var(--mono); font-size: 12px; color: var(--ink-muted); display: inline-flex; gap: 6px; align-items: center; }
+.pvstatus.stale { color: var(--warn); }
+.pvstage { flex: 1; min-height: 0; padding: 16px; display: flex; flex-direction: column; align-items: center; overflow: auto; }
+.pvbuild { margin-top: 80px; max-width: 480px; text-align: center; }
+.pvframe { flex: 1; width: 100%; min-height: 480px; border: 0; border-radius: 12px; box-shadow: 0 0 0 1px var(--line-strong); background: var(--bg-desk); }
+.pvframe.phone { max-width: 390px; }
+
 /* Phone: under 760 px of editor width (D-06). */
 @container app (max-width: 760px) {
   .shell { grid-template-columns: minmax(0, 1fr); }

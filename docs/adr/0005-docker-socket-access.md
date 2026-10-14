@@ -52,7 +52,7 @@ proxy is configured: free-text names, with a warning that they can't be checked.
 - Not verified: the proxy image digest and architecture support; label-vs-map precedence; the behaviour for unknown container names.
 
 ## Later (2026-10-13)
-Design D-25 (direct socket) was **overridden by the PM**: this ADR stands. The design's preview Glance (D-39) also reads containers; its access is decided with the deployment (plan v2).
+Design D-25 (direct socket) was **overridden by the PM**: this ADR stands. The design's preview Glance (D-39) also reads containers; its access is decided with the deployment (plan v2). Until then the dev environment mirrors the dev Glance (ADR-0019).
 Verified by test: the `containers` map wins over a `glance.hide` label (`test/glance-docker.sh`).
 
 ## Decision record
