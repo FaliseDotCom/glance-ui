@@ -41,6 +41,9 @@ Install it once, and it's all there.
   work as well: point a widget's Docker socket path at a read-only proxy there (`tcp://<server>:2375`).
   **Fill in icons and links** does it for all of them at once: Unraid's icons (downloaded) and web UI addresses,
   library icons by image name, and tidy names.
+- **Community widgets.** Add any of the widgets Glance users share in
+  [glanceapp/community-widgets](https://github.com/glanceapp/community-widgets) from Add widget → Community: search,
+  preview, pick a variant, see which values it needs, add. Each one is checked with the pinned Glance for every release.
 - **Icon finder** for bookmarks, monitors and containers. It searches Simple Icons, selfh.st Icons, Dashboard Icons
   and Material Design Icons, the site's own icon, and openly licensed images on the web. Web images are downloaded
   into Glance's assets folder, with their licence.
@@ -158,6 +161,8 @@ Stack: TypeScript, SvelteKit, SQLite, Node 24, Playwright and Vitest. Issues and
 ## Credits
 - **[Glance](https://github.com/glanceapp/glance)** (AGPL-3.0): the dashboard this whole project is built around.
   Its themes come from Glance's docs.
+- Community widgets: [glanceapp/community-widgets](https://github.com/glanceapp/community-widgets) (CC0-1.0), each by
+  the author named on its card; bundled as of the commit in [community-widgets.version](community-widgets.version).
 - Icons: [Simple Icons](https://simpleicons.org), [selfh.st Icons](https://selfh.st/icons/),
   [Dashboard Icons](https://github.com/homarr-labs/dashboard-icons) and
   [Material Design Icons](https://pictogrammers.com/library/mdi/), loaded from [jsDelivr](https://www.jsdelivr.com)

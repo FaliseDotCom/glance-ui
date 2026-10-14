@@ -4,7 +4,7 @@
 
 import { pageSlug, type DashboardT, type PageT, type WidgetT } from "@glance-editor/model";
 import {
-  addWidget, deleteWidget, deletePage, editWidget, findWidget, parentOf, plural, typeLabel, widgetAt, widgetName,
+  addOptions, addWidget, childRef, deleteWidget, deletePage, editWidget, findWidget, listOf, newWidget, parentOf, plural, typeLabel, widgetAt, widgetName,
   type ListRef, type WidgetRef,
 } from "@glance-editor/editing";
 import { api, type Change, type DraftState, type GlanceStatus, type ImportCheck, type Problem, type UploadCheck, type VersionSummary } from "./api.ts";
@@ -230,6 +230,24 @@ export class App {
     this.mutate((d) => (r = addWidget(d, target, type)));
     this.sheet = null;
     if (r) this.select(r);
+  }
+
+  /**
+   * ADR-0028: add a community widget exactly as its README gives it: a YAML override (D-12) read back by the server as
+   * the YAML tab does, so rules and Glance see the same thing. Returns a message when it can't be added here.
+   */
+  async addCommunityWidget(target: ListRef, text: string, title: string): Promise<string | null> {
+    const base = newWidget("custom-api");
+    const r = await api.parseWidget(text, base._id).catch((e: Error) => ({ ok: false as const, message: e.message, line: null }));
+    if (!r.ok) return r.line ? `Line ${r.line}: ${r.message}` : r.message;
+    const parentType = target.parentIds.length && this.draft ? widgetAt(this.draft, { ...target, ids: target.parentIds })?.type ?? null : null;
+    const option = addOptions(parentType).find((o) => o.type === r.widget.type);
+    if (option?.disabled) return option.why ?? "It can't go here.";
+    const w = { ...r.widget, _id: base._id, _yaml: { text, form: JSON.stringify({ _id: base._id, type: r.widget.type }) } } as WidgetT;
+    this.mutate((d) => { listOf(d, target, true).push(w); }, { toast: `Added ${title}`, undo: true });
+    this.sheet = null;
+    this.select(childRef(target, base._id));
+    return null;
   }
 
   /** D-17: immediate, with Undo. The inspector moves to the parent (or closes). */

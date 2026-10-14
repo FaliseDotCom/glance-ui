@@ -1,6 +1,6 @@
 # 0028. Community widgets, ready to pick
 
-- **Status:** proposed
+- **Status:** accepted by the PM, 2026-10-14 (via chat; all four as recommended). Built.
 - **Date:** 2026-10-14
 - **Decider:** PM
 - **UX impact:** yes: a new way to add widgets.
@@ -49,5 +49,34 @@
 3. Previews from GitHub (recommended), or bundled?
 4. List the 19 server-based ones as "Needs its own server" (recommended), or leave them out?
 
+## Decision
+As proposed.
+- **Snapshot:** `community-widgets.version` pins the commit; `scripts/community-widgets.ts` writes
+  `packages/server/data/community-widgets.json` (about 0.9 MB), bundled with the release. For each widget the snapshot
+  holds every README YAML block that holds a widget, named after the heading above it, and the `${NAMES}` each needs.
+  Each variant is checked twice: by the editor's own reader, and by the pinned Glance's `config:validate`.
+- **README quirks handled:** list items whose keys are indented deeper than the first key are brought back to two
+  spaces. A `${VAR}` used as a URL's port got a dummy that isn't a port while validating, which also made Save wrongly
+  reject such URLs; validation now puts a number there (packages/glance, tested).
+- **Result at commit 0c643aa:**
+  - 165 widgets;
+  - 148 can be added;
+  - 11 need their own server (no YAML);
+  - 6 are refused, with the reason: their README's YAML or template doesn't work with Glance v0.8.6.
+- **Add widget → Community:** search, previews from GitHub at the pinned commit, variants, the values needed, a link to
+  the widget's own instructions, and Add. Added widgets keep their YAML exactly as written (YAML override, D-12).
+- **Review warns** about `${VARIABLES}` with no value in the container or `.env`, in the all-in-one container
+  (`placeholder.unset`).
+- Moving the pin: run the script, review the diff, and the test re-checks every addable variant.
+
+## Tested
+- `packages/server/test/community.test.ts`: the pins; the list without YAML; **every addable variant re-checked as the
+  editor saves it** (the YAML tab's reader, the generator, the pinned Glance).
+- `packages/server/test/unset-values.test.ts`: the Review warning.
+- `packages/glance/test/validate.test.ts`: a port placeholder in a URL.
+- `test/e2e/widgets.spec.ts` "Community widgets" (desktop and 390 px, axe, 44 px): a server-only widget can't be added;
+  values named; a variant added and saved; Glance accepts it.
+- Not tested: each widget's actual data (each needs its own service, key or the internet).
+
 ## Decision record
-_Pending._
+2026-10-14, PM via chat: "1. I meant those ones. 2. Recommended option 3. Recommended option 4. recommended option".

@@ -54,7 +54,7 @@ test.describe("Flow 3: add and configure a widget", () => {
     await expectTargets(page, "add widget");
     await shot(page, "add-widget");
     await sheet.getByLabel("Search widget types").fill("rss");
-    await expect(sheet.getByRole("button")).toHaveCount(2); // RSS and Close
+    await expect(sheet.getByRole("button")).toHaveCount(4); // RSS, Close and the two tabs (Widget types, Community)
     await sheet.getByRole("button", { name: /^RSS/ }).click();
 
     const ins = inspector(page);
@@ -386,5 +386,52 @@ test.describe("states", () => {
     await card(page, "Docker containers").getByRole("button", { name: /^Docker containers, / }).click();
     await expect(inspector(page).getByText("Can't reach the Docker socket.")).toBeVisible(); // design 03
     await expect(inspector(page).getByText("The editor has no Docker connection set up.")).toBeVisible();
+  });
+});
+
+// ADR-0028: the Community tab of Add widget, with the community widgets bundled with this release.
+test.describe("Community widgets (ADR-0028)", () => {
+  test.use({ opts: { seed: fixture("home.yml"), glance: true } });
+
+  test("pick one: its variants, the values it needs, Add exactly as written; server-only ones can't be added", async ({ page, editor }) => {
+    await importSeed(page, editor.url);
+    await column(page, 2).getByRole("button", { name: "Add widget" }).click();
+    const sheet = page.getByRole("dialog", { name: "Add widget" });
+    await sheet.getByRole("button", { name: "Community", exact: true }).click();
+    await expect(sheet.getByText(/Made by Glance users and shared under CC0\. Each one was checked with Glance v0\.8\.6/)).toBeVisible();
+    await expect(sheet.getByRole("link", { name: "glanceapp/community-widgets" })).toHaveAttribute("href", "https://github.com/glanceapp/community-widgets");
+    await expectAccessible(page, "community list");
+    await expectTargets(page, "community list");
+    await shot(page, "community-list", { fullPage: false });
+
+    // One that needs a program of its own: no Add.
+    await sheet.getByLabel("Search community widgets").fill("animals display");
+    await sheet.getByRole("button", { name: /^Animals Display/ }).click();
+    await expect(sheet.getByText(/needs a program of its own/)).toBeVisible();
+    await expect(sheet.getByRole("button", { name: /^Add Animals Display/ })).toHaveCount(0);
+    await sheet.getByRole("button", { name: "All community widgets" }).click();
+
+    // One that needs values: they're named.
+    await sheet.getByLabel("Search community widgets").fill("arr releases");
+    await sheet.getByRole("button", { name: /^Arr Releases/ }).click();
+    await expect(sheet.getByText("${RADARR_URL}, ${RADARR_API_URL}, ${RADARR_KEY}")).toBeVisible();
+    await sheet.getByRole("button", { name: "All community widgets" }).click();
+
+    // Two variants; the second one is added.
+    await sheet.getByLabel("Search community widgets").fill("AFL");
+    await sheet.getByRole("button", { name: /^AFL Widgets/ }).click();
+    await sheet.getByRole("group", { name: "Variant" }).getByRole("button", { name: "Ladder" }).click();
+    await expect(sheet.locator("pre")).toContainText("type: custom-api");
+    await expectAccessible(page, "community widget");
+    await expectTargets(page, "community widget");
+    await shot(page, "community-widget", { fullPage: false });
+    await sheet.getByRole("button", { name: "Add AFL Widgets" }).click();
+    await expect(page.getByText("Added AFL Widgets")).toBeVisible();
+    await expect(inspector(page)).toBeVisible();
+    if (isPhone(page)) await inspector(page).getByRole("button", { name: "Back to layout" }).click();
+    await save(page);
+    await expect(page.getByRole("heading", { name: "Version 1 is live" })).toBeVisible();
+    expect(editor.live()).toContain("api.squiggle.com.au");
+    expect(editor.live()).toContain("type: custom-api");
   });
 });

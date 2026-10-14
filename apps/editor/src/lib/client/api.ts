@@ -1,8 +1,9 @@
 // The editor's JSON API (docs/api.md). Mutations send JSON from this origin, as ADR-0004 requires.
 import type { DashboardT, WidgetT } from "@glance-editor/model";
-import type { Change, ContainersResult, DownloadResult, FolderEntry, PixabayHit, DraftState, IconHit, LibraryStatus, SiteIcon, WebResult, WebSearch, GlanceStatus, ImportCheck, PreviewCheck, PreviewResult, Problem, SaveResult, UploadCheck, VersionSummary } from "@glance-editor/server";
+import type { CommunityWidget, Change, ContainersResult, DownloadResult, FolderEntry, PixabayHit, DraftState, IconHit, LibraryStatus, SiteIcon, WebResult, WebSearch, GlanceStatus, ImportCheck, PreviewCheck, PreviewResult, Problem, SaveResult, UploadCheck, VersionSummary } from "@glance-editor/server";
 
-export type { PixabayHit };
+export type { PixabayHit, CommunityWidget };
+export type CommunityList = { source: string; license: string; commit: string; glance: string; widgets: (Omit<CommunityWidget, "variants"> & { variants: Omit<CommunityWidget["variants"][number], "yaml">[] })[] };
 export type { Change, ContainersResult, DownloadResult, DraftState, IconHit, LibraryStatus, SiteIcon, WebResult, WebSearch, GlanceStatus, ImportCheck, PreviewCheck, PreviewResult, Problem, SaveResult, UploadCheck, VersionSummary };
 export type VersionDetail = VersionSummary & { text: string; pages: number | null; widgets: number | null };
 
@@ -39,6 +40,9 @@ export const api = {
   previewInfo: () => call<{ configured: boolean }>("GET", "/api/preview"),
   previewCheck: () => call<PreviewCheck>("POST", "/api/preview/check"),
   preview: () => call<PreviewResult>("POST", "/api/preview"),
+  /** ADR-0028: the community widgets bundled with this release (without YAML), and one with its variants' YAML. */
+  community: () => call<CommunityList>("GET", "/api/community"),
+  communityWidget: (dir: string) => call<CommunityWidget>("GET", `/api/community/${encodeURIComponent(dir)}`),
   containerIcons: (sock: string | undefined, names: string[]) => call<{ icons: Record<string, string>; notes: string[] }>("POST", "/api/containers/icons", { sock, names }),
   containers: (sock?: string) => call<ContainersResult>("GET", `/api/containers${sock ? `?sock=${encodeURIComponent(sock)}` : ""}`),
   iconInfo: () => call<IconInfo>("GET", "/api/icons"),
