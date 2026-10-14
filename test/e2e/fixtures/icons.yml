@@ -1,0 +1,25 @@
+# Test dashboard for the icon finder (flow 4 step 3, D-21, D-54, D-55). The links point at the icon sources stand-in.
+server:
+  host: 127.0.0.1
+  port: {{GLANCE_PORT}}
+  assets-path: {{ASSETS_DIR}}
+
+pages:
+  - name: Home
+    columns:
+      - size: full
+        widgets:
+          - type: bookmarks
+            title: Services
+            groups:
+              - title: Media
+                links:
+                  - title: Jellyfin
+                    url: {{ICON_SITE}}/site/
+                  - title: Router
+                    url: ${ROUTER_URL}
+          - type: monitor
+            cache: 1h
+            sites:
+              - title: Home Assistant
+                url: {{ICON_SITE}}/plain/

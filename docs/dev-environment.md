@@ -33,6 +33,7 @@ Overrides via env: `DEV_BIND`, `DEV_GLANCE_PORT`, `DEV_EDITOR_PORT`, `DEV_STATE`
 | `GLANCE_VERSION` | set at build from `/glance.version` | same |
 | `PREVIEW_CONFIG` | unset (no Preview button) | `/preview-config/glance.yml` (`~/.local/share/glance-editor-dev/preview-config`, shared with the preview Glance) |
 | `PREVIEW_GLANCE_URL` | unset | `http://glance-editor-dev-preview:8080/` (same Docker network) |
+| `ASSETS_DIR` | unset (no web or site icons) | `/glance-assets` (`~/.local/share/glance-editor-dev/assets`, also `/app/assets` in the dev and preview Glance) |
 | `DOCKER_PROXY_URL` | unset (the Containers section says it can't reach Docker; names already in the map can still be toggled) | `tcp://glance-editor-dev-docker-proxy:2375` (same Docker network) |
 
 The API is described in `docs/api.md`. Until the UI exists, you can try it with curl (mutations need `-H "Origin: http://<host>:18190" -H "Content-Type: application/json"`).
@@ -42,4 +43,6 @@ The API is described in `docs/api.md`. Until the UI exists, you can try it with 
 - No authentication by design (ADR-0004). Keep these ports off the internet: no port-forwarding on the router.
 - The dev Glance shows **this host's** containers in the docker-containers widget, because it has the socket. The
   editor's Containers section lists the same host's containers through the proxy.
+- Web and site icons also need `server: assets-path: /app/assets` in the dev glance.yml (ADR-0020). The sample
+  config doesn't set it, so the finder says so; the libraries and URL tab work without it.
 - Resetting: `dev/down.sh && rm -rf ~/.local/share/glance-editor-dev && dev/up.sh`.

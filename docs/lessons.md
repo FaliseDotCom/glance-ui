@@ -3,6 +3,16 @@
 Things learned the hard way or by surprise. Newest first. Each entry: date, what happened, what to do.
 Auto memory is machine-local. This file is the record.
 
+### 2026-10-14: Things learned building the icon finder (Phase 9)
+- **About 500 selfh.st and 544 dashboard-icons icons have no SVG**, and Glance asks for `.svg` unless the value says
+  `.png`/`.webp`. **Do:** build values from each library's format list, and test previews against the binary.
+- **Iconify's search needs every word to match an icon name:** "jellyfin logo" finds nothing. **Do:** drop words like
+  "logo" and "icon" for Iconify (tested live).
+- **`config:validate` fails when `server.assets-path` doesn't exist,** and resolves a relative path against its own
+  working folder (tested). The editor validates with a stand-in folder (Phase 1); the real folder is a deployment matter.
+- **A stand-in that matches case-sensitively hid a working feature.** The UI test failed, not the code. **Do:** make
+  stand-ins as forgiving as the real service, and check the screenshot before blaming the code.
+
 ### 2026-10-14: Things that bit while building the Containers section (Phase 8)
 - **A map's order is not a change.** Hiding a container and showing it again removed and re-added its entry, so the
   model's list order differed and the editor counted "1 unsaved change". The writer produced the same bytes, Glance

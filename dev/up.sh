@@ -3,7 +3,7 @@
 # Idempotent: it recreates the dev containers but never touches the config dir if it already has a glance.yml.
 source "$(dirname "$0")/env.sh"
 
-mkdir -p "$DEV_CONFIG_DIR" "$DEV_EDITOR_DATA" "$DEV_PREVIEW_DIR"
+mkdir -p "$DEV_CONFIG_DIR" "$DEV_EDITOR_DATA" "$DEV_PREVIEW_DIR" "$DEV_ASSETS_DIR"
 if [[ ! -f "$DEV_CONFIG_DIR/glance.yml" ]]; then
   cp "$DEV_ROOT/test/fixtures/valid/sample.yml" "$DEV_CONFIG_DIR/glance.yml"
   log "seeded $DEV_CONFIG_DIR/glance.yml from test/fixtures/valid/sample.yml"
@@ -23,6 +23,7 @@ docker run -d --name "$DEV_GLANCE" --label "$DEV_LABEL" --network "$DEV_NETWORK"
   --restart unless-stopped \
   -p "$DEV_BIND:$DEV_GLANCE_PORT:8080" \
   -v "$DEV_CONFIG_DIR:/app/config" \
+  -v "$DEV_ASSETS_DIR:/app/assets" \
   -v /var/run/docker.sock:/var/run/docker.sock:ro \
   "$GLANCE_IMAGE" >/dev/null
 log "dev Glance:  http://<this-host>:$DEV_GLANCE_PORT/  ($GLANCE_VERSION)"
@@ -38,6 +39,7 @@ docker rm -f "$DEV_PREVIEW" >/dev/null 2>&1 || true
 docker run -d --name "$DEV_PREVIEW" --label "$DEV_LABEL" --network "$DEV_NETWORK" \
   --restart unless-stopped \
   -v "$DEV_PREVIEW_DIR:/app/config" \
+  -v "$DEV_ASSETS_DIR:/app/assets" \
   -v /var/run/docker.sock:/var/run/docker.sock:ro \
   "$GLANCE_IMAGE" >/dev/null
 log "dev preview Glance: internal only, served by the editor under /preview"
@@ -62,6 +64,8 @@ if docker image inspect "$EDITOR_IMAGE" >/dev/null 2>&1; then
     -v "$DEV_CONFIG_DIR:/glance-config" \
     -v "$DEV_EDITOR_DATA:/data" \
     -v "$DEV_PREVIEW_DIR:/preview-config" \
+    -v "$DEV_ASSETS_DIR:/glance-assets" \
+    -e ASSETS_DIR=/glance-assets \
     -e GLANCE_URL="http://$DEV_GLANCE:8080/" \
     -e PREVIEW_CONFIG=/preview-config/glance.yml \
     -e PREVIEW_GLANCE_URL="http://$DEV_PREVIEW:8080/" \

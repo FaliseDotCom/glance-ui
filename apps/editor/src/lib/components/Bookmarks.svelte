@@ -1,6 +1,6 @@
 <!-- Bookmarks section (design D-13, D-19, D-57; flow 4 "Edit bookmarks"): groups with a title and a colour from swatches
      that follow the theme, each with links that collapse to one row (one open at a time). Reorder with arrows; delete is
-     immediate with Undo (D-17). The icon field is free text until the icon finder (plan v2, Phase 9). -->
+     immediate with Undo (D-17). The icon field has Find, which opens the icon finder (D-21). -->
 <script lang="ts">
   import { WIDGETS, type ModelWidgetT } from "@glance-editor/model";
   import { effective, groupPalette, hslCss, hslParts, newId, setIn, type WidgetRef } from "@glance-editor/editing";
@@ -85,8 +85,11 @@
                 <input id={`${id}-u`} class="input mono" value={l.url ?? ""} {disabled} oninput={(e) => setLink(gi, li, "url", e.currentTarget.value || undefined)} />
                 <p class="help">Environment variables such as {"${NAME}"} are kept as written.</p></div>
               <div class="field"><label class="flabel" for={`${id}-i`}>Icon</label>
-                <input id={`${id}-i`} class="input mono" value={l.icon ?? ""} placeholder="di:name, si:name, sh:name, mdi:name or a URL" {disabled}
-                  oninput={(e) => setLink(gi, li, "icon", e.currentTarget.value || undefined)} /></div>
+                <div class="row"><input id={`${id}-i`} class="input mono grow" value={l.icon ?? ""} placeholder="di:name, si:name, sh:name, mdi:name or a URL" {disabled}
+                  oninput={(e) => setLink(gi, li, "icon", e.currentTarget.value || undefined)} />
+                <button type="button" class="btn" {disabled} aria-label="Find icon" onclick={() => (app.sheet = {
+                  kind: "icon", label: "Icon", title: l.title ?? "", url: l.url ?? "", current: l.icon ?? "", apply: (v) => setLink(gi, li, "icon", v),
+                })}>Find</button></div></div>
               <div class="field"><label class="flabel" for={`${id}-d`}>Description</label>
                 <input id={`${id}-d`} class="input" value={l.description ?? ""} {disabled} oninput={(e) => setLink(gi, li, "description", e.currentTarget.value || undefined)} /></div>
               <div class="field row between"><span id={`${id}-s`}>Open in the same tab</span>

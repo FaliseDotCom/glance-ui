@@ -8,6 +8,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { test as base, expect, type Page } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
+import { startIconSources, type IconSourcesStandIn } from "../support/icon-sources.ts";
 
 export interface EditorOptions {
   /** glance.yml content; `{{GLANCE_PORT}}` is replaced with the test Glance's port. Omit for "no file". */
@@ -28,6 +29,12 @@ export interface EditorOptions {
    * Like the proxy, it answers only GET. "dead": a Docker URL nothing answers at (design 03 "Docker socket unreachable").
    */
   docker?: FakeContainer[] | "dead";
+  /** Stand-ins for the icon finder's sources (test/support/icon-sources.ts); the seed's `{{ICON_SITE}}` is their URL. */
+  icons?: boolean;
+  /** A Glance assets folder: ASSETS_DIR for the editor, `{{ASSETS_DIR}}` in the seed (for `server: assets-path`). */
+  assets?: boolean;
+  /** Environment for the test Glance (for placeholders in the seed). */
+  glanceEnv?: Record<string, string>;
 }
 
 export interface FakeContainer {
@@ -47,6 +54,10 @@ export interface Editor {
   previewPath: string | null;
   /** Every request the stand-in Docker API received ("GET /containers/json?all=true"). */
   dockerRequests: string[];
+  /** The assets folder (null without `assets`). */
+  assetsDir: string | null;
+  /** The icon sources stand-in's URL and the requests it received (null without `icons`). */
+  iconSources: { url: string; requests: string[] } | null;
 }
 
 /** The stand-in Docker API: GET /containers/json like Docker's (all=false: running and paused only); 403 otherwise. */
@@ -100,13 +111,18 @@ export const test = base.extend<{ opts: EditorOptions; editor: Editor }>({
     let previewPath: string | null = null;
     const dockerRequests: string[] = [];
     let docker: { server: Server; url: string } | null = null;
+    let icons: IconSourcesStandIn | null = null;
+    const assetsDir = opts.assets ? join(dir, "assets") : null;
     try {
+      if (assetsDir) mkdirSync(assetsDir);
+      if (opts.icons) icons = await startIconSources();
       if (Array.isArray(opts.docker)) docker = await fakeDocker(opts.docker, dockerRequests);
       // "dead": a port the OS just gave out, with nothing listening (fetch refuses some low ports outright).
       const dockerUrl = opts.docker === "dead" ? `tcp://127.0.0.1:${await port()}` : docker?.url ?? "";
       if (opts.seed !== undefined) {
         glancePort = await port();
-        writeFileSync(configPath, opts.seed.replaceAll("{{GLANCE_PORT}}", String(glancePort)).replaceAll("{{DOCKER_URL}}", dockerUrl));
+        writeFileSync(configPath, opts.seed.replaceAll("{{GLANCE_PORT}}", String(glancePort)).replaceAll("{{DOCKER_URL}}", dockerUrl)
+          .replaceAll("{{ASSETS_DIR}}", assetsDir ?? "").replaceAll("{{ICON_SITE}}", icons?.url ?? ""));
       }
       const env: Record<string, string> = {
         PATH: process.env.PATH ?? "",
@@ -117,9 +133,11 @@ export const test = base.extend<{ opts: EditorOptions; editor: Editor }>({
         HOST: "127.0.0.1",
       };
       if (dockerUrl) env.DOCKER_PROXY_URL = dockerUrl;
+      if (assetsDir) env.ASSETS_DIR = assetsDir;
+      if (icons) Object.assign(env, { ICON_CDN: icons.sources.cdn, ICONIFY_API: icons.sources.iconify, OPENVERSE_API: icons.sources.openverse, WIKIMEDIA_API: icons.sources.wikimedia });
       if (opts.glance && glancePort !== null) {
         let log = "";
-        const g = spawn(process.env.GLANCE_BIN!, ["--config", configPath], { stdio: "pipe", env: { PATH: env.PATH! } });
+        const g = spawn(process.env.GLANCE_BIN!, ["--config", configPath], { stdio: "pipe", env: { PATH: env.PATH!, ...opts.glanceEnv } });
         g.stdout?.on("data", (b: Buffer) => (log += b));
         g.stderr?.on("data", (b: Buffer) => (log += b));
         children.push(g);
@@ -156,7 +174,8 @@ export const test = base.extend<{ opts: EditorOptions; editor: Editor }>({
       const url = `http://127.0.0.1:${editorPort}`;
       await waitFor(`${url}/healthz`, e, () => log);
       await use({
-        url, configPath, glancePort, previewPath, dockerRequests,
+        url, configPath, glancePort, previewPath, dockerRequests, assetsDir,
+        iconSources: icons ? { url: icons.url, requests: icons.requests } : null,
         live: () => readFileSync(configPath, "utf8"),
         write: (text) => writeFileSync(configPath, text),
         readOnly: (on) => chmodSync(configDir, on ? 0o555 : 0o755),
@@ -164,6 +183,7 @@ export const test = base.extend<{ opts: EditorOptions; editor: Editor }>({
     } finally {
       for (const c of children) c.kill();
       docker?.server.close();
+      await icons?.close();
       try { chmodSync(configDir, 0o755); } catch { /* already gone */ }
       rmSync(dir, { recursive: true, force: true });
     }

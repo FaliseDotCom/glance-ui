@@ -14,6 +14,7 @@ import {
 } from "@glance-editor/document";
 import { describeChanges, type Change } from "./changes.ts";
 import { listContainers, type ContainersResult } from "./docker.ts";
+import { Icons, type IconSources } from "./icons.ts";
 import { backup, openDb, type Db } from "./db.ts";
 import { pastStamp, readLive, reloadStamp, sha256, waitForReload, writeLiveAtomically, type ReloadResult } from "./live.ts";
 import { migrateModel } from "./migrations.ts";
@@ -36,6 +37,12 @@ export interface EditorConfig {
   previewGlanceUrl?: string | undefined;
   /** The read-only Docker socket proxy as seen from the editor (`tcp://…` or `http://…`, ADR-0005). Optional. */
   dockerUrl?: string | undefined;
+  /** Glance's assets folder as the editor sees it (icons are downloaded into its icons/ folder, D-55). Optional. */
+  assetsDir?: string | undefined;
+  /** Where icon name lists and web results come from (tests use stand-ins). */
+  iconSources?: Partial<IconSources> | undefined;
+  /** For tests: the fetch the icon finder uses. */
+  iconFetch?: typeof fetch;
 }
 
 export type VersionSource = "import" | "editor" | "outside";
@@ -175,11 +182,14 @@ export class Editor {
   private db: Db;
   private cfg: EditorConfig;
   private now: () => Date;
+  /** The icon finder's name lists, web search and downloads (D-21, D-54 to D-56; ADR-0020). */
+  readonly icons: Icons;
 
   private constructor(db: Db, cfg: EditorConfig) {
     this.db = db;
     this.cfg = cfg;
     this.now = cfg.now ?? (() => new Date());
+    this.icons = new Icons({ cacheDir: cfg.dataDir, assetsDir: cfg.assetsDir, sources: cfg.iconSources, fetch: cfg.iconFetch, now: this.now });
   }
 
   /** Open the store and record any change made to glance.yml while the editor was not running (handoff §5). */
@@ -465,6 +475,23 @@ export class Editor {
       return { ok: false, problems: [{ source: "glance", severity: "error", code: "glance.unavailable", message: `Glance's validator couldn't run, so nothing was written: ${(e as Error).message}`, location: {} }] };
     }
     return { ok: true, out, render };
+  }
+
+  // ---- icons (D-21, D-54 to D-56) ----------------------------------------------------------------------------------
+
+  /**
+   * Can a downloaded icon be used? The editor must be able to write Glance's assets folder, and the draft must set
+   * `server.assets-path`, or Glance doesn't serve /assets/ at all (glance.go, v0.8.6).
+   */
+  async iconInfo(): Promise<{ cdn: string; assets: { ok: true } | { ok: false; reason: string; message: string } }> {
+    const st = await this.icons.assetsStatus();
+    if (!st.ok) return { cdn: this.icons.cdn, assets: st };
+    const row = this.draftRow();
+    const draft = row ? this.loadDraftModel(row) : null;
+    if (draft && !draft.server?.["assets-path"]) {
+      return { cdn: this.icons.cdn, assets: { ok: false, reason: "no-assets-path", message: "glance.yml doesn't set server: assets-path, so Glance wouldn't serve a downloaded file." } };
+    }
+    return { cdn: this.icons.cdn, assets: { ok: true } };
   }
 
   // ---- Docker containers (D-22 to D-24, ADR-0005) ---------------------------------------------------------------------
