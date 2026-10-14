@@ -186,9 +186,10 @@ Nothing below may be built on until you decide. ★ = affects user experience.
 ## Next steps
 1. You: switch the Unraid container's Repository to `ghcr.io/gcarstoiu/glance-editor:latest`.
 2. You: when ready, cut over from your old Glance (`docs/runbooks/cutover.md`; rehearse the fallback first).
-3. Community Apps: Claude prepared the files (`docs/runbooks/community-apps.md`); the `unraid-templates` repository gets them; you submit at ca.unraid.net.
+3. Community Apps: the files are in the public repository `gcarstoiu/unraid-templates` (created by Claude at the PM's request, 2026-10-15); you submit it at ca.unraid.net (`docs/runbooks/community-apps.md`).
 
 ## Session log
+- 2026-10-15: `gcarstoiu/unraid-templates` created and filled (v1.1.0 template, GPL-3.0); waiting for the PM's Community Apps submission.
 - 2026-10-14: v1.1.0 released (community widgets). Community Apps files prepared (`scripts/render-community-apps.sh`).
 - 2026-10-14: v1.0.1 released (certificates; the two Docker features missing from 1.0.0). v1.1.0 notes approved by the PM.
 - 2026-10-14: ADR-0028 (community widgets) accepted and built; favicon. On branch `feat/community-widgets`, on top of the v1.0.1 PR.
