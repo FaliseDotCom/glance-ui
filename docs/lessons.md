@@ -227,3 +227,6 @@ overwrites labels with map values. **Do:** treat source reading as a hypothesis 
   `yaml` library refuses it with only "Missing closing quote". The import check now explains it and names the lines.
   `config:print` indents an included file's lines under its `$include`, so line numbers in the joined text differ from
   the uploaded file's: the upload check names the file and its own line too.
+- A fixed full-screen scrim doesn't stop the page behind it from scrolling: wheel and touch scrolling over the scrim,
+  or past the end of the sheet's own scroll, move the document. Lock the root's overflow while a modal is open, and
+  measure scroll in tests *after* opening it (Playwright scrolls the button it clicks into view).

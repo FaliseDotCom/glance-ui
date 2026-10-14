@@ -17,6 +17,13 @@
     loadFile: "Load the file", error: "Not saved", discard: "Discard changes", deletePage: "Delete page", add: "Add widget", icon: "Choose an icon", images: "Add images",
   };
   const close = () => (app.sheet = null);
+  // While a sheet or the preview is open, the page behind stays still: no scrolling it over the dimmed area, and none
+  // carried on from the end of the sheet's own scroll (design §4: a modal).
+  $effect(() => {
+    const lock = !!app.sheet || !!app.preview?.open;
+    document.documentElement.classList.toggle("modal-open", lock);
+    return () => document.documentElement.classList.remove("modal-open");
+  });
 
   // Warnings shown on Review (ADR-0018 and other "Glance accepts it, but…" rules). Unknown or kept-as-is keys were
   // reported at import and aren't repeated on every save.
