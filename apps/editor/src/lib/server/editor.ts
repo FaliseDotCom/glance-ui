@@ -16,6 +16,8 @@ export function getEditor(): Promise<Editor> {
     previewGlanceUrl: env.PREVIEW_GLANCE_URL || undefined,
     dockerUrl: env.DOCKER_PROXY_URL || undefined,
     assetsDir: env.ASSETS_DIR || undefined,
+    glanceAssetsPath: env.GLANCE_ASSETS_PATH || undefined,
+    serverFolders: (env.SERVER_FOLDERS ?? "").split(",").map((x) => x.trim()).filter(Boolean),
     // The icon finder's sources (ADR-0020); only tests change them.
     iconSources: {
       ...(env.ICON_CDN ? { cdn: env.ICON_CDN } : {}),

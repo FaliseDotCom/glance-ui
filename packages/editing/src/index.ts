@@ -5,3 +5,4 @@ export * from "./form.ts";
 export * from "./colour.ts";
 export * from "./containers.ts";
 export * from "./icons.ts";
+export * from "./background.ts";

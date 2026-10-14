@@ -1,6 +1,6 @@
-# Phase 9: Icon finder (current phase)
+# Phase 9: Icon finder
 
-**Status:** implemented on branch `phase-9/icon-finder`. PR open; merged by Claude once CI is green (PM, 2026-10-14).
+**Status:** merged (PR #12, 2026-10-14).
 **Design:** design pass 1 (ADR-0016): flow 4 step 3, D-21, D-54, D-55, D-56 (decided 2026-10-13: Iconify + Openverse,
 Wikimedia Commons as fallback), design 03 "No search results".
 **Architecture:** ADR-0020 (non-UX; accepted on merge).

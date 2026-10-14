@@ -1,6 +1,6 @@
 // The editor's JSON API (docs/api.md). Mutations send JSON from this origin, as ADR-0004 requires.
 import type { DashboardT, WidgetT } from "@glance-editor/model";
-import type { Change, ContainersResult, DownloadResult, DraftState, IconHit, LibraryStatus, SiteIcon, WebResult, WebSearch, GlanceStatus, ImportCheck, PreviewCheck, PreviewResult, Problem, SaveResult, VersionSummary } from "@glance-editor/server";
+import type { Change, ContainersResult, DownloadResult, FolderEntry, DraftState, IconHit, LibraryStatus, SiteIcon, WebResult, WebSearch, GlanceStatus, ImportCheck, PreviewCheck, PreviewResult, Problem, SaveResult, VersionSummary } from "@glance-editor/server";
 
 export type { Change, ContainersResult, DownloadResult, DraftState, IconHit, LibraryStatus, SiteIcon, WebResult, WebSearch, GlanceStatus, ImportCheck, PreviewCheck, PreviewResult, Problem, SaveResult, VersionSummary };
 export type VersionDetail = VersionSummary & { text: string; pages: number | null; widgets: number | null };
@@ -45,9 +45,25 @@ export const api = {
   iconSite: (url: string) => call<SiteIcon>("GET", `/api/icons/site?url=${encodeURIComponent(url)}`),
   iconWeb: (q: string) => call<WebSearch>("GET", `/api/icons/web?q=${encodeURIComponent(q)}`),
   iconDownload: (id: string) => call<DownloadResult>("POST", "/api/icons/download", { id }),
+  folders: (path?: string) =>
+    call<{ roots: string[] } | FolderList | { error: string }>("GET", path === undefined ? "/api/folders" : `/api/folders?path=${encodeURIComponent(path)}`),
+  copyImages: (paths: string[]) => call<{ ok: true; images: { file: string; name: string }[] } | { ok: false; message: string }>("POST", "/api/backgrounds/copy", { paths }),
+  /** D-59 "This device": the file's bytes, not JSON (the editor accepts application/octet-stream only here). */
+  async uploadImage(f: Blob): Promise<Stored> {
+    const res = await fetch("/api/backgrounds/upload", { method: "POST", headers: { "content-type": "application/octet-stream" }, body: f });
+    const data = (await res.json().catch(() => ({ error: `HTTP ${res.status}` }))) as Stored & { error?: string };
+    if (!res.ok) throw new Error(res.status === 413 ? "the file is too large" : data.error ?? `HTTP ${res.status}`);
+    return data;
+  },
 };
+
+export type FolderList = { path: string; entries: FolderEntry[] };
+type Stored = { ok: true; file: string } | { ok: false; message: string };
 
 export interface IconInfo {
   cdn: string;
+  /** Glance's assets folder as Glance sees it, to offer when the draft sets none. */
+  glanceAssetsPath: string | null;
+  serverFolders: boolean;
   assets: { ok: true } | { ok: false; reason: string; message: string };
 }

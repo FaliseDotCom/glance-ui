@@ -8,12 +8,13 @@
   import type { App } from "../client/app.svelte.ts";
   import Icon from "./Icon.svelte";
   import IconFinder from "./IconFinder.svelte";
+  import AddImages from "./AddImages.svelte";
   let { app }: { app: App } = $props();
 
   const sheet = $derived(app.sheet);
   const titles: Record<string, string> = {
     review: "Review and save", checking: "Checking", problems: "Problems", saved: "Saved", conflict: "Changed outside the editor",
-    loadFile: "Load the file", error: "Not saved", discard: "Discard changes", deletePage: "Delete page", add: "Add widget", icon: "Choose an icon",
+    loadFile: "Load the file", error: "Not saved", discard: "Discard changes", deletePage: "Delete page", add: "Add widget", icon: "Choose an icon", images: "Add images",
   };
   const close = () => (app.sheet = null);
 
@@ -25,7 +26,7 @@
   function where(p: Problem, d: DashboardT | null): string {
     const loc = p.location;
     const page = d?.pages.find((x) => x._id === loc.pageId);
-    if (!page && loc.field?.startsWith("theme")) return "Theme";
+    if (!page && loc.field?.startsWith("theme")) return loc.field === "theme.background" ? "Theme › Background" : "Theme";
     if (!page) return loc.field ? `Settings › ${loc.field}` : "Whole config";
     const parts = [page.name || "Untitled page"];
     if (loc.column === "head") parts.push("Head widgets");
@@ -43,6 +44,7 @@
   function fieldLabel(p: Problem, d: DashboardT | null): string {
     const f = p.location.field;
     if (!f) return p.source === "glance" ? "Glance's message" : "Layout";
+    if (f === "theme.background") return "Background image";
     if (f.startsWith("theme.")) return THEME_LABELS[f.slice(6) as keyof typeof THEME_LABELS] ?? f.slice(6);
     if (!p.location.widgetIds?.length || !d || !p.location.pageId || p.location.column === undefined) return f === "name" ? "Page name" : f === "slug" ? "Slug" : f;
     const w = widgetAt(d, { pageId: p.location.pageId, column: p.location.column, ids: p.location.widgetIds });
@@ -128,6 +130,8 @@
           {/each}
           {#if !addList.length}<div class="empty">No widget type matches.</div>{/if}
         </div>
+      {:else if sheet.kind === "images"}
+        <AddImages {app} />
       {:else if sheet.kind === "icon"}
         {#key sheet}<IconFinder {app} target={sheet} />{/key}
       {:else if sheet.kind === "review"}

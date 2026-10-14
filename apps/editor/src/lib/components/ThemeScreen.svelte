@@ -1,13 +1,14 @@
 <!-- Theme (design D-20, D-50, D-51, D-63; flow 9 steps 1-3): start from a theme in Glance's docs, then adjust each colour
      from swatches or the picker. Each colour says what it is used for. No colour sample and no presets (D-63): Preview is
-     the way to see the result, and presets already in the file are kept as written. The background (image, slideshow)
-     comes with plan v2 Phase 10. -->
+     the way to see the result, and presets already in the file are kept as written. The background (image, slideshow,
+     D-52, D-53) is its own component. -->
 <script lang="ts">
   import {
     GALLERY, GLANCE_DEFAULTS, PALETTES, THEME_COLOURS, applyGalleryTheme, effective, hslCss, hslParts, isGalleryTheme, normHsl,
     parseMultiplier, setThemeKey, type ColourKey, type GalleryTheme,
   } from "@glance-editor/editing";
   import type { App } from "../client/app.svelte.ts";
+  import Background from "./Background.svelte";
   import Swatches from "./Swatches.svelte";
   import Toggle from "./Toggle.svelte";
 
@@ -101,6 +102,8 @@
         </div>
       {/each}
     </div>
+
+    <Background {app} />
 
     {#if presets.length}
       <div class="notice">Your glance.yml has {presets.length === 1 ? "a theme preset" : `${presets.length} theme presets`} ({presets.map((p) => p.key).join(", ")}). They are kept exactly as written; the editor doesn't change them.</div>

@@ -5,7 +5,7 @@
 import { containsPlaceholder, findPlaceholders, isWholePlaceholder } from "./placeholder.ts";
 import { itemKeys, type Field } from "./fields.ts";
 import {
-  Auth, AuthUser, Branding, Column, Dashboard, Document, Page, Server, Theme, ThemePreset,
+  Auth, AuthUser, Background, BackgroundImage, Branding, Column, Dashboard, Document, EditorSection, Page, Server, Theme, ThemePreset,
   GLANCE_WIDGET_TYPES,
   isRawWidget,
   type DashboardT,
@@ -37,6 +37,7 @@ export function checkDashboard(d: DashboardT): Issue[] {
   checkSlugs(d, add);
 
   checkAuth(d, add);
+  checkBackground(d, add);
   checkUniqueIds(d, add);
   checkPlaceholders(d, add);
   checkExtras(d, [], add);
@@ -44,6 +45,23 @@ export function checkDashboard(d: DashboardT): Issue[] {
 }
 
 type Add = (severity: Severity, code: string, path: Issue["path"], message: string) => void;
+
+/**
+ * Design 03 "Background incomplete": an image background needs an image, a slideshow at least 2 (a server folder
+ * counts as 2 here; the server checks what is in it). Located on the Theme screen (`theme.background`).
+ */
+function checkBackground(d: DashboardT, add: Add) {
+  const bg = d["glance-editor"]?.background;
+  if (!bg) return;
+  const images = bg.images ?? [];
+  images.forEach((im, i) => {
+    if (!im.file === !im.folder) add("error", "background.image-shape", ["theme", "background"], `Background image ${i + 1} needs either a file or a folder.`);
+  });
+  const count = images.reduce((n, im) => n + (im.folder ? 2 : 1), 0);
+  if (bg.mode === "image" && !images.length) add("error", "background.no-image", ["theme", "background"], "Upload an image, or set the background back to Colour only.");
+  if (bg.mode === "image" && images.length && (bg.use ?? 0) >= images.length) add("error", "background.no-image", ["theme", "background"], "The chosen background image is gone. Pick one of the images.");
+  if (bg.mode === "slideshow" && count < 2) add("error", "background.slideshow-short", ["theme", "background"], "A slideshow needs at least 2 images.");
+}
 
 function checkPage(page: PageT, path: Issue["path"], add: Add) {
   const n = page.columns.length;
@@ -264,8 +282,10 @@ function checkPlaceholders(d: DashboardT, add: Add) {
 }
 
 /** Which object an `extra` belongs to, from its path, so a kept-as-is value isn't reported as an unknown key. */
-const LIST_SCHEMAS: Record<string, { shape: object }> = { pages: Page, columns: Column, presets: ThemePreset, users: AuthUser };
-const SECTION_SCHEMAS: Record<string, { shape: object }> = { theme: Theme, branding: Branding, server: Server, document: Document, auth: Auth };
+const LIST_SCHEMAS: Record<string, { shape: object }> = { pages: Page, columns: Column, presets: ThemePreset, users: AuthUser, images: BackgroundImage };
+const SECTION_SCHEMAS: Record<string, { shape: object }> = {
+  theme: Theme, branding: Branding, server: Server, document: Document, auth: Auth, "glance-editor": EditorSection, background: Background,
+};
 
 function knownKeys(path: (string | number)[]): Set<string> {
   let schema: { shape: object } | undefined;

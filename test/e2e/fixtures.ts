@@ -5,7 +5,7 @@ import { chmodSync, mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync 
 import { createServer as createHttpServer, type Server } from "node:http";
 import { createServer, type AddressInfo } from "node:net";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
 import { test as base, expect, type Page } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
 import { startIconSources, type IconSourcesStandIn } from "../support/icon-sources.ts";
@@ -35,6 +35,10 @@ export interface EditorOptions {
   assets?: boolean;
   /** Environment for the test Glance (for placeholders in the seed). */
   glanceEnv?: Record<string, string>;
+  /** Folders mounted into the editor (SERVER_FOLDERS, D-59): folder name → files. Created under the test's temp dir. */
+  serverFolders?: Record<string, Record<string, Buffer>>;
+  /** Tell the editor where Glance's assets folder is (GLANCE_ASSETS_PATH = the assets folder). */
+  glanceAssetsPath?: boolean;
 }
 
 export interface FakeContainer {
@@ -56,6 +60,8 @@ export interface Editor {
   dockerRequests: string[];
   /** The assets folder (null without `assets`). */
   assetsDir: string | null;
+  /** The mounted server folders' paths, by name. */
+  serverFolders: Record<string, string>;
   /** The icon sources stand-in's URL and the requests it received (null without `icons`). */
   iconSources: { url: string; requests: string[] } | null;
 }
@@ -113,6 +119,7 @@ export const test = base.extend<{ opts: EditorOptions; editor: Editor }>({
     let docker: { server: Server; url: string } | null = null;
     let icons: IconSourcesStandIn | null = null;
     const assetsDir = opts.assets ? join(dir, "assets") : null;
+    const serverFolders: Record<string, string> = {};
     try {
       if (assetsDir) mkdirSync(assetsDir);
       if (opts.icons) icons = await startIconSources();
@@ -134,6 +141,18 @@ export const test = base.extend<{ opts: EditorOptions; editor: Editor }>({
       };
       if (dockerUrl) env.DOCKER_PROXY_URL = dockerUrl;
       if (assetsDir) env.ASSETS_DIR = assetsDir;
+      if (assetsDir && opts.glanceAssetsPath) env.GLANCE_ASSETS_PATH = assetsDir;
+      env.BODY_SIZE_LIMIT = "32M"; // as in the image (Dockerfile): background uploads
+      for (const [name, files] of Object.entries(opts.serverFolders ?? {})) {
+        const f = join(dir, "mounts", name);
+        mkdirSync(f, { recursive: true });
+        for (const [file, data] of Object.entries(files)) {
+          mkdirSync(dirname(join(f, file)), { recursive: true });
+          writeFileSync(join(f, file), data);
+        }
+        serverFolders[name] = f;
+      }
+      if (Object.keys(serverFolders).length) env.SERVER_FOLDERS = Object.values(serverFolders).join(",");
       if (icons) Object.assign(env, { ICON_CDN: icons.sources.cdn, ICONIFY_API: icons.sources.iconify, OPENVERSE_API: icons.sources.openverse, WIKIMEDIA_API: icons.sources.wikimedia });
       if (opts.glance && glancePort !== null) {
         let log = "";
@@ -174,7 +193,7 @@ export const test = base.extend<{ opts: EditorOptions; editor: Editor }>({
       const url = `http://127.0.0.1:${editorPort}`;
       await waitFor(`${url}/healthz`, e, () => log);
       await use({
-        url, configPath, glancePort, previewPath, dockerRequests, assetsDir,
+        url, configPath, glancePort, previewPath, dockerRequests, assetsDir, serverFolders,
         iconSources: icons ? { url: icons.url, requests: icons.requests } : null,
         live: () => readFileSync(configPath, "utf8"),
         write: (text) => writeFileSync(configPath, text),

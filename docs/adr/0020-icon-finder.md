@@ -1,6 +1,6 @@
 # 0020. The icon finder: name lists, web sources, downloads into Glance's assets folder
 
-- **Status:** proposed (non-UX; accepted when the Phase 9 PR is merged, per the ADR README)
+- **Status:** accepted (non-UX; by merging the Phase 9 PR, #12, 2026-10-14)
 - **Date:** 2026-10-14
 - **Decider:** PM
 - **UX impact:** no. The screens and the sources are the design's and the PM's (D-21, D-54 to D-56; D-56 decided
@@ -73,4 +73,4 @@
 - Not verified: rate limits under heavy use (Openverse anonymous limits, Wikimedia); every site's icon markup.
 
 ## Decision record
-_Accepted when the Phase 9 PR is merged (non-UX)._
+Accepted 2026-10-14 by merging PR #12 (merged by Claude with the PM's standing permission).

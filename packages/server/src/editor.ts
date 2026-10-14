@@ -15,6 +15,8 @@ import {
 import { describeChanges, type Change } from "./changes.ts";
 import { listContainers, type ContainersResult } from "./docker.ts";
 import { Icons, type IconSources } from "./icons.ts";
+import { assetsWritable, copyImages, listFolder, resolveImages, storeImage, writeBackground, type BuildEnv, type FolderEntry, type Problemish } from "./background.ts";
+import { PREVIEW_CSS } from "@glance-editor/editing";
 import { backup, openDb, type Db } from "./db.ts";
 import { pastStamp, readLive, reloadStamp, sha256, waitForReload, writeLiveAtomically, type ReloadResult } from "./live.ts";
 import { migrateModel } from "./migrations.ts";
@@ -43,6 +45,10 @@ export interface EditorConfig {
   iconSources?: Partial<IconSources> | undefined;
   /** For tests: the fetch the icon finder uses. */
   iconFetch?: typeof fetch;
+  /** Glance's assets folder as Glance sees it (`server.assets-path` to offer when the draft has none). Optional. */
+  glanceAssetsPath?: string | undefined;
+  /** Folders mounted into the editor for background images (D-59), as the editor sees them. */
+  serverFolders?: readonly string[] | undefined;
 }
 
 export type VersionSource = "import" | "editor" | "outside";
@@ -175,6 +181,9 @@ interface VersionRow {
   changes: string;
   applied_at: string | null;
 }
+
+/** A background problem, shown on the Theme screen (Go to opens it). */
+const backgroundProblem = (p: Problemish): Problem => ({ source: "editor", severity: "error", code: p.code, message: p.message, location: { field: "theme.background" } });
 
 const INCLUDE = /^[ \t]*(?:-[ \t]*)?(?:!|\$)include:/m;
 
@@ -424,6 +433,14 @@ export class Editor {
       if (opts.acceptOutside !== outside.number) return { status: "conflict", outsideVersion: outside.number };
     }
 
+    // The background's CSS first, so the reloaded page never links a file that isn't there yet (D-52, D-60: a server
+    // folder's new images are picked up now).
+    const bg = draft["glance-editor"]?.background;
+    if (bg) {
+      const p = await writeBackground(bg, this.buildEnv(), "background.css");
+      if (p.length) return { status: "problems", problems: p.map(backgroundProblem) };
+    }
+
     // 5. Store the version, then replace the file atomically (D-35: an existing file is version 0 first).
     if (this.versionCount() === 0 && live !== null) this.addVersion("import", live, [], true);
     const number = this.addVersion("editor", out.text, changes, false);
@@ -457,6 +474,14 @@ export class Editor {
     const issues = checkDashboard(draft);
     if (hasErrors(issues)) return { ok: false, problems: issues.filter((i) => i.severity === "error").map((i) => fromIssue(i, draft)) };
 
+    // The background's files must be there before anything is written (design 03 "Background incomplete").
+    const bg = draft["glance-editor"]?.background;
+    if (bg) {
+      const w = await assetsWritable(this.cfg.assetsDir);
+      const found = w ? { problems: [w] } : await resolveImages(bg, this.buildEnv(), false);
+      if (found.problems.length) return { ok: false, problems: found.problems.map(backgroundProblem) };
+    }
+
     const render = (d: DashboardT) =>
       row.base_text ? writeDraft(row.base_text, d) : { text: generate(d, { glanceVersion: this.cfg.glanceVersion }).yaml, warnings: [] as string[] };
     const out = render(draft);
@@ -477,21 +502,52 @@ export class Editor {
     return { ok: true, out, render };
   }
 
+  // ---- background images (D-52, D-59, D-60) ------------------------------------------------------------------------
+
+  private buildEnv(): BuildEnv {
+    return { assetsDir: this.cfg.assetsDir, roots: this.cfg.serverFolders ?? [] };
+  }
+
+  /** "This device" (D-59): store uploaded image bytes in Glance's assets folder. */
+  async uploadBackground(data: Buffer): Promise<{ ok: true; file: string } | { ok: false; message: string }> {
+    const w = await assetsWritable(this.cfg.assetsDir);
+    if (w) return { ok: false, message: w.message.replace("Couldn't store the background", "Couldn't store the image") };
+    const r = await storeImage(this.cfg.assetsDir!, data);
+    return "error" in r ? { ok: false, message: r.error } : { ok: true, file: r.file };
+  }
+
+  /** "Server folder" (D-59): the mounted folders, or one folder's subfolders and images. */
+  async serverFolder(path?: string): Promise<{ roots: string[] } | { path: string; entries: FolderEntry[] } | { error: string }> {
+    const roots = [...(this.cfg.serverFolders ?? [])];
+    if (!path) return { roots };
+    const entries = await listFolder(roots, path);
+    return entries ? { path, entries } : { error: `${path} isn't a folder mounted into the editor.` };
+  }
+
+  /** Copy picked server images into Glance's assets folder. */
+  async copyServerImages(paths: readonly string[]): Promise<{ ok: true; images: { file: string; name: string }[] } | { ok: false; message: string }> {
+    const w = await assetsWritable(this.cfg.assetsDir);
+    if (w) return { ok: false, message: w.message.replace("Couldn't store the background", "Couldn't store the image") };
+    const r = await copyImages(this.cfg.serverFolders ?? [], this.cfg.assetsDir!, paths);
+    return "error" in r ? { ok: false, message: r.error } : { ok: true, images: r };
+  }
+
   // ---- icons (D-21, D-54 to D-56) ----------------------------------------------------------------------------------
 
   /**
    * Can a downloaded icon be used? The editor must be able to write Glance's assets folder, and the draft must set
    * `server.assets-path`, or Glance doesn't serve /assets/ at all (glance.go, v0.8.6).
    */
-  async iconInfo(): Promise<{ cdn: string; assets: { ok: true } | { ok: false; reason: string; message: string } }> {
+  async iconInfo(): Promise<{ cdn: string; glanceAssetsPath: string | null; serverFolders: boolean; assets: { ok: true } | { ok: false; reason: string; message: string } }> {
+    const base = { cdn: this.icons.cdn, glanceAssetsPath: this.cfg.glanceAssetsPath ?? null, serverFolders: (this.cfg.serverFolders ?? []).length > 0 };
     const st = await this.icons.assetsStatus();
-    if (!st.ok) return { cdn: this.icons.cdn, assets: st };
+    if (!st.ok) return { ...base, assets: st };
     const row = this.draftRow();
     const draft = row ? this.loadDraftModel(row) : null;
     if (draft && !draft.server?.["assets-path"]) {
-      return { cdn: this.icons.cdn, assets: { ok: false, reason: "no-assets-path", message: "glance.yml doesn't set server: assets-path, so Glance wouldn't serve a downloaded file." } };
+      return { ...base, assets: { ok: false, reason: "no-assets-path", message: "glance.yml doesn't set server: assets-path, so Glance wouldn't serve a stored file." } };
     }
-    return { cdn: this.icons.cdn, assets: { ok: true } };
+    return { ...base, assets: { ok: true } };
   }
 
   // ---- Docker containers (D-22 to D-24, ADR-0005) ---------------------------------------------------------------------
@@ -533,7 +589,14 @@ export class Editor {
     // Glance reloads only when the file's bytes change (v0.8.6 config.go 367, read 2026-10-14), so a build of an
     // unchanged draft would never load. The build time in a closing comment makes every build, and so every Refresh, a
     // reload: widgets fetch fresh data, as design 04 describes.
-    const body = checked.render({ ...draft, server: { ...draft.server, ...previewServer(url) } }).text;
+    // The preview's background CSS is its own file, so Preview never changes what the live dashboard links.
+    const bg = draft["glance-editor"]?.background;
+    if (bg) {
+      const p = await writeBackground(bg, this.buildEnv(), "preview.css");
+      if (p.length) return { status: "problems", problems: p.map(backgroundProblem) };
+    }
+    const theme = bg ? { theme: { ...draft.theme, "custom-css-file": PREVIEW_CSS } } : {};
+    const body = checked.render({ ...draft, ...theme, server: { ...draft.server, ...previewServer(url) } }).text;
     const text = `${body.endsWith("\n") ? body : `${body}\n`}# Glance Editor preview build ${this.now().toISOString()}\n`;
     const before = await reloadStamp(url);
     await pastStamp(before);
