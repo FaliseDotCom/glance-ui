@@ -61,3 +61,22 @@ export function pixelAt(png: Buffer, x: number, y: number): [number, number, num
 
 /** Colours within `tol` per channel. */
 export const near = (a: [number, number, number], b: [number, number, number], tol = 24) => a.every((v, i) => Math.abs(v - b[i]!) <= tol);
+
+/** A diagonal gradient between two colours, for README screenshots (a calmer background than a solid colour). */
+export function gradientPng(from: [number, number, number], to: [number, number, number], width = 480, height = 270): Buffer {
+  const ihdr = Buffer.alloc(13);
+  ihdr.writeUInt32BE(width, 0);
+  ihdr.writeUInt32BE(height, 4);
+  ihdr[8] = 8;
+  ihdr[9] = 2;
+  const rows: Buffer[] = [];
+  for (let y = 0; y < height; y++) {
+    const row = Buffer.alloc(1 + width * 3);
+    for (let x = 0; x < width; x++) {
+      const t = (x / width + y / height) / 2;
+      for (let c = 0; c < 3; c++) row[1 + x * 3 + c] = Math.round(from[c]! + (to[c]! - from[c]!) * t);
+    }
+    rows.push(row);
+  }
+  return Buffer.concat([Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]), chunk("IHDR", ihdr), chunk("IDAT", deflateSync(Buffer.concat(rows))), chunk("IEND", Buffer.alloc(0))]);
+}

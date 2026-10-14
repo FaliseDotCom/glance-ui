@@ -230,3 +230,12 @@ overwrites labels with map values. **Do:** treat source reading as a hypothesis 
 - A fixed full-screen scrim doesn't stop the page behind it from scrolling: wheel and touch scrolling over the scrim,
   or past the end of the sheet's own scroll, move the document. Lock the root's overflow while a modal is open, and
   measure scroll in tests *after* opening it (Playwright scrolls the button it clicks into view).
+
+## Glance's page details (2026-10-14, Glance v0.8.6 source and tests; ADR-0026)
+- Glance's container label for the display name is `glance.name`, not `title` (widget-docker-containers.go 62).
+- Docker containers and bookmark groups both use `.dynamic-columns.list-with-separator`: a left border side by side,
+  a top border when stacked in a narrow widget. Bookmark links themselves have no separator.
+- Glance fills a page by script after it loads; tests wait for `.content-ready` (page.js 770), not for `.widget`
+  (an html widget has none visible).
+- A fixed background layer sized `inset: 0` follows the window's height, which changes on phones as the address bar
+  moves; `100lvh` doesn't.

@@ -48,7 +48,7 @@ test.describe("Flow: hide a container", () => {
 
     // 3. watchtower shows "Label": hidden by a glance.hide label, and can't be changed here (D-23).
     await expect(row(page, "watchtower").getByText("Label", { exact: true })).toBeVisible();
-    await expect(row(page, "watchtower").getByRole("button")).toHaveCount(0);
+    await expect(row(page, "watchtower").getByRole("button", { name: "Show watchtower" })).toHaveCount(0); // no eye; its settings still open (ADR-0026)
     await expect(row(page, "watchtower").getByText(/Hidden by the glance\.hide label/)).toBeVisible();
     await row(page, "watchtower").scrollIntoViewIfNeeded();
     await expectAccessible(page, "containers section");
@@ -126,5 +126,52 @@ test.describe("design 03: Docker socket unreachable", () => {
     await expect(page.getByRole("heading", { name: "Version 1 is live" })).toBeVisible();
     expect(editor.live()).toMatch(/glance-editor: # the editor itself\n {16}hide: false/);
     expect(editor.live()).toMatch(/name: Jellyfin # display name, kept when the eye is pressed\n {16}hide: true/);
+  });
+});
+
+// ADR-0026: each container's settings in the widget's map: icon (the icon finder, with Unraid's own icon and
+// suggestions from the image's name), name, URL, description, same tab. Glance shows them after Save.
+test.describe("Container settings (ADR-0026)", () => {
+  const UNRAID_ICON = "https://icons.invalid/jellyfin.png";
+  test.use({ opts: { seed: fixture("docker.yml"), glance: true, icons: true, docker: [
+    { name: "media", image: "lscr.io/linuxserver/jellyfin:latest", labels: { "net.unraid.docker.icon": UNRAID_ICON, "glance.description": "From a label" } },
+    { name: "paperless", image: "ghcr.io/paperless-ngx/paperless-ngx:2.15" },
+  ] } });
+
+  test("open a container: Unraid's icon and suggestions by image; name, URL, description; labels show greyed", async ({ page, editor }) => {
+    await importSeed(page, editor.url);
+    await openWidget(page);
+    const ins = inspector(page);
+    await ins.getByRole("button", { name: "media settings" }).click();
+    await expect(ins.getByLabel("Description", { exact: true })).toHaveAttribute("placeholder", "From a label");
+    await ins.getByRole("button", { name: "Find icon for media" }).click();
+    const finder = page.getByRole("dialog", { name: "Choose an icon" });
+    await expect(finder.getByText("Icon · jellyfin")).toBeVisible(); // looked up by the image's name
+    await expect(finder.getByRole("button", { name: /^Unraid's icon/ })).toBeVisible();
+    await expect(finder.getByRole("button", { name: /si:jellyfin/ }).first()).toBeVisible();
+    await expectAccessible(page, "container icon finder");
+    await shot(page, "container-icon-finder");
+    await finder.getByRole("button", { name: /^Unraid's icon/ }).click();
+    await expect(ins.getByLabel("Icon", { exact: true })).toHaveValue(UNRAID_ICON);
+    await ins.getByLabel("Name", { exact: true }).fill("Jellyfin");
+    await ins.getByLabel("URL", { exact: true }).fill("https://media.example/");
+    await expectAccessible(page, "container settings");
+    await expectTargets(page, "container settings");
+    await shot(page, "container-settings");
+    if (isPhone(page)) await ins.getByRole("button", { name: "Back to layout" }).click();
+    await page.getByRole("button", { name: "Save", exact: true }).click();
+    await page.getByRole("dialog", { name: "Review and save" }).getByRole("button", { name: "Check and save" }).click();
+    await expect(page.getByRole("heading", { name: "Version 1 is live" })).toBeVisible();
+    const media = editor.live().split("              media:\n")[1] ?? "";
+    for (const line of ["icon: https://icons.invalid/jellyfin.png", "name: Jellyfin", "url: https://media.example/"]) expect(media).toContain(`                ${line}\n`);
+
+    const g = await page.context().newPage();
+    await g.goto(`http://127.0.0.1:${editor.glancePort}/`);
+    await g.locator(".content-ready").waitFor({ state: "attached" });
+    const item = g.locator(".widget-type-docker-containers li", { hasText: "Jellyfin" }).first();
+    await expect(item.locator(`img[src="${UNRAID_ICON}"]`)).toBeAttached();
+    await expect(item.locator('a[href="https://media.example/"]')).toBeAttached();
+    await expect(item.getByText("From a label")).toBeAttached(); // the label still applies where nothing is set
+    await g.close();
   });
 });

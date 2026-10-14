@@ -48,6 +48,7 @@ export interface FakeContainer {
   name: string;
   state?: string;
   labels?: Record<string, string>;
+  image?: string;
 }
 
 export interface Editor {
@@ -80,7 +81,7 @@ async function fakeDocker(list: FakeContainer[], seen: string[]): Promise<{ serv
     const all = u.searchParams.get("all") === "true";
     const body = list
       .filter((c) => all || ["running", "paused"].includes(c.state ?? "running"))
-      .map((c) => ({ Names: [`/${c.name}`], Image: "example", State: c.state ?? "running", Status: c.state === "exited" ? "Exited (0) 2 days ago" : "Up 3 days", Labels: c.labels ?? {} }));
+      .map((c) => ({ Names: [`/${c.name}`], Image: c.image ?? "example", State: c.state ?? "running", Status: c.state === "exited" ? "Exited (0) 2 days ago" : "Up 3 days", Labels: c.labels ?? {} }));
     res.writeHead(200, { "content-type": "application/json" }).end(JSON.stringify(body));
   });
   await new Promise<void>((ok) => server.listen(0, "127.0.0.1", ok));

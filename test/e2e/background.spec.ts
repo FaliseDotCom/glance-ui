@@ -127,6 +127,43 @@ test.describe("Background", () => {
     expect([first, second].some((c) => near(c, RED)) && [first, second].some((c) => near(c, BLUE))).toBe(true);
   });
 
+  test("ADR-0026: a whole image at the top over a blurred copy; every layer as tall as the window gets", async ({ page, editor, browser }) => {
+    await importSeed(page, editor.url);
+    await openTheme(page);
+    await bgType(page, "Slideshow").click();
+    await page.getByRole("button", { name: "Add images" }).click();
+    const sheet = page.getByRole("dialog", { name: "Add images" });
+    await sheet.getByRole("tab", { name: "Server folder" }).click();
+    const root = editor.serverFolders.photos!;
+    await sheet.getByRole("button", { name: new RegExp(`^${root.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")} Mounted folder`) }).click();
+    await sheet.getByRole("button", { name: "Use this folder" }).click();
+    // Around the image and Position appear only for a whole image.
+    await expect(page.getByRole("group", { name: "Around the image" })).toHaveCount(0);
+    await page.getByRole("group", { name: "Fit" }).getByRole("button", { name: "Whole image" }).click();
+    await page.getByRole("group", { name: "Around the image" }).getByRole("button", { name: "Blurred copy" }).click();
+    await page.getByRole("group", { name: "Position" }).getByRole("button", { name: "Top" }).click();
+    await expectAccessible(page, "whole image options");
+    await shot(page, "background-whole-blurred");
+    await save(page);
+    await expect(page.getByRole("heading", { name: "Version 1 is live" })).toBeVisible();
+    expect(editor.live()).toContain("around: blurred");
+    expect(editor.live()).toContain("align: top");
+
+    const p = await browser.newPage({ viewport: page.viewportSize()! });
+    await p.goto(`http://127.0.0.1:${editor.glancePort}/`);
+    const style = await p.evaluate(() => {
+      const before = getComputedStyle(document.body, "::before");
+      const back = getComputedStyle(document.documentElement, "::before");
+      return { position: before.backgroundPosition, size: before.backgroundSize, height: before.height, back: back.filter, backImage: back.backgroundImage, win: window.innerHeight };
+    });
+    await p.close();
+    expect(style.position).toBe("50% 0%");
+    expect(style.size).toBe("contain");
+    expect(style.back).toBe("blur(30px)");
+    expect(style.backImage).toMatch(/backgrounds\/[0-9a-f]{16}\.png/);
+    expect(parseFloat(style.height)).toBeGreaterThanOrEqual(style.win); // lvh: never shorter than the window
+  });
+
   test("shuffle adds the script through the document option, and only then", async ({ page, editor, browser }) => {
     await importSeed(page, editor.url);
     await openTheme(page);

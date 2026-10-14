@@ -23,7 +23,7 @@ export type Sheet =
   | { kind: "deletePage"; pageId: string }
   | { kind: "add"; target: ListRef }
   | { kind: "images" }
-  | { kind: "icon"; label: string; title: string; url: string; current: string; apply: (value: string | undefined) => void };
+  | { kind: "icon"; label: string; title: string; url: string; current: string; apply: (value: string | undefined) => void; offers?: { value: string; name: string; note: string }[] };
 
 export interface Toast {
   text: string;
@@ -160,6 +160,13 @@ export class App {
   async init() {
     try {
       await this.reload();
+      // ADR-0026: the dashboard's Edit link opens the editor on the page it was showing (?page=<slug>).
+      const want = new URLSearchParams(location.search).get("page");
+      if (want !== null) {
+        const p = this.draft?.pages.find((x) => pageSlug(x) === want);
+        if (p) this.pageId = p._id;
+        history.replaceState(history.state, "", location.pathname);
+      }
       void this.checkGlance();
       void api.colours().then((r) => (this.colours = r.colours)).catch(() => undefined);
       void api.previewInfo().then((r) => (this.previewConfigured = r.configured)).catch(() => undefined);

@@ -41,6 +41,8 @@ Last updated: 2026-10-14 (Phase 11: test release v1.0.0-rc.3 out; upload on firs
 Nothing below may be built on until you decide. ★ = affects user experience.
 
 - ★ **v1.0.0 release notes:** draft in `CHANGELOG.md` (Unreleased). Approve or edit; then you push the `v1.0.0` tag.
+- ★ **ADR-0026 (built, on a branch):** waiting for your go-ahead for the PR. One open point: Glance's two default
+  themes stay in the menu (not answered; recommended).
 - ★ **ADR-0025 leftovers (say if you want otherwise):** `.env` from the zip is stored and given to Glance; no assets
   file list in the editor yet; the screen was built from the ADR's text, without a design pass.
 - ★ **D-62 reading (confirm, or say otherwise):** in a slideshow, every image of a Pixabay set is a slide, so the
@@ -50,6 +52,7 @@ Nothing below may be built on until you decide. ★ = affects user experience.
 ## Decided on 2026-10-14 (via chat)
 | ADR | Outcome |
 | --- | ------- |
+| [0026](adr/0026-dashboard-look-and-menu.md) | Lines switch; background fix plus blurred copy and top position; Edit link; any of the 14 docs themes in the menu; container icon, name, URL, description |
 | [0025](adr/0025-upload-on-first-run.md) | **Upload your Glance folder as a .zip** on first run (option C): includes, assets and `.env` come with it |
 | [0024](adr/0024-all-in-one-container.md) | **One container** (editor, Glance, preview, Docker gate) with one Unraid template; ports 8080/8090; follows `:latest`; template with our releases now, Community Apps later. Supersedes ADR-0023 and in part ADR-0005 |
 
@@ -186,6 +189,7 @@ Nothing below may be built on until you decide. ★ = affects user experience.
    what CA needs).
 
 ## Session log
+- 2026-10-14: ADR-0026 (five findings from the PM's install) proposed, accepted, built and tested on branch `phase-11/findings-2`; PR waits for the PM's go-ahead.
 - 2026-10-14: PR #16 merged by Claude at the PM's request. rc.2 (upload) and rc.3 (two fixes from the PM's install: a clearer message for a quoted value wrapped onto an unindented line; the page no longer scrolls behind an open sheet) published.
 - 2026-10-14: Test release v1.0.0-rc.1 published (image and template). ADR-0025 (upload a .zip on first run) proposed, accepted as option C, built.
 - 2026-10-14: One container (ADR-0024) built and accepted: image/start.ts, the Docker gate, the Unraid template and icon, test releases; tested end to end on the dev machine.

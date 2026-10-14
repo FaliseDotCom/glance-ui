@@ -1,7 +1,7 @@
 <!-- Theme (design D-20, D-50, D-51, D-63; flow 9 steps 1-3): start from a theme in Glance's docs, then adjust each colour
-     from swatches or the picker. Each colour says what it is used for. No colour sample and no presets (D-63): Preview is
-     the way to see the result, and presets already in the file are kept as written. The background (image, slideshow,
-     D-52, D-53) is its own component. -->
+     from swatches or the picker. Each colour says what it is used for. No colour sample (D-63): Preview is the way to see
+     the result. The background (image, slideshow, D-52, D-53) is its own component; the dashboard's look and menu
+     (ADR-0026: lines, themes in the menu as presets, the Edit link) too. -->
 <script lang="ts">
   import {
     GALLERY, GLANCE_DEFAULTS, PALETTES, THEME_COLOURS, applyGalleryTheme, effective, hslCss, hslParts, isGalleryTheme, normHsl,
@@ -9,13 +9,13 @@
   } from "@glance-editor/editing";
   import type { App } from "../client/app.svelte.ts";
   import Background from "./Background.svelte";
+  import MenuAndLook from "./MenuAndLook.svelte";
   import Swatches from "./Swatches.svelte";
   import Toggle from "./Toggle.svelte";
 
   let { app }: { app: App } = $props();
 
   const theme = $derived(app.draft?.theme);
-  const presets = $derived(theme?.presets ?? []);
   const cardCss = (t: GalleryTheme, k: ColourKey) =>
     hslCss(hslParts(t.properties[k] ?? (k === "positive-color" ? t.properties["primary-color"] ?? GLANCE_DEFAULTS["primary-color"] : GLANCE_DEFAULTS[k]))!);
 
@@ -104,9 +104,6 @@
     </div>
 
     <Background {app} />
-
-    {#if presets.length}
-      <div class="notice">Your glance.yml has {presets.length === 1 ? "a theme preset" : `${presets.length} theme presets`} ({presets.map((p) => p.key).join(", ")}). They are kept exactly as written; the editor doesn't change them.</div>
-    {/if}
+    <MenuAndLook {app} />
   </div>
 </div>

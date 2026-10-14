@@ -1,13 +1,18 @@
 // The editor's Docker connection (ADR-0005): a read-only socket proxy, never the socket itself. The editor makes one
 // request, the same one Glance v0.8.6 makes (widget-docker-containers.go: GET /containers/json?all=…, 5 s timeout;
-// source read 2026-10-14), and passes on only what the Containers section needs: each container's name, state and
-// glance.* labels. Other labels can hold secrets (proxy credentials, for example) and never leave the server.
+// source read 2026-10-14), and passes on only what the Containers section needs: each container's name, state, image
+// and glance.* labels, and the icon Unraid shows for it (ADR-0026). Other labels can hold secrets (proxy credentials,
+// for example) and never leave the server.
 
 export interface DockerContainer {
   name: string;
   state: string;
   /** The container's glance.* labels, without the prefix. */
   glance: Record<string, string>;
+  /** The image it runs (`lscr.io/linuxserver/plex:latest`), for icon suggestions. */
+  image?: string;
+  /** The icon Unraid shows for it: its template's Icon, in the `net.unraid.docker.icon` label (webgui Helpers.php 443). */
+  unraidIcon?: string;
 }
 
 export type ContainersResult =
@@ -45,17 +50,22 @@ export async function listContainers(url: string | undefined, fetchFn: typeof fe
   }
   if (!Array.isArray(body)) return { status: "unreachable", message: "Docker's answer wasn't a container list" };
   const containers: DockerContainer[] = [];
-  for (const c of body as { Names?: unknown; State?: unknown; Labels?: unknown }[]) {
+  for (const c of body as { Names?: unknown; State?: unknown; Labels?: unknown; Image?: unknown }[]) {
     // Glance uses the first name without its leading slash, and skips containers without one.
     const name = Array.isArray(c?.Names) && typeof c.Names[0] === "string" ? c.Names[0].replace(/^\/+/, "") : "";
     if (!name) continue;
     const glance: Record<string, string> = {};
+    let unraidIcon: string | undefined;
     if (c.Labels && typeof c.Labels === "object") {
       for (const [k, v] of Object.entries(c.Labels as Record<string, unknown>)) {
         if (k.startsWith("glance.") && typeof v === "string") glance[k.slice("glance.".length)] = v;
+        if (k === "net.unraid.docker.icon" && typeof v === "string" && /^https?:\/\//.test(v)) unraidIcon = v;
       }
     }
-    containers.push({ name, state: typeof c.State === "string" ? c.State.toLowerCase() : "", glance });
+    containers.push({
+      name, state: typeof c.State === "string" ? c.State.toLowerCase() : "", glance,
+      ...(typeof c.Image === "string" && c.Image ? { image: c.Image } : {}), ...(unraidIcon ? { unraidIcon } : {}),
+    });
   }
   return { status: "ok", containers };
 }

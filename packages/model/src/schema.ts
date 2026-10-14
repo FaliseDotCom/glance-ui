@@ -178,6 +178,9 @@ export const Background = z.strictObject({
   order: z.enum(["in-order", "shuffle"]).optional(),
   transition: z.enum(["fade", "cut"]).optional(),
   fit: z.enum(["fill", "whole"]).optional(),
+  /** ADR-0026, "Whole image" only: what fills the space around it, and where the image sits. */
+  around: z.enum(["colour", "blurred"]).optional(),
+  align: z.enum(["center", "top"]).optional(),
   dim: z.number().int().min(0).max(80).optional(),
   blur: z.number().int().min(0).max(20).optional(),
   surfaces: z.enum(["solid", "see-through"]).optional(),
@@ -186,7 +189,16 @@ export const Background = z.strictObject({
   extra,
 });
 
-export const EditorSection = z.strictObject({ background: Background.optional(), extra });
+export const EditorSection = z.strictObject({
+  background: Background.optional(),
+  /** ADR-0026: hide the lines Glance draws between list items and between bookmark groups. */
+  "hide-lines": z.boolean().optional(),
+  /** ADR-0026: the editor's address; when set, an Edit link to it is added to the dashboard's menu. */
+  "edit-link": str.optional(),
+  /** The user's own custom CSS file, which the editor's CSS file imports (D-52). Older files keep it in background. */
+  "import-css": str.optional(),
+  extra,
+});
 
 export const Dashboard = z.strictObject({
   schemaVersion: z.literal(SCHEMA_VERSION),
@@ -224,6 +236,7 @@ export type WidgetT = ModelWidgetT | RawWidgetT;
 
 export type DashboardT = z.infer<typeof Dashboard>;
 export type BackgroundT = z.infer<typeof Background>;
+export type EditorSectionT = z.infer<typeof EditorSection>;
 export type BackgroundImageT = z.infer<typeof BackgroundImage>;
 export type PageT = z.infer<typeof Page>;
 export type ColumnT = z.infer<typeof Column>;
