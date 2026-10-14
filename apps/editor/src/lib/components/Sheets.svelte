@@ -9,6 +9,7 @@
   import Icon from "./Icon.svelte";
   import IconFinder from "./IconFinder.svelte";
   import AddImages from "./AddImages.svelte";
+  import CommunityWidgets from "./CommunityWidgets.svelte";
   let { app }: { app: App } = $props();
 
   const sheet = $derived(app.sheet);
@@ -64,9 +65,12 @@
   const addTarget = $derived(sheet?.kind === "add" ? sheet.target : null);
   const addParentType = $derived(addTarget && addTarget.parentIds.length && app.draft ? widgetAt(app.draft, { ...addTarget, ids: addTarget.parentIds })?.type ?? null : null);
   const addList = $derived(addTarget ? addOptions(addParentType, addQuery) : []);
+  // ADR-0028: Widget types, or the community widgets bundled with this release.
+  let addTab = $state<"types" | "community">("types");
   $effect(() => {
     if (!addTarget) return;
     addQuery = "";
+    addTab = "types";
     void tick().then(() => addInput?.focus());
   });
 
@@ -124,6 +128,13 @@
           <div><span class="lbl">{listLabel(app.draft, sheet.target)}</span><h2 class="h2">{addParentType === "group" ? "Add tab" : "Add widget"}</h2></div>
           <button type="button" class="ib" aria-label="Close" onclick={close}><Icon name="close" size={20} /></button>
         </div>
+        <div class="seg" role="group" aria-label="What to add">
+          <button type="button" class:on={addTab === "types"} aria-pressed={addTab === "types"} onclick={() => (addTab = "types")}>Widget types</button>
+          <button type="button" class:on={addTab === "community"} aria-pressed={addTab === "community"} onclick={() => (addTab = "community")}>Community</button>
+        </div>
+        {#if addTab === "community"}
+          <CommunityWidgets {app} target={sheet.target} />
+        {:else}
         <label class="sr" for="addq">Search widget types</label>
         <input id="addq" class="input" placeholder="Search widget types" bind:value={addQuery} bind:this={addInput} autocomplete="off" />
         <div class="tlist" role="list" aria-label="Widget types">
@@ -137,6 +148,7 @@
           {/each}
           {#if !addList.length}<div class="empty">No widget type matches.</div>{/if}
         </div>
+        {/if}
       {:else if sheet.kind === "images"}
         <AddImages {app} />
       {:else if sheet.kind === "icon"}

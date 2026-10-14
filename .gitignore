@@ -6,6 +6,8 @@ coverage/
 .env.*
 # Editor data and generated configs must never be committed
 data/
+# …except the bundled community widgets snapshot (ADR-0028), which is source
+!packages/server/data/
 *.sqlite
 *.sqlite3
 /glance.yml

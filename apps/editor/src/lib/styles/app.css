@@ -207,6 +207,13 @@ fieldset.subcard { padding: 10px 12px; }
 .tlist { display: flex; flex-direction: column; gap: 6px; max-height: 420px; overflow: auto; padding: 2px; }
 .trow { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; align-items: center; width: 100%; min-height: 48px; padding: 6px 12px; border: 0; border-radius: 12px; background: var(--fill-card); box-shadow: inset 0 0 0 1px var(--line); text-align: left; cursor: pointer; color: inherit; }
 .trow:disabled { cursor: not-allowed; opacity: 0.55; }
+/* ADR-0028: community widgets */
+.trow.cw { grid-template-columns: auto minmax(0, 1fr); gap: 12px; }
+.cwthumb { width: 72px; height: 44px; border-radius: 8px; overflow: hidden; background: var(--fill-press); flex: none; display: inline-flex; }
+.cwthumb.big { width: 144px; height: 88px; }
+.cwthumb img { width: 100%; height: 100%; object-fit: cover; }
+.cwdesc { white-space: normal; display: -webkit-box; -webkit-line-clamp: 2; line-clamp: 2; -webkit-box-orient: vertical; }
+.pre.cwyaml { max-height: 280px; overflow: auto; box-shadow: inset 0 0 0 1px var(--line); }
 
 /* theme (D-20, D-50) */
 .themegrid { display: grid; grid-template-columns: minmax(0, 760px); gap: 24px; align-items: start; }

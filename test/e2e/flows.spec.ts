@@ -29,6 +29,11 @@ test.describe("Flow 1: create a dashboard from scratch", () => {
   test("no file: Start empty, pick a layout, save version 1", async ({ page, editor }) => {
     await page.goto(editor.url);
     await expect(page.getByRole("heading", { name: "Set up the editor" })).toBeVisible();
+    // The browser tab's icon: the project's icon, served by the editor.
+    const icon = await page.locator('link[rel="icon"][type="image/svg+xml"]').getAttribute("href");
+    const res = await page.request.get(new URL(icon!, page.url()).href);
+    expect(res.status()).toBe(200);
+    expect(await res.text()).toContain("<title>Glance Editor</title>");
     // noFile: Import is disabled and says why (design 03).
     await expect(page.getByRole("button", { name: /Import glance\.yml/ })).toBeDisabled();
     await expect(page.getByText("No glance.yml in the data folder.")).toBeVisible();

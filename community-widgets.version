@@ -1,0 +1,3 @@
+# Pinned glanceapp/community-widgets (CC0-1.0, ADR-0028): the snapshot each release bundles,
+# packages/server/data/community-widgets.json, comes from this commit (scripts/community-widgets.ts). Change only through a PR.
+COMMUNITY_WIDGETS_COMMIT=0c643aa3e0b8963b132090ead5d58f8967fbd9fe

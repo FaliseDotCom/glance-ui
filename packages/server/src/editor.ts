@@ -1,12 +1,13 @@
 // The editor's server core (plan v2, Phase 3). Design references: handoff §2 (draft), §4 (save pipeline), §5 (versions);
 // D-26 to D-35, D-46. No HTTP here: apps/editor's routes call these methods.
 
+import { readFileSync } from "node:fs";
 import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { randomBytes } from "node:crypto";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import {
-  checkDashboard, hasErrors, parseDashboard, SCHEMA_VERSION, type ColumnT, type DashboardT, type WidgetT,
+  checkDashboard, findPlaceholders, hasErrors, parseDashboard, SCHEMA_VERSION, type ColumnT, type DashboardT, type WidgetT,
 } from "@glance-editor/model";
 import { generate, toGlanceJson } from "@glance-editor/generator";
 import { printConfig, validateConfig } from "@glance-editor/glance";
@@ -363,7 +364,7 @@ export class Editor {
       baseVersion: row.base_version,
       liveVersion: this.latestApplied()?.number ?? null,
       changes: describeChanges(this.refModel(row), draft),
-      problems: checkDashboard(draft).map((i) => fromIssue(i, draft)),
+      problems: [...checkDashboard(draft).map((i) => fromIssue(i, draft)), ...this.unsetValues(draft)],
       changedOutside: live !== null && sha256(live) !== row.base_sha256,
     };
   }
@@ -381,7 +382,24 @@ export class Editor {
     const parsed = parseDashboard(json);
     if (!parsed.dashboard) return { ok: false, problems: parsed.issues.map((i) => fromIssue(i, undefined)) };
     this.putDraft(parsed.dashboard, row.base_text, row.base_version, row.base_sha256);
-    return { ok: true, changes: describeChanges(this.refModel(row), parsed.dashboard), problems: parsed.issues.map((i) => fromIssue(i, parsed.dashboard)) };
+    return { ok: true, changes: describeChanges(this.refModel(row), parsed.dashboard), problems: [...parsed.issues.map((i) => fromIssue(i, parsed.dashboard)), ...this.unsetValues(parsed.dashboard)] };
+  }
+
+  /**
+   * ADR-0028 (and ADR-0025): `${VARIABLES}` with no value in the container or `.env`, as a warning for Review. Glance
+   * won't load a config with one. Only the names are compared, never values; outside the all-in-one container the
+   * editor doesn't know Glance's variables, so nothing is reported.
+   */
+  private unsetValues(d: DashboardT): Problem[] {
+    if (this.cfg.glanceEnvNames === undefined) return [];
+    let env = "";
+    try { env = readFileSync(this.envPath(), "utf8"); } catch { /* no .env */ }
+    const have = new Set([...this.cfg.glanceEnvNames, ...[...env.matchAll(/^[ \t]*(?:export[ \t]+)?([A-Za-z_][A-Za-z0-9_]*)[ \t]*=/gm)].map((m) => m[1]!)]);
+    const missing = [...new Set(findPlaceholders(JSON.stringify(d)).filter((p) => p.kind === "env" || p.kind === "readFileFromEnv").map((p) => p.name))].filter((n) => !have.has(n));
+    if (!missing.length) return [];
+    const list = missing.map((n) => `\${${n}}`).join(", ");
+    return [{ source: "editor", severity: "warning", code: "placeholder.unset", location: {},
+      message: `${list} ${missing.length === 1 ? "has" : "have"} no value. Add ${missing.length === 1 ? "it" : "them"} to .env next to glance.yml, or as variables in the container's settings: Glance won't load the dashboard until each has one.` }];
   }
 
   // ---- first run (D-34, D-35) ---------------------------------------------------------------------------------------

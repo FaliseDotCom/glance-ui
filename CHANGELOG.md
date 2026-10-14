@@ -5,6 +5,13 @@ All notable changes are recorded here. The format follows Keep a Changelog; vers
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-10-14
+### Added
+- **Community widgets.** Add widget has a Community tab: the widgets Glance users share in glanceapp/community-widgets,
+  with search, previews, variants and the values each needs. Each one is checked with Glance for the release.
+- Review warns about any `${VARIABLE}` that has no value in the container or `.env`.
+- The editor's browser tab shows the project's icon.
+
 ## [1.0.1] - 2026-10-14
 ### Fixed
 - **Widgets that fetch from the web work again.** Weather, RSS, releases and every other widget that loads data over
