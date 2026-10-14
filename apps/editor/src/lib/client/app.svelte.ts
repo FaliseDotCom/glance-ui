@@ -2,7 +2,7 @@
 // the open sheet and the toast, the widget open in the inspector, and "My colours". Every edit replaces the whole draft
 // on the server (PUT /api/draft), in order.
 
-import type { DashboardT, PageT, WidgetT } from "@glance-editor/model";
+import { pageSlug, type DashboardT, type PageT, type WidgetT } from "@glance-editor/model";
 import {
   addWidget, deleteWidget, deletePage, editWidget, findWidget, parentOf, plural, typeLabel, widgetAt, widgetName,
   type ListRef, type WidgetRef,
@@ -13,8 +13,8 @@ export type Screen = "loading" | "welcome" | "import" | "layout" | "pages" | "th
 
 export type Sheet =
   | { kind: "review" }
-  | { kind: "checking" }
-  | { kind: "problems" }
+  | { kind: "checking"; for?: "preview" }
+  | { kind: "problems"; for?: "preview" }
   | { kind: "saved"; version: number; reload: "reloaded" | "not-confirmed" | "not-checked"; warnings: string[] }
   | { kind: "conflict"; outsideVersion: number }
   | { kind: "loadFile" }
@@ -63,6 +63,23 @@ export interface Picker {
   hex: string | null;
 }
 
+/**
+ * Handoff §4b: the preview built on the preview Glance (D-39). `sig` is the draft it was built from: when the draft
+ * differs, it is out of date until Refresh (only Refresh rebuilds). `path` is the page the frame shows, kept across
+ * rebuilds.
+ */
+export interface Preview {
+  sig: string;
+  device: "desktop" | "phone";
+  open: boolean;
+  building: boolean;
+  /** Design 03 "Preview can't build": the preview Glance didn't answer or load the draft. */
+  failed: string | null;
+  path: string;
+  /** Increases with every build, so the frame loads again. */
+  build: number;
+}
+
 const clone = <T>(x: T): T => structuredClone(x);
 
 export class App {
@@ -101,6 +118,9 @@ export class App {
   picker = $state<Picker | null>(null);
   /** D-51: kept by the editor, shown in every colour row and in bookmark groups. */
   colours = $state<string[]>([]);
+  /** ADR-0019: a preview Glance is set up. */
+  previewConfigured = $state(false);
+  preview = $state<Preview | null>(null);
 
   private toastTimer: ReturnType<typeof setTimeout> | undefined;
   private queue: Promise<unknown> = Promise.resolve();
@@ -138,6 +158,7 @@ export class App {
       await this.reload();
       void this.checkGlance();
       void api.colours().then((r) => (this.colours = r.colours)).catch(() => undefined);
+      void api.previewInfo().then((r) => (this.previewConfigured = r.configured)).catch(() => undefined);
     } catch (e) {
       this.loadError = (e as Error).message;
     }
@@ -298,6 +319,96 @@ export class App {
     return this.flushTimer !== undefined ? this.flush() : this.queue;
   }
 
+  // ---- preview (handoff §4b, D-39, D-47 to D-49) ----------------------------------------------------------------
+
+  /** What the draft is, for "Out of date": the preview was built from a different one. */
+  private draftSig(): string {
+    return JSON.stringify($state.snapshot(this.draft));
+  }
+  get previewStale(): boolean {
+    return !!this.preview && !this.preview.building && this.preview.sig !== this.draftSig();
+  }
+
+  /** Where focus returns when the preview closes (captured before the editor behind it becomes inert). */
+  previewReturn: HTMLElement | null = null;
+
+  /**
+   * The Preview button: show the preview built earlier, marked out of date if the draft changed since (flow 8 step 3;
+   * handoff §4b step 5: only Refresh rebuilds). The first time, or after a failed build, check and build.
+   */
+  async openPreview() {
+    this.previewReturn = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    const p = this.preview;
+    if (p && !p.failed) {
+      p.open = true;
+      return;
+    }
+    await this.buildPreview();
+  }
+
+  /**
+   * D-47: the same checks as Save first; any problem → the Problems list, no preview built, nothing written. Then the
+   * preview Glance loads the draft (handoff §4b steps 2–3) while the preview shows "Starting the preview".
+   */
+  async buildPreview() {
+    if (!this.draft) return;
+    this.picker = null;
+    if (this.typedProblems.length) {
+      this.showErrors = true;
+      this.sheet = { kind: "problems", for: "preview" };
+      return;
+    }
+    this.sheet = { kind: "checking", for: "preview" };
+    await this.settle();
+    const sig = this.draftSig();
+    try {
+      const c = await api.previewCheck();
+      if (!c.ok) return this.previewProblems(c.problems);
+    } catch (e) {
+      this.sheet = null;
+      return this.previewFailed(sig, (e as Error).message);
+    }
+    this.sheet = null;
+    const old = this.preview;
+    this.preview = { sig, device: old?.device ?? "desktop", open: true, building: true, failed: null, path: this.previewPath(old?.path), build: (old?.build ?? 0) + 1 };
+    let r;
+    try {
+      r = await api.preview();
+    } catch (e) {
+      return this.previewFailed(sig, (e as Error).message);
+    }
+    if (!this.preview) return; // saved or closed meanwhile
+    if (r.status === "built") this.preview.building = false;
+    else if (r.status === "problems") this.previewProblems(r.problems);
+    else this.previewFailed(sig, r.status === "failed" ? r.message : "The preview Glance isn't set up.");
+  }
+
+  private previewProblems(problems: Problem[]) {
+    this.glanceProblems = problems.filter((p) => p.source === "glance");
+    this.showErrors = true;
+    if (this.preview) this.preview.open = false;
+    this.sheet = { kind: "problems", for: "preview" };
+  }
+
+  private previewFailed(sig: string, message: string) {
+    const old = this.preview;
+    this.preview = { sig, device: old?.device ?? "desktop", open: true, building: false, failed: message, path: old?.path ?? this.previewPath(), build: old?.build ?? 0 };
+  }
+
+  /** The page to show: the one the frame was on, if the draft still has it, else the page open in the editor. */
+  private previewPath(kept?: string): string {
+    const slugs = (this.draft?.pages ?? []).map((p) => pageSlug(p));
+    if (kept !== undefined) {
+      const now = decodeURIComponent(kept.replace(/^\/preview\/?/, "").replace(/\/$/, ""));
+      if (now === "" || slugs.includes(now)) return kept;
+    }
+    return `/preview/${this.page ? encodeURIComponent(pageSlug(this.page)) : ""}`;
+  }
+
+  closePreview() {
+    if (this.preview) this.preview.open = false;
+  }
+
   // ---- first run (D-34) -----------------------------------------------------------------------------------------
 
   async runImportCheck(text?: string) {
@@ -370,6 +481,7 @@ export class App {
         this.sheet = { kind: "conflict", outsideVersion: r.outsideVersion };
         break;
       case "saved":
+        this.preview = null; // the preview isn't promoted; after a save the live Glance shows the same (D-49)
         this.glanceProblems = [];
         this.showErrors = false;
         this.highlight = null;
@@ -415,6 +527,7 @@ export class App {
   goTo(p: Problem) {
     const loc = p.location;
     this.sheet = null;
+    this.closePreview();
     if (!loc.pageId && loc.field?.startsWith("theme")) {
       this.screen = "theme";
       this.highlight = null;

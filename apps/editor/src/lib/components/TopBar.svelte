@@ -29,6 +29,11 @@
       <button type="button" class="btn ghost desk-only" onclick={() => (app.sheet = { kind: "discard" })}>Discard</button>
       <button type="button" class="btn chip desk-only" onclick={() => (app.sheet = { kind: "review" })}>{app.changesLabel}</button>
     {/if}
+    {#if app.previewConfigured}
+      <!-- D-49: with no unsaved changes the preview would equal live Glance. -->
+      <button type="button" class="btn" disabled={!hasChanges || !app.draft?.pages.length} title={hasChanges ? "Preview the draft before it goes live" : "No unsaved changes to preview"}
+        onclick={() => app.openPreview()}>Preview</button>
+    {/if}
     <button type="button" class="btn pri" disabled={!hasChanges} onclick={() => (app.sheet = { kind: "review" })}>Save</button>
   {/if}
 </header>

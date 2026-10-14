@@ -3,7 +3,7 @@
 # Idempotent: it recreates the dev containers but never touches the config dir if it already has a glance.yml.
 source "$(dirname "$0")/env.sh"
 
-mkdir -p "$DEV_CONFIG_DIR" "$DEV_EDITOR_DATA"
+mkdir -p "$DEV_CONFIG_DIR" "$DEV_EDITOR_DATA" "$DEV_PREVIEW_DIR"
 if [[ ! -f "$DEV_CONFIG_DIR/glance.yml" ]]; then
   cp "$DEV_ROOT/test/fixtures/valid/sample.yml" "$DEV_CONFIG_DIR/glance.yml"
   log "seeded $DEV_CONFIG_DIR/glance.yml from test/fixtures/valid/sample.yml"
@@ -27,6 +27,21 @@ docker run -d --name "$DEV_GLANCE" --label "$DEV_LABEL" --network "$DEV_NETWORK"
   "$GLANCE_IMAGE" >/dev/null
 log "dev Glance:  http://<this-host>:$DEV_GLANCE_PORT/  ($GLANCE_VERSION)"
 
+# The preview Glance (ADR-0019, handoff §4b): same pinned image and the same read-only socket as the dev Glance, its own
+# config dir, no published port. Its config needs a file before it starts (Glance exits on a missing one); this is the
+# same seed the editor writes (packages/server previewSeed). After that, only the editor writes it.
+if [[ ! -f "$DEV_PREVIEW_DIR/glance.yml" ]]; then
+  printf '%s\n' "server:" "  port: 8080" "  base-url: /preview" "pages:" "  - name: Preview" "    columns:" \
+    "      - size: full" "        widgets: []" > "$DEV_PREVIEW_DIR/glance.yml"
+fi
+docker rm -f "$DEV_PREVIEW" >/dev/null 2>&1 || true
+docker run -d --name "$DEV_PREVIEW" --label "$DEV_LABEL" --network "$DEV_NETWORK" \
+  --restart unless-stopped \
+  -v "$DEV_PREVIEW_DIR:/app/config" \
+  -v /var/run/docker.sock:/var/run/docker.sock:ro \
+  "$GLANCE_IMAGE" >/dev/null
+log "dev preview Glance: internal only, served by the editor under /preview"
+
 # Editor slot. There is no editor image until Phase 1, so it is skipped until one exists.
 EDITOR_IMAGE="${EDITOR_IMAGE:-glance-editor:dev}"
 if docker image inspect "$EDITOR_IMAGE" >/dev/null 2>&1; then
@@ -36,7 +51,10 @@ if docker image inspect "$EDITOR_IMAGE" >/dev/null 2>&1; then
     -p "$DEV_BIND:$DEV_EDITOR_PORT:3000" \
     -v "$DEV_CONFIG_DIR:/glance-config" \
     -v "$DEV_EDITOR_DATA:/data" \
+    -v "$DEV_PREVIEW_DIR:/preview-config" \
     -e GLANCE_URL="http://$DEV_GLANCE:8080/" \
+    -e PREVIEW_CONFIG=/preview-config/glance.yml \
+    -e PREVIEW_GLANCE_URL="http://$DEV_PREVIEW:8080/" \
     "$EDITOR_IMAGE" >/dev/null
   log "dev editor:  http://<this-host>:$DEV_EDITOR_PORT/"
 else

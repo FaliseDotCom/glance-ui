@@ -1,6 +1,6 @@
-# Phase 6: UI 2, widgets and theme (current phase)
+# Phase 6: UI 2, widgets and theme
 
-**Status:** implemented on branch `phase-6/widgets-theme`. PR open, awaiting PM review.
+**Status:** merged (PR #9, 2026-10-14).
 **Design:** design pass 1 (ADR-0016): flows 3, 4 and flow 9 steps 1–3; the widget steps of flows 1 and 6; decisions D-04,
 D-05, D-11 to D-21 (D-21 as free text, see below), D-50, D-51, D-57, D-58, D-63. ADR-0018 (accepted) for the form's
 required markers.

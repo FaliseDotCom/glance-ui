@@ -10,10 +10,11 @@ It is **not** the test harness (`docs/testing.md`) and **not** the live dashboar
 | Binding | `0.0.0.0` (LAN), configurable | `127.0.0.1` only |
 | Ports | Glance `18180`, editor `18190` | `18080`, `18081` |
 | Config | `~/.local/share/glance-editor-dev/glance-config/` (directory mount) | temp dirs |
-| Docker socket | Glance: host socket `:ro` (mirrors a standard install). Editor: via socket proxy (Phase 6, ADR-0005) | none |
+| Docker socket | Glance and preview Glance: host socket `:ro` (mirrors a standard install). Editor: via socket proxy (Phase 6, ADR-0005) | none |
 
 ## Commands
-- `dev/up.sh`: validates the dev config with the pinned Glance, then (re)creates the containers. Seeds the config
+- `dev/up.sh`: validates the dev config with the pinned Glance, then (re)creates the containers: the dev Glance, the
+  preview Glance (ADR-0019; no published port, the editor serves it under `/preview`) and the editor. Seeds the config
   from `test/fixtures/valid/sample.yml` on first run only. Starts the editor if an image `glance-editor:dev` exists
   (from Phase 1).
 - `dev/status.sh`: shows the containers and the config path.
@@ -29,6 +30,8 @@ Overrides via env: `DEV_BIND`, `DEV_GLANCE_PORT`, `DEV_EDITOR_PORT`, `DEV_STATE`
 | `GLANCE_URL` | unset (reload not checked) | `http://glance-editor-dev-glance:8080/` (same Docker network) |
 | `GLANCE_BIN` | `/usr/local/bin/glance` (bundled, pinned) | same |
 | `GLANCE_VERSION` | set at build from `/glance.version` | same |
+| `PREVIEW_CONFIG` | unset (no Preview button) | `/preview-config/glance.yml` (`~/.local/share/glance-editor-dev/preview-config`, shared with the preview Glance) |
+| `PREVIEW_GLANCE_URL` | unset | `http://glance-editor-dev-preview:8080/` (same Docker network) |
 
 The API is described in `docs/api.md`. Until the UI exists, you can try it with curl (mutations need `-H "Origin: http://<host>:18190" -H "Content-Type: application/json"`).
 

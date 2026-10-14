@@ -13,6 +13,7 @@ DEV_LABEL="glance-editor-dev=1"
 DEV_NETWORK="glance-editor-dev"
 DEV_GLANCE="glance-editor-dev-glance"
 DEV_EDITOR="glance-editor-dev-editor"
+DEV_PREVIEW="glance-editor-dev-preview"   # the preview Glance (ADR-0019): no published port, reached through the editor
 
 # Bind address: 0.0.0.0 makes the services reachable from the LAN (the PM's choice). Set DEV_BIND=127.0.0.1 to keep them local.
 DEV_BIND="${DEV_BIND:-0.0.0.0}"
@@ -23,5 +24,6 @@ DEV_EDITOR_PORT="${DEV_EDITOR_PORT:-18190}"
 DEV_STATE="${DEV_STATE:-${XDG_DATA_HOME:-$HOME/.local/share}/glance-editor-dev}"
 DEV_CONFIG_DIR="$DEV_STATE/glance-config"   # mounted as a DIRECTORY (ADR-0009: required for atomic saves)
 DEV_EDITOR_DATA="$DEV_STATE/editor-data"
+DEV_PREVIEW_DIR="$DEV_STATE/preview-config" # the preview Glance's own config dir; the editor writes it, never glance.yml
 
 log() { printf '[dev] %s\n' "$*" >&2; }
