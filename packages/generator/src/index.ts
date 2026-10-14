@@ -55,12 +55,49 @@ export interface GenerateResult {
 type Obj = Record<string, unknown>;
 
 export function generate(d: DashboardT, opts: GenerateOptions): GenerateResult {
-  const { json, placeholderHints } = toGlanceJson(d, opts);
-  const doc = new Document(json, { version: "1.2" } satisfies DocumentOptions);
+  const placeholderHints = new Map<string, PlaceholderHint>();
+  const conv = new Converter(placeholderHints, false, true);
+  const json = conv.dashboard(d, opts);
+  // D-12: a widget edited as YAML is written as typed. It is serialised as a token, then replaced by its text.
+  const nonce = randomUUID().replaceAll("-", "");
+  const overrides = new Map<string, string>();
+  const swap = (v: unknown): unknown => {
+    if (Array.isArray(v)) return v.map(swap);
+    if (v && typeof v === "object") {
+      const o = v as Obj;
+      if (typeof o._yaml === "string") {
+        const token = `__glance_editor_yaml_${nonce}_${overrides.size}__`;
+        overrides.set(token, o._yaml);
+        return token;
+      }
+      return Object.fromEntries(Object.entries(o).map(([k, x]) => [k, swap(x)]));
+    }
+    return v;
+  };
+  const doc = new Document(swap(json), { version: "1.2" } satisfies DocumentOptions);
   doc.commentBefore = header(opts);
   if (/\$\{/.test(header(opts))) throw new Error("header comment must not contain ${");
-  return { yaml: stringify(doc), placeholderHints };
+  let yaml = stringify(doc);
+  for (const [token, text] of overrides) {
+    const m = new RegExp(`^( *)- ${token}\n`, "m").exec(yaml);
+    if (!m) throw new Error("a widget edited as YAML couldn't be placed");
+    yaml = yaml.slice(0, m.index) + indentBlock(overrideItem(text), m[1]!.length) + yaml.slice(m.index + m[0].length);
+  }
+  return { yaml, placeholderHints };
 }
+
+/**
+ * A YAML override's text (a map at column 0) as a list item at column 0: "- " before its first line, the rest indented
+ * by two. Blank lines at either end are dropped; blank lines inside stay empty. (D-12; also used by the document writer.)
+ */
+export function overrideItem(text: string): string {
+  const lines = text.replace(/\r\n?/g, "\n").split("\n");
+  while (lines.length && lines[0]!.trim() === "") lines.shift();
+  while (lines.length && lines[lines.length - 1]!.trim() === "") lines.pop();
+  return lines.map((l, i) => (i === 0 ? `- ${l}` : l.trim() === "" ? "" : `  ${l}`)).join("\n") + "\n";
+}
+
+const indentBlock = (text: string, n: number) => text.split("\n").map((l) => (l === "" ? l : " ".repeat(n) + l)).join("\n");
 
 /**
  * The model as the plain object Glance reads (keys, maps and raw widgets as in glance.yml), in canonical key order.
@@ -74,6 +111,11 @@ export function toGlanceJson(
   const placeholderHints = new Map<string, PlaceholderHint>();
   const json = new Converter(placeholderHints, opts.keepIds ?? false).dashboard(d, opts);
   return { json, placeholderHints };
+}
+
+/** One widget as Glance reads it (no ids), for the widget's YAML tab when there is no file text to show. */
+export function widgetToGlanceJson(w: WidgetT): Obj {
+  return new Converter(new Map(), false).widget(w);
 }
 
 /** Serialise a Glance JSON value (no `_id` keys) as block YAML at column 0, with every encoding rule above. */
@@ -197,9 +239,11 @@ function replaceSpecialScalars(doc: Document): Map<string, string> {
 class Converter {
   private hints: Map<string, PlaceholderHint>;
   private keepIds: boolean;
-  constructor(hints: Map<string, PlaceholderHint>, keepIds: boolean) {
+  private keepOverrides: boolean;
+  constructor(hints: Map<string, PlaceholderHint>, keepIds: boolean, keepOverrides = keepIds) {
     this.hints = hints;
     this.keepIds = keepIds;
+    this.keepOverrides = keepOverrides;
   }
 
   /** Record a typed placeholder and return the value unchanged. */
@@ -301,8 +345,12 @@ class Converter {
   }
 
   widget(w: WidgetT): Obj {
-    if (isRawWidget(w)) return { ...(this.keepIds ? { _id: w._id } : {}), type: w.type, ...w._raw };
-    return this.fields(w as unknown as Obj, [{ key: "type", label: "Type", kind: "text" }, ...widgetFields(w.type)]);
+    const out = isRawWidget(w)
+      ? { ...(this.keepIds ? { _id: w._id } : {}), type: w.type, ...w._raw }
+      : this.fields(w as unknown as Obj, [{ key: "type", label: "Type", kind: "text" }, ...widgetFields(w.type)]);
+    // D-12: for writing (generate, and the document writer), a YAML override travels along to be written as typed.
+    if (this.keepOverrides && w._yaml) out._yaml = w._yaml.text;
+    return out;
   }
 
   /** Keys in field order (canonical, rule 3), each value converted by its field's kind, then `extra`. */

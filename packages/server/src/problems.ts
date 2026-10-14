@@ -12,6 +12,8 @@ export interface Location {
   field?: string;
   /** Index inside a list field (e.g. a bookmark link), when known. */
   index?: number;
+  /** The full path inside the widget (e.g. ["groups", 0, "links", 1, "url"]), when known. */
+  path?: (string | number)[];
 }
 
 export interface Problem {
@@ -64,6 +66,8 @@ export function locate(path: (string | number)[], d: DashboardT | undefined): Lo
   if (typeof field === "string") loc.field = field;
   const idx = path.slice(i).find((p) => typeof p === "number");
   if (typeof idx === "number") loc.index = idx;
+  const rest = path.slice(i).filter((p) => p !== "extra");
+  if (ids.length && rest.length) loc.path = rest;
   return loc;
 }
 

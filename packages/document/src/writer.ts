@@ -12,12 +12,14 @@
 // - Shapes the splicer doesn't handle (flow collections, block scalars, aliases, type changes, empty ↔ non-empty lists,
 //   deleting a merged key) fall back to regenerating that pair or item with the Phase 1 serialiser. Comments inside it
 //   are lost, and a warning says where.
+// - A widget with a YAML override (D-12) is written as the text the user applied, comments and all, in place of its
+//   list item. Its leading comments in the file stay.
 // - Self-check: the result is re-imported, and must equal the draft under Glance's view. Otherwise the whole file is
 //   regenerated, with a warning. Never silently.
 
 import { isAlias, isMap, isScalar, isSeq, type Node, type Pair, type YAMLMap, type YAMLSeq } from "yaml";
 import { glanceView, type DashboardT } from "@glance-editor/model";
-import { encodeInlineScalar, serializeYaml, toGlanceJson } from "@glance-editor/generator";
+import { encodeInlineScalar, overrideItem, serializeYaml, toGlanceJson } from "@glance-editor/generator";
 import { importText } from "./import.ts";
 import { glanceParse, unmarkKey, indentFollowing, indentOf, leadingCommentsStart, lineStart, shift, splitTail } from "./text.ts";
 
@@ -105,9 +107,15 @@ class Renderer {
   private fresh(value: unknown): string {
     const tokens = new Map<string, { src: ItemSource; draft: Obj }>();
     const nonce = Math.random().toString(36).slice(2);
+    const overrides = new Map<string, string>();
     const swap = (v: unknown): unknown => {
       if (Array.isArray(v)) {
         return v.map((x) => {
+          if (isObj(x) && typeof x._yaml === "string") {
+            const token = `__glance_editor_yaml_${nonce}_${overrides.size}__`;
+            overrides.set(token, x._yaml);
+            return token;
+          }
           if (isObj(x) && typeof x._id === "string" && this.items.has(x._id)) {
             const token = `__glance_editor_moved_${nonce}_${tokens.size}__`;
             tokens.set(token, { src: this.items.get(x._id)!, draft: x });
@@ -118,12 +126,18 @@ class Renderer {
       }
       if (isObj(v)) {
         const out: Obj = {};
-        for (const [k, x] of Object.entries(v)) if (k !== "_id") out[k] = swap(x);
+        for (const [k, x] of Object.entries(v)) if (k !== "_id" && k !== "_yaml") out[k] = swap(x);
         return out;
       }
       return v;
     };
     let text = serializeYaml(swap(value));
+    for (const [token, yaml] of overrides) {
+      const m = new RegExp(`^( *)- ${token}\n`, "m").exec(text);
+      if (!m) { this.warnings.push("A widget edited as YAML couldn't be placed as typed."); continue; }
+      const placed = shift(overrideItem(yaml), m[1]!.length);
+      text = text.slice(0, m.index) + placed + text.slice(m.index + m[0].length);
+    }
     for (const [token, { src, draft }] of tokens) {
       const m = new RegExp(`^( *)- ${token}\n`, "m").exec(text);
       if (!m) { this.warnings.push("A moved item couldn't be placed with its comments."); continue; }
@@ -169,7 +183,7 @@ class Renderer {
     for (const k of Object.keys(base)) if (k !== "_id" && !astKeys.has(k) && !(k in draft)) return null;
     // New keys, and changed values of merge-derived keys (an explicit key overrides the merge).
     for (const [k, v] of Object.entries(draft)) {
-      if (k === "_id" || astKeys.has(k)) continue;
+      if (k === "_id" || k === "_yaml" || astKeys.has(k)) continue;
       if (k in base && deepEqual(base[k], v)) continue;
       if (!(k in base) && isEmpty(v)) continue;
       if (!out.endsWith("\n")) out += "\n";
@@ -283,6 +297,12 @@ class Renderer {
 
   private item(node: Node, base: unknown, draft: unknown, bs: number, be: number, dashCol: number, path: string): string {
     const src = this.src;
+    if (isObj(draft) && typeof draft._yaml === "string") {
+      // D-12: the override as typed, keeping the item's leading comments and its tail.
+      const dashLine = lineStart(src, node.range![0]);
+      const contentEnd = splitTail(src, bs, be, dashCol + 1);
+      return src.slice(bs, dashLine) + shift(overrideItem(draft._yaml), dashCol) + src.slice(contentEnd, be);
+    }
     if (deepEqual(base, draft)) return src.slice(bs, be);
     if (isMap(node) && !node.flow && isObj(base) && isObj(draft) && node.items.length > 0) {
       const k0 = ((node.items[0] as Pair).key as Node).range![0];
@@ -315,7 +335,7 @@ export function viewOf(v: unknown): unknown {
   if (Array.isArray(v)) return v.map(viewOf);
   if (isObj(v)) {
     const out: Obj = {};
-    for (const [k, x] of Object.entries(v)) if (k !== "_id") out[glanceView(k)] = viewOf(x);
+    for (const [k, x] of Object.entries(v)) if (k !== "_id" && k !== "_yaml") out[glanceView(k)] = viewOf(x);
     return out;
   }
   return v;
@@ -325,7 +345,7 @@ export function stripIds(v: unknown): unknown {
   if (Array.isArray(v)) return v.map(stripIds);
   if (isObj(v)) {
     const out: Obj = {};
-    for (const [k, x] of Object.entries(v)) if (k !== "_id") out[k] = stripIds(x);
+    for (const [k, x] of Object.entries(v)) if (k !== "_id" && k !== "_yaml") out[k] = stripIds(x);
     return out;
   }
   return v;

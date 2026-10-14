@@ -4,7 +4,7 @@ A no-code web editor that owns the entire Glance (glanceapp/glance) config. Dash
 data model; `glance.yml` is generated on every explicit Save and is output only. Existing config is imported once.
 
 @docs/handoff.md
-@docs/phases/phase-5-ui-shell.md
+@docs/phases/phase-6-widgets-theme.md
 
 ## Roles
 - **PM/QA (repo owner):** merges every PR, approves every release note, decides everything with UX impact.
@@ -55,7 +55,7 @@ data model; `glance.yml` is generated on every explicit Save and is output only.
 | `packages/document` | Import (`importFile`), document-preserving writer (`writeDraft`), report, CLI (ADR-0015) |
 | `packages/server` | `Editor`: drafts, versions, save pipeline, SQLite store (Phase 3) |
 | `docs/api.md` | The editor's HTTP API |
-| `packages/editing` | Page/column operations, layout rules (D-07–D-10), wording, line diff: UI logic without a DOM, tested in Node |
+| `packages/editing` | Page/column and widget operations, layout rules (D-07–D-10), form parsing, colours and palettes, wording, line diff: UI logic without a DOM, tested in Node |
 | `apps/editor` | SvelteKit 3 app: `src/lib/client` (state, API), `src/lib/components`, `src/lib/styles/app.css` (design tokens + prototype CSS). `Dockerfile` builds it with the glance binary |
 | `test/e2e` | Playwright UI tests: built app + real Glance per test, desktop and 390 px, axe and 44 px checks (`npx playwright test`) |
 | `docs/screenshots/` | Screenshots per phase, captured by the UI tests |
@@ -74,5 +74,6 @@ data model; `glance.yml` is generated on every explicit Save and is output only.
   Never hand-roll YAML for placeholders: use the generator. Edits to an imported file are spliced, not regenerated (ADR-0015).
 - `config:validate` doesn't run `newApplication`: a page slug `login`/`logout` passes validate but Glance won't load it
   (rule `page.reserved-slug`). Glance's reload stamp has 1 s resolution.
+- Glance's theme defaults (v0.8.6 main.css): background 240 8 9, primary 43 50 70, positive = primary, negative 0 70 70.
 - Glance's docs overstate "required" for 17 widget fields and differ from v0.8.6 on some defaults (lessons, ADR-0018).
   The binary is the reference: `packages/document/test/widget-schema.test.ts`.

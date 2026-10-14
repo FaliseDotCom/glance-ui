@@ -8,6 +8,10 @@
 //   - widgets are derived from the field definitions in widgets.ts (ADR-0017). A widget type Glance doesn't have is
 //     stored as a raw widget `{ _id, type, _raw: {…} }` and written back unchanged (ADR-0011).
 //   - Maps whose order matters to the UI (auth users, theme presets, docker container overrides) are arrays with a key field.
+//   - `_yaml` (optional, any widget): a YAML override (design D-12). `text` is what the user applied in the widget's YAML
+//     tab and is written to glance.yml as typed (packages/document writer); the widget's other keys are that text read
+//     back, so rules and Glance's validator see the same thing. `form` is the widget as it was before the override
+//     (JSON), restored by "Discard YAML override". Editor state only: re-importing a saved file drops it.
 //
 // Keys and formats: Glance v0.8.6 source (`config.go`, `config-fields.go`, `theme.go`, `widget-*.go`), read 2026-10-13.
 // Every object is strict: an unknown key must go into `extra`, so nothing is silently dropped.
@@ -28,12 +32,16 @@ export const GLANCE_WIDGET_TYPES = WIDGET_TYPES;
 export const KNOWN_WIDGET_TYPES = WIDGET_TYPES;
 export type KnownWidgetType = string;
 
+/** D-12: a widget edited as YAML. See the header. */
+export const YamlOverride = z.strictObject({ text: z.string(), form: z.string() });
+
 function widgetSchema(type: string) {
   return z.strictObject({
     _id: id,
     type: z.literal(type),
     ...shapeOf(widgetFields(type), () => Widget),
     extra,
+    _yaml: YamlOverride.optional(),
   });
 }
 
@@ -57,6 +65,7 @@ export const RawWidget = z.strictObject({
     message: "known widget types must not be stored as raw",
   }),
   _raw: z.record(z.string(), z.unknown()),
+  _yaml: YamlOverride.optional(),
 });
 
 export const Widget: z.ZodType<WidgetT> = z.union([KnownWidget, RawWidget]) as unknown as z.ZodType<WidgetT>;
@@ -163,8 +172,11 @@ export interface ModelWidgetT {
   /** Child widgets (group, split-column). */
   widgets?: WidgetT[] | undefined;
   extra?: Record<string, unknown> | undefined;
+  /** D-12 YAML override (see the header). */
+  _yaml?: YamlOverrideT | undefined;
   [key: string]: unknown;
 }
+export type YamlOverrideT = z.infer<typeof YamlOverride>;
 export type RawWidgetT = z.infer<typeof RawWidget>;
 export type WidgetT = ModelWidgetT | RawWidgetT;
 

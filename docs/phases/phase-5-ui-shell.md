@@ -1,6 +1,6 @@
-# Phase 5: UI 1 (current phase)
+# Phase 5: UI 1
 
-**Status:** implemented on branch `phase-5/ui-shell`. PR open, awaiting PM review.
+**Status:** merged (PR #8).
 **Design:** design pass 1 (ADR-0016): IA, flows 1, 2, 6, 7, error and empty states, decisions D-01 to D-10, D-17, D-26 to D-35,
 D-41 to D-46. ADR-0018 (accepted) for warnings on Review.
 

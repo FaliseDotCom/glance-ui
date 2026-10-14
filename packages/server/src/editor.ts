@@ -8,7 +8,10 @@ import {
 } from "@glance-editor/model";
 import { generate, toGlanceJson } from "@glance-editor/generator";
 import { validateConfig } from "@glance-editor/glance";
-import { glanceParse, importFile, importText, writeDraft, type ImportReport, type ImportResult } from "@glance-editor/document";
+import {
+  glanceParse, importFile, importText, widgetFromYaml, widgetTextIn, widgetYaml, writeDraft, type ImportReport, type ImportResult,
+  type WidgetYamlResult,
+} from "@glance-editor/document";
 import { describeChanges, type Change } from "./changes.ts";
 import { backup, openDb, type Db } from "./db.ts";
 import { readLive, reloadStamp, sha256, waitForReload, writeLiveAtomically, type ReloadResult } from "./live.ts";
@@ -417,6 +420,50 @@ export class Editor {
     return undefined;
   }
 
+  // ---- a widget's YAML tab (D-12) -------------------------------------------------------------------------------------
+
+  /**
+   * The YAML tab's text for one widget: exactly what a save would write for it (its text in the rendered file, comments
+   * included), or the override the user applied. Null when there is no such widget in the stored draft.
+   */
+  widgetText(widgetId: string): string | null {
+    const row = this.draftRow();
+    if (!row) return null;
+    const draft = this.loadDraftModel(row);
+    const found = findWidget(draft, widgetId);
+    if (!found) return null;
+    if (found.widget._yaml) return found.widget._yaml.text;
+    const text = row.base_text ? writeDraft(row.base_text, draft).text : generate(draft, { glanceVersion: this.cfg.glanceVersion }).yaml;
+    return widgetTextIn(text, found.path) ?? widgetYaml(found.widget);
+  }
+
+  /** Read YAML typed in a widget's YAML tab. Nothing is stored: the client applies the result to its draft. */
+  parseWidgetYaml(text: string, widgetId: string): WidgetYamlResult {
+    return widgetFromYaml(text, widgetId);
+  }
+
+  // ---- my colours (D-51: kept by the editor, never in glance.yml) ---------------------------------------------------
+
+  colours(): string[] {
+    const row = this.db.prepare("SELECT value FROM settings WHERE key = 'my-colours'").get() as { value: string } | undefined;
+    if (!row) return [];
+    try {
+      const v = JSON.parse(row.value) as unknown;
+      return Array.isArray(v) ? v.filter((x): x is string => typeof x === "string" && isHsl(x)) : [];
+    } catch {
+      return [];
+    }
+  }
+
+  setColours(input: unknown): string[] {
+    if (!Array.isArray(input) || !input.every((x) => typeof x === "string" && isHsl(x))) {
+      throw new Error('Colours must be a list of "H S L" values, e.g. "240 8 9".');
+    }
+    const list = [...new Set(input as string[])].slice(0, 100);
+    this.db.prepare("INSERT INTO settings (key, value) VALUES ('my-colours', ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value").run(JSON.stringify(list));
+    return list;
+  }
+
   // ---- discard and restore (D-31, D-33) -------------------------------------------------------------------------------
 
   /** Reset the draft to the live file. */
@@ -479,6 +526,34 @@ function parseError(text: string): ImportCheck["parse"] & { ok: false } | null {
     .map(({ n, l }) => `${n === line ? ">" : " "} ${String(n).padStart(String(line + 1).length)} | ${l.replaceAll("\t", "→   ")}`)
     .join("\n");
   return { ok: false, line, message: e.message.split("\n")[0]!, snippet };
+}
+
+/** "H S L" as the editor writes it: whole numbers, hue ≤ 360, saturation and lightness ≤ 100. */
+const isHsl = (v: string) => {
+  const m = /^(\d{1,3}) (\d{1,3}) (\d{1,3})$/.exec(v);
+  return !!m && Number(m[1]) <= 360 && Number(m[2]) <= 100 && Number(m[3]) <= 100;
+};
+
+/** A widget anywhere in the draft, with its model path (["pages", 0, "columns", 1, "widgets", 2, "widgets", 0]). */
+function findWidget(d: DashboardT, id: string): { widget: WidgetT; path: (string | number)[] } | undefined {
+  const visit = (list: WidgetT[], path: (string | number)[]): { widget: WidgetT; path: (string | number)[] } | undefined => {
+    for (const [i, w] of list.entries()) {
+      if (w._id === id) return { widget: w, path: [...path, i] };
+      const kids = (w as { widgets?: WidgetT[] }).widgets;
+      const inner = Array.isArray(kids) ? visit(kids, [...path, i, "widgets"]) : undefined;
+      if (inner) return inner;
+    }
+    return undefined;
+  };
+  for (const [pi, p] of d.pages.entries()) {
+    const head = visit(p["head-widgets"] ?? [], ["pages", pi, "head-widgets"]);
+    if (head) return head;
+    for (const [ci, c] of p.columns.entries()) {
+      const r = visit(c.widgets, ["pages", pi, "columns", ci, "widgets"]);
+      if (r) return r;
+    }
+  }
+  return undefined;
 }
 
 function emptyDashboard(): DashboardT {

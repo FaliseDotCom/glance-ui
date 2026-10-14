@@ -1,4 +1,4 @@
-<!-- The editor (design pass 1, Phase 5 scope): first run, pages and layout, history, Save. -->
+<!-- The editor (design pass 1, Phases 5 and 6): first run, pages and layout, the widget inspector, theme, history, Save. -->
 <script lang="ts">
   import { onMount } from "svelte";
   import { App } from "#lib/client/app.svelte.ts";
@@ -10,6 +10,8 @@
   import LayoutPick from "#lib/components/LayoutPick.svelte";
   import PageEditor from "#lib/components/PageEditor.svelte";
   import History from "#lib/components/History.svelte";
+  import Inspector from "#lib/components/Inspector.svelte";
+  import ThemeScreen from "#lib/components/ThemeScreen.svelte";
   import Sheets from "#lib/components/Sheets.svelte";
   import Toast from "#lib/components/Toast.svelte";
 
@@ -20,7 +22,8 @@
     const t = setInterval(() => void app.checkGlance(), 60_000);
     return () => clearInterval(t);
   });
-  const editing = $derived(app.screen === "pages" || app.screen === "history");
+  const editing = $derived(app.screen === "pages" || app.screen === "theme" || app.screen === "history");
+  const inspecting = $derived(app.screen === "pages" && !!app.sel && !!app.selWidget);
 </script>
 
 <svelte:head><title>Glance Editor</title></svelte:head>
@@ -44,15 +47,19 @@
   {:else if editing}
     <div class="shell">
       <Rail {app} />
-      <main class="work"><div class="canvas">
+      <main class="work" class:open={inspecting}><div class="canvas">
         {#if app.screen === "history"}
           <History {app} />
+        {:else if app.screen === "theme"}
+          <ThemeScreen {app} />
         {:else if app.page}
           {#key app.page._id}<PageEditor {app} page={app.page} />{/key}
         {:else}
           <div class="empty" style="padding: 40px">No pages. Glance needs at least one page before it will start.</div>
         {/if}
-      </div></main>
+      </div>
+      {#if inspecting}{#key app.sel!.ids.join("/")}<Inspector {app} wref={app.sel!} />{/key}{/if}
+      </main>
     </div>
     <Tabs {app} />
   {/if}

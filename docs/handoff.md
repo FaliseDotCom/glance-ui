@@ -1,10 +1,10 @@
 # Handoff
 
 The single place to see where the project stands. Updated at the end of every work session and every PR.
-Last updated: 2026-10-13 (Phase 5 PR opened).
+Last updated: 2026-10-14 (Phase 6 PR opened).
 
 ## Current state
-- **Phase:** 5 (UI 1: first screens) **PR open**, waiting for your review. Phase 4 merged (PR #7).
+- **Phase:** 6 (UI 2: widgets and theme) **PR open**, waiting for your review. Phase 5 merged (PR #8).
 - **Phase plan:** approved 2026-10-13.
 - **Pinned Glance:** v0.8.6, by digest (`/glance.version`).
 - **Dev environment:** dev Glance on :18180 and the editor container on :18190, on the dev machine (`docs/dev-environment.md`).
@@ -15,7 +15,9 @@ Last updated: 2026-10-13 (Phase 5 PR opened).
   - Phase 4: schemas for every widget type, checked against Glance; built-in themes.
   - Phase 5: the first screens. First run (import with checks, Start empty), pages and column layout, Save with
     Review/Problems/Go to, History with Restore, Discard, undo toasts; desktop and phone.
-  - The dev editor on :18190 runs this UI against the dev Glance.
+  - Phase 6: widgets and theme. Widget cards with grips (drag on desktop, move buttons everywhere), Add widget, the
+    inspector (generated form for every type, Children, YAML tab with overrides), Bookmarks, the Theme screen, My colours.
+  - The dev editor on :18190 runs this branch (Phase 6) against the dev Glance.
 
 ## Needs user decision
 Nothing below may be built on until you decide. ★ = affects user experience.
@@ -48,6 +50,16 @@ _No decisions open._
 - The docker label-vs-map precedence is still **untested** (the source suggests the map wins).
 - Dev Glance confirmed reachable from another LAN device (by you, 2026-10-13).
 - Correction: the Phase 0 docs called the dev machine's Docker "rootless". It is rootful. Fixed in lessons and ADR-0009.
+
+## Phase 6 findings
+- A widget can now be edited as YAML and is written exactly as you typed it, comments and `${VAR}`s included. Keys
+  Glance doesn't know are kept and written (they come back after a save, and stay on later saves).
+- The design's three columns don't fit beside the settings panel at 1280 px (the prototype squeezes the middle column
+  to about 100 px). With the panel open, columns keep a usable width and the layout scrolls sideways.
+- Tapping a card's grip shows its move buttons without opening the settings panel. In the prototype the panel opened
+  and, on a phone, covered the buttons.
+- New widgets start with only their type; Glance's defaults show greyed in the fields, so the file only gets what you set.
+- Glance's own default colours (v0.8.6 source): background 240 8 9, primary 43 50 70, negative 0 70 70; positive follows primary.
 
 ## Phase 5 findings
 - Try it: the dev editor at :18190 (`docs/dev-environment.md`). It edits the dev Glance's config only.
@@ -92,11 +104,13 @@ _No decisions open._
 - The real-binary tests caught a validator bug that my own model-based tests missed. Both kinds of test are kept.
 
 ## Next steps
-1. You: review and merge the Phase 5 PR. Try the screens on the dev editor (:18190), on desktop and phone.
-2. Claude: Phase 6 (UI 2): widget cards with grips and drag, the inspector (Settings and YAML tabs) generated from the
-   Phase 4 schemas, Add widget, the Bookmarks section, the Theme screen.
+1. You: review and merge the Phase 6 PR. Try adding and editing widgets, bookmarks and the theme on the dev editor
+   (:18190), on desktop and phone. It runs this branch now.
+2. Claude: Phase 7, Preview: a second Glance at the pinned version, the preview screen (desktop/phone width,
+   "Out of date", Refresh, Save and go live).
 
 ## Session log
+- 2026-10-14: PR #8 (Phase 5) merged. Phase 6 implemented (widgets, inspector, YAML overrides, bookmarks, theme); PR opened.
 - 2026-10-13: Phase 5 implemented (first screens, UI tests at two widths); PR opened. ADR-0018 accepted (option B).
 - 2026-10-13: PR #7 (Phase 4) merged.
 - 2026-10-13: Phase 4 implemented (widget schemas for every type, schema v2, themes); PR opened. ADR-0018 proposed.

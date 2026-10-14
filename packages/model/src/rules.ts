@@ -230,7 +230,7 @@ function checkUniqueIds(d: DashboardT, add: Add) {
         if (seen.has(rec._id)) add("error", "model.duplicate-id", path, `Duplicate _id "${rec._id}" (also at ${seen.get(rec._id)}).`);
         else seen.set(rec._id, where);
       }
-      for (const [k, v] of Object.entries(rec)) if (k !== "extra" && k !== "_raw") visit(v, [...path, k]);
+      for (const [k, v] of Object.entries(rec)) if (k !== "extra" && k !== "_raw" && k !== "_yaml") visit(v, [...path, k]);
     }
   };
   visit(d, []);
@@ -257,7 +257,8 @@ function checkPlaceholders(d: DashboardT, add: Add) {
         add("warning", "placeholder.adjacent", path, "Glance doesn't substitute a placeholder that directly follows another one. Put a character between them.");
       }
     } else if (Array.isArray(value)) value.forEach((v, i) => visit(v, [...path, i]));
-    else if (value && typeof value === "object") for (const [k, v] of Object.entries(value)) visit(v, [...path, k]);
+    // `_yaml` holds the override's source text; its values are checked where they were read back into the widget.
+    else if (value && typeof value === "object") for (const [k, v] of Object.entries(value)) if (k !== "_yaml") visit(v, [...path, k]);
   };
   visit(d, []);
 }
@@ -291,7 +292,7 @@ function checkExtras(value: unknown, path: (string | number)[], add: Add, known?
     known = new Set(["_id", "type", ...fields.map((f) => f.key)]);
   }
   for (const [k, v] of Object.entries(owner)) {
-    if (k === "_raw") continue;
+    if (k === "_raw" || k === "_yaml") continue;
     if (k === "extra" && v && typeof v === "object") {
       const keys = known ?? knownKeys(path);
       for (const key of Object.keys(v)) {

@@ -1,6 +1,6 @@
 // Plan v2 Phase 5 acceptance: the design's key flows, at desktop width and at 390 px (projects in playwright.config.ts).
-// The widget steps of flows 1 and 6 (Add widget, the inspector) arrive in Phase 6; here the flows run as far as the
-// Phase 5 screens go, and the validation error is produced on a page field.
+// The widget steps of flows 1 and 6 (Add widget, the inspector, Phase 6) are in widgets.spec.ts; flow 6's Glance-only
+// problem below goes on to the widget's YAML tab.
 import { readFileSync } from "node:fs";
 import type { Page } from "@playwright/test";
 import { expect, expectAccessible, expectTargets, fixture, isPhone, test } from "./fixtures.ts";
@@ -168,7 +168,18 @@ test.describe("Flow 6: save → validation error → fix", () => {
     await problems.getByRole("button", { name: "Go to" }).click();
     await expect(page.getByLabel("Page name")).toHaveValue("Ops");
     await expect(page.locator(".wcard.hl", { hasText: "Status" }).getByText("Fix")).toBeVisible();
+    // Design 03 "Save blocked by Glance": Go to opens the widget's YAML tab. Fix it there, apply, save.
+    const ins = page.getByRole("complementary", { name: "Widget settings" });
+    await expect(ins.getByRole("tab", { name: "YAML" })).toHaveAttribute("aria-selected", "true");
+    const box = ins.getByLabel("YAML for this widget");
+    await expect(box).toHaveValue("type: custom-api\ntitle: Status\ntemplate: \"{{ .JSON\"\n");
     await shot(page, "glance-rejects");
+    await box.fill("type: custom-api\ntitle: Status\ntemplate: <p>{{ .JSON.String \"status\" }}</p>\n");
+    await ins.getByRole("button", { name: "Apply YAML" }).click();
+    await ins.getByRole("button", { name: isPhone(page) ? "Back to layout" : "Close settings" }).click();
+    await save(page);
+    await expect(page.getByRole("heading", { name: "Version 1 is live" })).toBeVisible();
+    expect(editor.live()).toContain("          - type: custom-api\n            title: Status\n            template: <p>{{ .JSON.String \"status\" }}</p>\n");
   });
 });
 

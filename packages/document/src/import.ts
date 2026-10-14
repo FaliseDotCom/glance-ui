@@ -318,3 +318,18 @@ export function modelFromRaw(w: { _id: string; type: string; _raw: Record<string
   const out = new Ctx(report).widget({ ...w._raw, type: w.type }, w._id.split(".")) ?? {};
   return { ...out, _id: w._id };
 }
+
+/**
+ * One widget from YAML the user typed in its YAML tab (D-12), converted as the importer converts a widget: keys that
+ * don't fit go to `extra` and are listed, so nothing typed is dropped (D-14). `idBase` prefixes the ids of everything
+ * inside the widget (children, list items); the widget itself gets `id`.
+ */
+export function widgetFromJson(json: Record<string, unknown>, id: string, idBase: string): { widget?: Record<string, unknown>; issues: Issue[]; report: ImportReport } {
+  const report: ImportReport = {
+    pages: 0, widgets: 0, widgetsByType: {}, rawWidgetTypes: [], unknownKeys: [], keptAsIs: [], placeholders: [],
+    comments: 0, anchors: 0, aliases: 0, includes: [],
+  };
+  const ctx = new Ctx(report);
+  const out = ctx.widget(json, [idBase]);
+  return { ...(out ? { widget: { ...out, _id: id } } : {}), issues: ctx.issues, report };
+}
