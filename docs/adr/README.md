@@ -45,3 +45,4 @@ One file per decision: `NNNN-short-title.md`, copied from [0000-template.md](000
 | [0024](0024-all-in-one-container.md) | One container: the editor, your Glance, the preview Glance and the Docker gate | accepted (PM, 2026-10-14) | **yes** |
 | [0025](0025-upload-on-first-run.md) | Upload your Glance folder as a .zip on the first-run screen | accepted (PM, 2026-10-14: option C) | **yes** |
 | [0026](0026-dashboard-look-and-menu.md) | Five findings from the first install: lines, background jumps, an Edit link, theme choices, container icons | accepted (PM, 2026-10-14) | **yes** |
+| [0027](0027-fill-in-container-icons-and-links.md) | Fill in container icons and links from what the containers carry | accepted (PM, 2026-10-14) | **yes** |

@@ -203,3 +203,43 @@ test.describe("Another server's Docker", () => {
     await g.close();
   });
 });
+
+// ADR-0027 "Fill in icons and links": what the containers carry (Unraid's icon and WebUI), names tidied; only empty
+// settings are filled, and Glance shows the result after Save.
+test.describe("Fill in icons and links (ADR-0027)", () => {
+  test.use({ opts: { seed: fixture("look.yml"), glance: true, assets: true, icons: true, docker: [
+    { name: "plex", image: "plexinc/pms-docker", ports: [{ private: 32400, public: 32401 }],
+      labels: { "net.unraid.docker.icon": "{{ICON_SITE}}/gh/unraid/plex.png", "net.unraid.docker.webui": "http://[IP]:[PORT:32400]/web" } },
+    { name: "jellyfin_media", image: "lscr.io/linuxserver/jellyfin:latest" },
+    { name: "custom", image: "example/zzz", labels: { "glance.url": "https://mine.example/", "net.unraid.docker.webui": "http://[IP]:[PORT:80]/" }, ports: [{ private: 80, public: 8081 }] },
+  ] } });
+
+  test("Unraid's icon downloaded, a library icon by image, Unraid's link filled in, a label kept; Glance shows them", async ({ page, editor }) => {
+    await importSeed(page, editor.url);
+    await page.locator(".wcard").getByRole("button", { name: /^Docker containers, / }).click();
+    const ins = inspector(page);
+    await ins.getByRole("button", { name: "Fill in icons and links" }).click();
+    await expect(page.getByText("Filled in: 2 icons, 1 link, names tidied")).toBeVisible();
+    await shot(page, "containers-filled");
+    const origin = new URL(editor.url).hostname;
+    if (isPhone(page)) await ins.getByRole("button", { name: "Back to layout" }).click();
+    await page.getByRole("button", { name: "Save", exact: true }).click();
+    await page.getByRole("dialog", { name: "Review and save" }).getByRole("button", { name: "Check and save" }).click();
+    await expect(page.getByRole("heading", { name: "Version 1 is live" })).toBeVisible();
+    const yml = editor.live();
+    expect(yml).toContain("format-container-names: true");
+    expect(yml).toContain("icon: /assets/icons/plex.png");
+    expect(yml).toContain(`url: http://${origin}:32401/web`);
+    expect(yml).toContain("icon: di:jellyfin");
+    expect(yml).not.toContain(":8081/"); // custom's own glance.url label wins over Unraid's WebUI
+    expect(yml).not.toMatch(/^\s+custom:/m); // and no library has an icon for it: nothing written
+    const g = await page.context().newPage();
+    await g.goto(`http://127.0.0.1:${editor.glancePort}/`);
+    await g.locator(".content-ready").waitFor({ state: "attached" });
+    const plex = g.locator(".widget-type-docker-containers li", { hasText: "Plex" }).first();
+    await expect(plex.locator('img[src="/assets/icons/plex.png"]')).toBeAttached();
+    await expect(plex.locator(`a[href="http://${origin}:32401/web"]`)).toBeAttached();
+    await expect(g.getByText("Jellyfin Media")).toBeVisible(); // tidied by Glance
+    await g.close();
+  });
+});

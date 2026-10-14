@@ -39,6 +39,7 @@ export const api = {
   previewInfo: () => call<{ configured: boolean }>("GET", "/api/preview"),
   previewCheck: () => call<PreviewCheck>("POST", "/api/preview/check"),
   preview: () => call<PreviewResult>("POST", "/api/preview"),
+  containerIcons: (sock: string | undefined, names: string[]) => call<{ icons: Record<string, string>; notes: string[] }>("POST", "/api/containers/icons", { sock, names }),
   containers: (sock?: string) => call<ContainersResult>("GET", `/api/containers${sock ? `?sock=${encodeURIComponent(sock)}` : ""}`),
   iconInfo: () => call<IconInfo>("GET", "/api/icons"),
   iconSearch: (q: string, lib: string) =>

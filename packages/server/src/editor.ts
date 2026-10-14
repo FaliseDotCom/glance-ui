@@ -18,7 +18,7 @@ import { describeChanges, type Change } from "./changes.ts";
 import { listContainers, type ContainersResult } from "./docker.ts";
 import { Icons, type IconSources } from "./icons.ts";
 import { assetsWritable, copyImages, listFolder, resolveImages, storeImage, writeEditorFiles, type BuildEnv, type FolderEntry, type Problemish } from "./background.ts";
-import { needsEditorCss, PREVIEW_CSS } from "@glance-editor/editing";
+import { iconTerm, needsEditorCss, PREVIEW_CSS } from "@glance-editor/editing";
 import { Pixabay } from "./pixabay.ts";
 import { backup, openDb, type Db } from "./db.ts";
 import { pastStamp, readLive, reloadStamp, sha256, waitForReload, writeLiveAtomically, type ReloadResult } from "./live.ts";
@@ -773,6 +773,30 @@ export class Editor {
       return { status: "unreachable", message: "No Docker containers widget in the draft uses this address." };
     }
     return listContainers(sockPath);
+  }
+
+  /**
+   * ADR-0027 "Fill in icons and links": an icon for each named container of a widget's list. Its Unraid icon, downloaded
+   * into Glance's assets folder (so the dashboard doesn't load it from the web); else the libraries' exact match for its
+   * image's name. Addresses come only from Docker's own list, never from the request.
+   */
+  async containerIcons(sockPath: string | undefined, names: readonly string[]): Promise<{ icons: Record<string, string>; notes: string[] }> {
+    const list = await this.containers(sockPath);
+    if (list.status !== "ok") return { icons: {}, notes: [list.status === "unreachable" ? list.message : "The editor has no Docker connection set up."] };
+    const icons: Record<string, string> = {};
+    const notes: string[] = [];
+    for (const name of names) {
+      const c = list.containers.find((x) => x.name === name);
+      if (!c) continue;
+      if (c.unraidIcon) {
+        const r = await this.icons.downloadUrl(c.unraidIcon, c.glance.name || c.name, { source: "the container's Unraid template (net.unraid.docker.icon)", landing: c.unraidIcon });
+        if (r.ok) { icons[name] = r.value; continue; }
+        notes.push(`${name}: Unraid's icon couldn't be downloaded (${r.message}).`);
+      }
+      const hit = await this.icons.exact(iconTerm(c.name, c.glance.name, c.image)).catch(() => null);
+      if (hit) icons[name] = hit.value;
+    }
+    return { icons, notes };
   }
 
   // ---- preview (handoff §4b, D-39, D-47 to D-49; ADR-0019) ------------------------------------------------------------

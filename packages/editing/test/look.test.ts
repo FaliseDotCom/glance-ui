@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import type { DashboardT } from "@glance-editor/model";
 import { BACKGROUND_CSS, editLinkTag, setBackgroundMode, setEditorOption, slideshowTag } from "../src/background.ts";
 import { MENU_THEMES, inMenu, presetKey, setInMenu } from "../src/colour.ts";
-import { containerEntry, iconTerm, setContainerField } from "../src/containers.ts";
+import { containerEntry, emptyFields, iconTerm, resolveWebui, setContainerField } from "../src/containers.ts";
 
 const dash = (extra: Partial<DashboardT> = {}): DashboardT => ({ schemaVersion: 2, pages: [], ...extra }) as DashboardT;
 
@@ -92,5 +92,33 @@ describe("container settings", () => {
     expect(iconTerm("db", undefined, "postgres@sha256:abc")).toBe("postgres");
     expect(iconTerm("my_app", undefined, "sha256:0123456789abcdef")).toBe("my app");
     expect(iconTerm("my-app", undefined, undefined)).toBe("my app");
+  });
+});
+
+describe("Unraid's WebUI address, filled in as Unraid does (ADR-0027)", () => {
+  const base = { name: "c", state: "running", glance: {} as Record<string, string> };
+  it("a published port: the server's address and the host port published for [PORT:n]", () => {
+    expect(resolveWebui({ ...base, unraidWebui: "http://[IP]:[PORT:8096]/web", ports: [{ private: 8096, public: 8097 }], networkMode: "bridge", networks: { bridge: "172.17.0.2" } }, "tower.lan"))
+      .toBe("http://tower.lan:8097/web");
+    // A port that isn't published stays as written (Unraid does the same).
+    expect(resolveWebui({ ...base, unraidWebui: "http://[IP]:[PORT:9000]/", ports: [{ private: 8096, public: 8097 }], networkMode: "bridge" }, "10.0.0.5")).toBe("http://10.0.0.5:9000/");
+  });
+  it("host network: the server's address, the port as written", () => {
+    expect(resolveWebui({ ...base, unraidWebui: "http://[IP]:[PORT:32400]/web", ports: [], networkMode: "host" }, "tower.lan")).toBe("http://tower.lan:32400/web");
+  });
+  it("a LAN network (br0, macvlan/ipvlan): the container's own address", () => {
+    expect(resolveWebui({ ...base, unraidWebui: "http://[IP]:[PORT:80]/", ports: [{ private: 80 }], networkMode: "br0", networks: { br0: "192.0.2.40" } }, "tower.lan")).toBe("http://192.0.2.40:80/");
+    expect(resolveWebui({ ...base, unraidWebui: "http://[IP]/", networkMode: "br0.10", networks: { "br0.10": "2001:db8::5" } }, "tower.lan")).toBe("http://[2001:db8::5]/");
+  });
+  it("nothing reachable from the LAN: no address; a WebUI without placeholders is used as written; none without one", () => {
+    expect(resolveWebui({ ...base, unraidWebui: "http://[IP]:[PORT:80]/", ports: [{ private: 80 }], networkMode: "proxy", networks: { proxy: "172.20.0.3" } }, "tower.lan")).toBeNull();
+    expect(resolveWebui({ ...base, unraidWebui: "https://media.example/" }, "tower.lan")).toBe("https://media.example/");
+    expect(resolveWebui(base, "tower.lan")).toBeNull();
+  });
+  it("only what neither the map nor the container's labels set is filled", () => {
+    const w: Record<string, unknown> = { containers: [{ _id: "1", container: "a", icon: "si:x" }, { _id: "2", container: "b", url: "" }] };
+    expect(emptyFields(w, { ...base, name: "a" })).toEqual({ icon: false, url: true });
+    expect(emptyFields(w, { ...base, name: "b", glance: { icon: "si:y" } })).toEqual({ icon: false, url: true });
+    expect(emptyFields(w, { ...base, name: "c", glance: { url: "http://x/" } })).toEqual({ icon: true, url: false });
   });
 });
