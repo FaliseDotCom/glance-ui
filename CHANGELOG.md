@@ -4,6 +4,8 @@ All notable changes are recorded here. The format follows Keep a Changelog; vers
 (process: docs/adr/0007-versioning-and-release-notes.md, accepted).
 
 ## [Unreleased]
+
+## [1.1.0] - 2026-10-14
 ### Added
 - **Community widgets.** Add widget has a Community tab: the widgets Glance users share in glanceapp/community-widgets,
   with search, previews, variants and the values each needs. Each one is checked with Glance for the release.
