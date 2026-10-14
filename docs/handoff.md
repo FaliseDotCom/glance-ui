@@ -41,6 +41,8 @@ Last updated: 2026-10-14 (Phase 11: test release v1.0.0-rc.3 out; upload on firs
 Nothing below may be built on until you decide. ★ = affects user experience.
 
 - ★ **v1.0.0 release notes:** draft in `CHANGELOG.md` (Unreleased). Approve or edit; then you push the `v1.0.0` tag.
+- ★ **[ADR-0026](adr/0026-dashboard-look-and-menu.md) Five findings from your install:** lines between items, the
+  background jumping, an Edit link in the dashboard menu, themes in the menu, container icons. Six questions.
 - ★ **ADR-0025 leftovers (say if you want otherwise):** `.env` from the zip is stored and given to Glance; no assets
   file list in the editor yet; the screen was built from the ADR's text, without a design pass.
 - ★ **D-62 reading (confirm, or say otherwise):** in a slideshow, every image of a Pixabay set is a slide, so the
