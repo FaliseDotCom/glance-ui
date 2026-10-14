@@ -254,3 +254,8 @@ overwrites labels with map values. **Do:** treat source reading as a hypothesis 
 - `.gitignore`'s `data/` (meant for editor data) also matched `packages/server/data/`: the community widgets snapshot
   stayed local and CI's typecheck caught it. Check `git status` for files a commit should include but doesn't
   (`git check-ignore -v <file>`).
+- Svelte 5: `bind:x={obj[key]}` to a missing entry fails at runtime ("Cannot do bind to undefined") when the child
+  declares `x = $bindable(default)`; the page shows a 500. Declare `$bindable()` without a default and treat undefined
+  as "not set".
+- The editor's build (Docker build stage) only sees what the Dockerfile copies: importing `image/dotenv.ts` into the
+  server needed `COPY image/dotenv.ts image/` there, though the local build worked.

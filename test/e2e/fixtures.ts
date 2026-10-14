@@ -42,6 +42,8 @@ export interface EditorOptions {
   serverFolders?: Record<string, Record<string, Buffer>>;
   /** Tell the editor where Glance's assets folder is (GLANCE_ASSETS_PATH = the assets folder). */
   glanceAssetsPath?: boolean;
+  /** The container's own variable names, as the all-in-one container passes them (GLANCE_ENV_NAMES, ADR-0029). */
+  glanceEnvNames?: string[];
   /** A stand-in for Pixabay's API (test/support/pixabay.ts) as PIXABAY_API. */
   pixabay?: boolean;
 }
@@ -164,6 +166,7 @@ export const test = base.extend<{ opts: EditorOptions; editor: Editor }>({
       if (assetsDir) env.ASSETS_DIR = assetsDir;
       if (assetsDir && opts.glanceAssetsPath) env.GLANCE_ASSETS_PATH = assetsDir;
       if (pixabay) env.PIXABAY_API = pixabay.api;
+      if (opts.glanceEnvNames) env.GLANCE_ENV_NAMES = opts.glanceEnvNames.join(",");
       env.BODY_SIZE_LIMIT = "100M"; // as in the image (Dockerfile): background uploads, the first-run zip
       for (const [name, files] of Object.entries(opts.serverFolders ?? {})) {
         const f = join(dir, "mounts", name);

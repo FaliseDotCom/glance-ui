@@ -2,7 +2,7 @@
 // D-26 to D-35, D-46. No HTTP here: apps/editor's routes call these methods.
 
 import { readFileSync } from "node:fs";
-import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, rename, rm, writeFile } from "node:fs/promises";
 import { randomBytes } from "node:crypto";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
@@ -19,7 +19,8 @@ import { describeChanges, type Change } from "./changes.ts";
 import { listContainers, type ContainersResult } from "./docker.ts";
 import { Icons, type IconSources } from "./icons.ts";
 import { assetsWritable, copyImages, listFolder, resolveImages, storeImage, writeEditorFiles, type BuildEnv, type FolderEntry, type Problemish } from "./background.ts";
-import { iconTerm, needsEditorCss, PREVIEW_CSS } from "@glance-editor/editing";
+import { iconTerm, needsEditorCss, PREVIEW_CSS, typeLabel, widgetName } from "@glance-editor/editing";
+import { envNames, envValue, setEnvValues, VALUE_NAME } from "./values.ts";
 import { Pixabay } from "./pixabay.ts";
 import { backup, openDb, type Db } from "./db.ts";
 import { pastStamp, readLive, reloadStamp, sha256, waitForReload, writeLiveAtomically, type ReloadResult } from "./live.ts";
@@ -385,6 +386,55 @@ export class Editor {
     return { ok: true, changes: describeChanges(this.refModel(row), parsed.dashboard), problems: [...parsed.issues.map((i) => fromIssue(i, parsed.dashboard)), ...this.unsetValues(parsed.dashboard)] };
   }
 
+  // ---- values for ${VARIABLES} (ADR-0029) ----------------------------------------------------------------------------
+
+  /**
+   * The values the Values screen manages: every `${NAME}` the draft uses, and every name in `.env`, with whether `.env`
+   * sets it and which widgets use it. Names set only in the container's own settings aren't listed (PM, 2026-10-15).
+   * `applies`: Glance reads `.env` here (the all-in-one container).
+   */
+  async values(extra: readonly string[] = []): Promise<{ applies: boolean; values: ValueInfo[] }> {
+    const env = await readFile(this.envPath(), "utf8").catch(() => "");
+    const inFile = new Set(envNames(env));
+    const container = new Set(this.cfg.glanceEnvNames ?? []);
+    const row = this.draftRow();
+    const used = row ? placeholderUses(this.loadDraftModel(row)) : new Map<string, string[]>();
+    // `extra`: names asked about by name (a community widget's), listed even when only the container sets them.
+    const asked = new Set(extra.filter((n) => VALUE_NAME.test(n)));
+    const names = [...new Set([...used.keys(), ...inFile, ...asked])].filter((n) => inFile.has(n) || asked.has(n) || !container.has(n)).sort();
+    return {
+      applies: this.cfg.glanceEnvNames !== undefined,
+      values: names.map((name) => ({ name, set: inFile.has(name), container: container.has(name), hidden: SECRET.test(name), usedBy: used.get(name) ?? [] })),
+    };
+  }
+
+  /** ADR-0029: one value from `.env`, for the eye on a field. Null when `.env` doesn't set it. */
+  async value(name: string): Promise<string | null> {
+    if (!VALUE_NAME.test(name)) return null;
+    return envValue(await readFile(this.envPath(), "utf8").catch(() => ""), name);
+  }
+
+  /**
+   * ADR-0029: set (a string) or remove (null) values in `.env`. Written atomically, readable by its owner only; the
+   * container restarts Glance and the preview Glance with them within seconds. glance.yml isn't touched.
+   */
+  async setValues(changes: Readonly<Record<string, string | null>>): Promise<{ applies: boolean; values: ValueInfo[] }> {
+    const path = this.envPath();
+    const before = await readFile(path, "utf8").catch(() => "");
+    const after = setEnvValues(before, changes);
+    if (after !== before) {
+      const tmp = `${path}.editor-${randomBytes(6).toString("hex")}.tmp`;
+      await writeFile(tmp, after, { mode: 0o600 });
+      try {
+        await rename(tmp, path);
+      } catch (e) {
+        await rm(tmp, { force: true });
+        throw e;
+      }
+    }
+    return this.values();
+  }
+
   /**
    * ADR-0028 (and ADR-0025): `${VARIABLES}` with no value in the container or `.env`, as a warning for Review. Glance
    * won't load a config with one. Only the names are compared, never values; outside the all-in-one container the
@@ -399,7 +449,7 @@ export class Editor {
     if (!missing.length) return [];
     const list = missing.map((n) => `\${${n}}`).join(", ");
     return [{ source: "editor", severity: "warning", code: "placeholder.unset", location: {},
-      message: `${list} ${missing.length === 1 ? "has" : "have"} no value. Add ${missing.length === 1 ? "it" : "them"} to .env next to glance.yml, or as variables in the container's settings: Glance won't load the dashboard until each has one.` }];
+      message: `${list} ${missing.length === 1 ? "has" : "have"} no value. Set ${missing.length === 1 ? "it" : "them"} on the Values screen (or in the container's settings): Glance won't load the dashboard until each has one.` }];
   }
 
   // ---- first run (D-34, D-35) ---------------------------------------------------------------------------------------
@@ -1047,6 +1097,48 @@ function splitQuoted(raw: string[]): { line: number; message: string } | null {
     };
   }
   return null;
+}
+
+/** ADR-0029: a value for one `${NAME}`, as the Values screen and the community widget view show it. */
+export interface ValueInfo {
+  name: string;
+  /** `.env` sets it. */
+  set: boolean;
+  /** The container's own settings set it (listed only when asked about by name; `.env` can't change it). */
+  container: boolean;
+  /** The name says it's a secret (token, key, password…): its field is hidden until the eye is pressed. */
+  hidden: boolean;
+  /** Where the draft uses it: "Page › Widget", or "Settings" outside the pages. */
+  usedBy: string[];
+}
+
+const SECRET = /TOKEN|KEY|PASS|SECRET|AUTH|CRED/i;
+
+/** Each `${NAME}` the draft uses (env and readFileFromEnv), with where. */
+function placeholderUses(d: DashboardT): Map<string, string[]> {
+  const out = new Map<string, string[]>();
+  const add = (text: string, where: string) => {
+    for (const p of findPlaceholders(text)) {
+      if (p.kind !== "env" && p.kind !== "readFileFromEnv") continue;
+      const list = out.get(p.name) ?? [];
+      if (!list.includes(where)) list.push(where);
+      out.set(p.name, list);
+    }
+  };
+  const visit = (list: WidgetT[] | undefined, page: string) => {
+    for (const w of list ?? []) {
+      const { widgets, ...own } = w as WidgetT & { widgets?: WidgetT[] };
+      add(JSON.stringify(own), `${page} › ${widgetName(w, typeLabel(w.type))}`);
+      visit(widgets, page);
+    }
+  };
+  for (const p of d.pages) {
+    visit(p["head-widgets"], p.name);
+    for (const c of p.columns) visit(c.widgets, p.name);
+  }
+  const { pages: _pages, ...rest } = d;
+  add(JSON.stringify(rest), "Settings");
+  return out;
 }
 
 /** Glance treats these socket paths as a remote Docker; anything else is a Unix socket on Glance's own machine. */

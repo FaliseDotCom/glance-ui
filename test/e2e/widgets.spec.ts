@@ -2,6 +2,8 @@
 // 390 px, the widget steps of flows 1 and 6, a YAML override that round-trips unknown keys, and this phase's error and
 // empty states. Each test runs the built editor against a real Glance (fixtures.ts). The icon finder has its own
 // tests (icons.spec.ts); here the icon is typed.
+import { readFileSync } from "node:fs";
+import { dirname, join } from "node:path";
 import type { Locator, Page } from "@playwright/test";
 import { expect, expectAccessible, expectTargets, fixture, isPhone, test } from "./fixtures.ts";
 import { shot } from "./shots.ts";
@@ -414,7 +416,8 @@ test.describe("Community widgets (ADR-0028)", () => {
     // One that needs values: they're named.
     await sheet.getByLabel("Search community widgets").fill("arr releases");
     await sheet.getByRole("button", { name: /^Arr Releases/ }).click();
-    await expect(sheet.getByText("${RADARR_URL}, ${RADARR_API_URL}, ${RADARR_KEY}")).toBeVisible();
+    await expect(sheet.getByText("The 3 values it needs")).toBeVisible(); // asked for here (ADR-0029)
+    for (const n of ["RADARR_URL", "RADARR_API_URL", "RADARR_KEY"]) await expect(sheet.getByLabel(n, { exact: true })).toBeVisible();
     await sheet.getByRole("button", { name: "All community widgets" }).click();
 
     // Two variants; the second one is added.
@@ -433,5 +436,60 @@ test.describe("Community widgets (ADR-0028)", () => {
     await expect(page.getByRole("heading", { name: "Version 1 is live" })).toBeVisible();
     expect(editor.live()).toContain("api.squiggle.com.au");
     expect(editor.live()).toContain("type: custom-api");
+  });
+});
+
+// ADR-0029: values for ${VARIABLES}, filled in where they're needed and kept in .env (never in glance.yml).
+test.describe("Values (ADR-0029)", () => {
+  test.use({ opts: { seed: fixture("home.yml"), glance: true, glanceEnvNames: ["PATH", "TZ"] } });
+
+  test("filled in while adding a community widget; the eye; the Values screen; Review's Set values", async ({ page, editor }) => {
+    const envPath = join(dirname(editor.configPath), ".env");
+    await importSeed(page, editor.url);
+    await column(page, 2).getByRole("button", { name: "Add widget" }).click();
+    const sheet = page.getByRole("dialog", { name: "Add widget" });
+    await sheet.getByRole("button", { name: "Community", exact: true }).click();
+    await sheet.getByLabel("Search community widgets").fill("arr releases");
+    await sheet.getByRole("button", { name: /^Arr Releases/ }).click();
+    await expect(sheet.getByText("The 3 values it needs")).toBeVisible();
+    await sheet.getByLabel("RADARR_URL").fill("http://nas.lan:7878");
+    const key = sheet.getByLabel("RADARR_KEY", { exact: true });
+    await key.fill("abc 123");
+    await expect(key).toHaveAttribute("type", "password"); // a key is hidden…
+    await sheet.getByRole("button", { name: "Show RADARR_KEY" }).click();
+    await expect(key).toHaveAttribute("type", "text"); // …until the eye is pressed
+    await expectAccessible(page, "community values");
+    await expectTargets(page, "community values");
+    await shot(page, "community-values", { fullPage: false });
+    await sheet.getByRole("button", { name: "Add Arr Releases" }).click();
+    await expect(page.getByText("Added Arr Releases")).toBeVisible();
+    expect(readFileSync(envPath, "utf8")).toBe('RADARR_URL=http://nas.lan:7878\nRADARR_KEY="abc 123"\n');
+
+    // Review warns about the one left empty, and Set values goes to the Values screen.
+    if (isPhone(page)) await inspector(page).getByRole("button", { name: "Back to layout" }).click();
+    await page.getByRole("button", { name: "Save", exact: true }).click();
+    const review = page.getByRole("dialog", { name: "Review and save" });
+    await expect(review.getByText(/^\$\{RADARR_API_URL\} has no value\./)).toBeVisible();
+    await review.getByRole("button", { name: "Set values" }).click();
+    await expect(page.getByRole("heading", { name: "Values", exact: true })).toBeVisible();
+    await expect(page.getByLabel("RADARR_URL")).toHaveValue("http://nas.lan:7878"); // not a secret: shown
+    await expect(page.getByLabel("RADARR_KEY", { exact: true })).toHaveValue(""); // a secret: hidden until the eye
+    await page.getByRole("button", { name: "Show RADARR_KEY" }).click();
+    await expect(page.getByLabel("RADARR_KEY", { exact: true })).toHaveValue("abc 123");
+    await page.getByLabel("RADARR_API_URL").fill("http://nas.lan:7878/api");
+    await page.locator(".panel", { has: page.getByLabel("RADARR_API_URL") }).getByRole("button", { name: "Store" }).click();
+    await expect(page.getByText("Stored RADARR_API_URL.", { exact: false })).toBeVisible();
+    expect(readFileSync(envPath, "utf8")).toContain("RADARR_API_URL=http://nas.lan:7878/api\n");
+    await expectAccessible(page, "values screen");
+    await expectTargets(page, "values screen");
+    await shot(page, "values-screen");
+    await page.getByRole("button", { name: "Save", exact: true }).click();
+    await expect(page.getByRole("dialog", { name: "Review and save" }).getByText(/has no value/)).toHaveCount(0);
+    await page.getByRole("dialog", { name: "Review and save" }).getByRole("button", { name: "Check and save" }).click();
+    // This test's Glance doesn't read .env (the container's does: test/all-in-one.sh), so it keeps its old config
+    // and the reload isn't confirmed; glance.yml is written all the same.
+    await expect(page.getByRole("heading", { name: /^Version 1 is (live|written)$/ })).toBeVisible({ timeout: 30_000 });
+    expect(editor.live()).toContain("${RADARR_KEY}"); // glance.yml keeps the placeholders
+    expect(editor.live()).not.toContain("abc 123");
   });
 });
