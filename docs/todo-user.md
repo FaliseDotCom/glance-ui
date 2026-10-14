@@ -4,8 +4,9 @@ Things only you can do or decide. Claude adds items here and never ticks them. Y
 Decisions on ADRs are tracked in [handoff.md](handoff.md#needs-user-decision), not here.
 
 ## Now
-- [ ] Merge the Phase 11 PR, then publish a test release: `git tag v1.0.0-rc.1 origin/main && git push origin v1.0.0-rc.1`
-      (or GitHub → Releases → Draft a new release → new tag `v1.0.0-rc.1`, "Set as a pre-release").
+- [ ] Merge the Phase 11 PR, then publish a test release from a clone of the repo:
+      `git fetch origin && git tag v1.0.0-rc.1 origin/main && git push origin v1.0.0-rc.1` (a pushed tag starts the
+      release workflow; whether a tag made in GitHub's Releases page does too is not checked).
 - [ ] After that first release: GitHub → your profile → Packages → `glance-editor` → Package settings → Change
       visibility → **Public**, so Unraid can pull it without a login.
 - [ ] Install on Unraid side by side (`docs/runbooks/install.md`), compare, rehearse the fallback.
