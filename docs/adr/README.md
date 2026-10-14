@@ -43,3 +43,4 @@ One file per decision: `NNNN-short-title.md`, copied from [0000-template.md](000
 | [0022](0022-pixabay.md) | Pixabay: key on the server, cached search, downloaded picks, a local rotating set | accepted (PR #14) | no (one D-62 reading to confirm) |
 | [0023](0023-deployment.md) | Deployment on Unraid | superseded (0024) | **yes** |
 | [0024](0024-all-in-one-container.md) | One container: the editor, your Glance, the preview Glance and the Docker gate | accepted (PM, 2026-10-14) | **yes** |
+| [0025](0025-upload-on-first-run.md) | Upload your Glance files on the first-run screen | proposed | **yes** |

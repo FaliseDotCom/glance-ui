@@ -41,6 +41,8 @@ Last updated: 2026-10-14 (Phase 11: one container decided, ADR-0024; ready for a
 Nothing below may be built on until you decide. ★ = affects user experience.
 
 - ★ **v1.0.0 release notes:** draft in `CHANGELOG.md` (Unreleased). Approve or edit; then you push the `v1.0.0` tag.
+- ★ **[ADR-0025](adr/0025-upload-on-first-run.md) Upload on the first-run screen:** upload your Glance folder
+  (glance.yml, include files, assets, `.env`) instead of copying it into the data folder. Four questions in the ADR.
 - ★ **D-62 reading (confirm, or say otherwise):** in a slideshow, every image of a Pixabay set is a slide, so the
   set's daily/weekly/monthly switch only matters when the background is a single image (ADR-0022). Built this way;
   the alternative (a slideshow showing part of the set and swapping) is a small change.
@@ -181,6 +183,7 @@ Nothing below may be built on until you decide. ★ = affects user experience.
    what CA needs).
 
 ## Session log
+- 2026-10-14: Test release v1.0.0-rc.1 published (image and template). ADR-0025 proposed (upload on first run).
 - 2026-10-14: One container (ADR-0024) built and accepted: image/start.ts, the Docker gate, the Unraid template and icon, test releases; tested end to end on the dev machine.
 - 2026-10-14: PR #14 (Phase 10b) merged by Claude, after fixing a test teardown hang CI found.
 - 2026-10-14: Phase 11 prepared: ADR-0023 (proposed), runbook drafts, release workflow, Glance license in the image, v1.0.0 notes draft. PR opened; not merged (decisions pending).
