@@ -52,6 +52,7 @@ Nothing below may be built on until you decide. ★ = affects user experience.
 ## Decided on 2026-10-14 (via chat)
 | ADR | Outcome |
 | --- | ------- |
+| [0027](adr/0027-fill-in-container-icons-and-links.md) | **Fill in icons and links** button for containers: Unraid icons downloaded, Unraid WebUI links, names tidied |
 | [0026](adr/0026-dashboard-look-and-menu.md) | Lines switch; background fix plus blurred copy and top position; Edit link; any of the 14 docs themes in the menu; container icon, name, URL, description |
 | [0025](adr/0025-upload-on-first-run.md) | **Upload your Glance folder as a .zip** on first run (option C): includes, assets and `.env` come with it |
 | [0024](adr/0024-all-in-one-container.md) | **One container** (editor, Glance, preview, Docker gate) with one Unraid template; ports 8080/8090; follows `:latest`; template with our releases now, Community Apps later. Supersedes ADR-0023 and in part ADR-0005 |
@@ -189,6 +190,7 @@ Nothing below may be built on until you decide. ★ = affects user experience.
    what CA needs).
 
 ## Session log
+- 2026-10-14: ADR-0027 (fill in container icons and links) decided and built on PR #18.
 - 2026-10-14: ADR-0026 (five findings from the PM's install) built; PR #18 opened, rc.4 published. Follow-up built on the same PR: a widget for another server's Docker lists that server's containers.
 - 2026-10-14: PR #16 merged by Claude at the PM's request. rc.2 (upload) and rc.3 (two fixes from the PM's install: a clearer message for a quoted value wrapped onto an unindented line; the page no longer scrolls behind an open sheet) published.
 - 2026-10-14: Test release v1.0.0-rc.1 published (image and template). ADR-0025 (upload a .zip on first run) proposed, accepted as option C, built.

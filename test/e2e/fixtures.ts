@@ -51,6 +51,8 @@ export interface FakeContainer {
   state?: string;
   labels?: Record<string, string>;
   image?: string;
+  /** Docker's Ports: a container port, and the host port published for it. */
+  ports?: { private: number; public?: number }[];
 }
 
 export interface Editor {
@@ -77,7 +79,7 @@ export interface Editor {
 }
 
 /** The stand-in Docker API: GET /containers/json like Docker's (all=false: running and paused only); 403 otherwise. */
-async function fakeDocker(list: FakeContainer[], seen: string[]): Promise<{ server: Server; url: string }> {
+async function fakeDocker(list: FakeContainer[], seen: string[], iconSite = ""): Promise<{ server: Server; url: string }> {
   const server = createHttpServer((req, res) => {
     seen.push(`${req.method} ${req.url}`);
     const u = new URL(req.url ?? "/", "http://x");
@@ -85,7 +87,11 @@ async function fakeDocker(list: FakeContainer[], seen: string[]): Promise<{ serv
     const all = u.searchParams.get("all") === "true";
     const body = list
       .filter((c) => all || ["running", "paused"].includes(c.state ?? "running"))
-      .map((c) => ({ Names: [`/${c.name}`], Image: c.image ?? "example", State: c.state ?? "running", Status: c.state === "exited" ? "Exited (0) 2 days ago" : "Up 3 days", Labels: c.labels ?? {} }));
+      .map((c) => ({ Names: [`/${c.name}`], Image: c.image ?? "example", State: c.state ?? "running", Status: c.state === "exited" ? "Exited (0) 2 days ago" : "Up 3 days",
+        // Label values may name the icon stand-in as {{ICON_SITE}} (a container's Unraid icon, ADR-0027).
+        Labels: Object.fromEntries(Object.entries(c.labels ?? {}).map(([k, v]) => [k, v.replaceAll("{{ICON_SITE}}", iconSite)])),
+        Ports: (c.ports ?? []).map((p) => ({ IP: "0.0.0.0", PrivatePort: p.private, ...(p.public ? { PublicPort: p.public } : {}), Type: "tcp" })),
+        HostConfig: { NetworkMode: "bridge" }, NetworkSettings: { Networks: { bridge: { IPAddress: "172.17.0.9" } } } }));
     res.writeHead(200, { "content-type": "application/json" }).end(JSON.stringify(body));
   });
   await new Promise<void>((ok) => server.listen(0, "127.0.0.1", ok));
@@ -137,7 +143,7 @@ export const test = base.extend<{ opts: EditorOptions; editor: Editor }>({
       if (assetsDir) mkdirSync(assetsDir);
       if (opts.icons) icons = await startIconSources();
       if (opts.pixabay) pixabay = await startPixabay();
-      if (Array.isArray(opts.docker)) docker = await fakeDocker(opts.docker, dockerRequests);
+      if (Array.isArray(opts.docker)) docker = await fakeDocker(opts.docker, dockerRequests, icons?.url);
       if (opts.remoteDocker) remote = await fakeDocker(opts.remoteDocker, remoteRequests);
       // "dead": a port the OS just gave out, with nothing listening (fetch refuses some low ports outright).
       const dockerUrl = opts.docker === "dead" ? `tcp://127.0.0.1:${await port()}` : docker?.url ?? "";

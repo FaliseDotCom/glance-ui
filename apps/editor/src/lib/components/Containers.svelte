@@ -5,7 +5,7 @@
      the container's own glance.* labels show greyed until set here. -->
 <script lang="ts">
   import type { ModelWidgetT } from "@glance-editor/model";
-  import { containerEntry, containerRows, iconTerm, iconUrl, setContainerField, setContainerVisible, type ContainerField, type ContainerInfo, type WidgetRef } from "@glance-editor/editing";
+  import { containerEntry, containerRows, emptyFields, iconTerm, iconUrl, plural, resolveWebui, setContainerField, setContainerVisible, type ContainerField, type ContainerInfo, type WidgetRef } from "@glance-editor/editing";
   import { api, type ContainersResult } from "../client/api.ts";
   import type { App } from "../client/app.svelte.ts";
   import Icon from "./Icon.svelte";
@@ -55,6 +55,40 @@
   let open = $state<string | null>(null);
   const fid = (name: string) => `ct-${wid}-${name.replace(/[^A-Za-z0-9_-]/g, "_")}`;
 
+  // ADR-0027: icons and links from what the containers carry (Unraid's template icon and WebUI), names tidied. Only
+  // empty settings are filled: the widget's map and the containers' own glance.* labels win.
+  let filling = $state(false);
+  let fillNotes = $state<string[]>([]);
+  async function fill() {
+    if (!docker) return;
+    filling = true;
+    fillNotes = [];
+    const wr = w as Record<string, unknown>;
+    // The server as the browser reaches it: another server's Docker by its socket path, this one by the editor's address.
+    const server = remote ? new URL(sock.replace(/^tcp:/, "http:")).hostname : location.hostname;
+    const r = await api.containerIcons(sock || undefined, docker.filter((c) => emptyFields(wr, c).icon).map((c) => c.name))
+      .catch((e: Error) => ({ icons: {} as Record<string, string>, notes: [e.message] }));
+    const urls = docker.flatMap((c) => {
+      const u = emptyFields(wr, c).url ? resolveWebui(c, server) : null;
+      return u ? [[c.name, u] as const] : [];
+    });
+    const icons = Object.entries(r.icons);
+    const tidy = wr["format-container-names"] !== true;
+    filling = false;
+    fillNotes = r.notes;
+    if (!icons.length && !urls.length && !tidy) {
+      app.say("Nothing to fill in: every container already has an icon and a link, or Unraid doesn't give one.");
+      return;
+    }
+    const done = [icons.length ? plural(icons.length, "icon") : "", urls.length ? plural(urls.length, "link") : "", tidy ? "names tidied" : ""].filter(Boolean);
+    app.editWidget(wref, (x) => {
+      const xr = x as Record<string, unknown>;
+      for (const [n, v] of icons) setContainerField(xr, n, "icon", v);
+      for (const [n, u] of urls) setContainerField(xr, n, "url", u);
+      if (tidy) xr["format-container-names"] = true;
+    }, { toast: `Filled in: ${done.join(", ")}`, undo: true });
+  }
+
   function findIcon(name: string) {
     const c = info(name);
     app.sheet = {
@@ -72,6 +106,11 @@
 {:else}
   {#if result.status === "ok"}
     <p class="help" style="margin: 0 0 6px">{list.shown} of {list.rows.length} containers shown. The list comes from {remote ? `the Docker at ${sock}` : "this server's Docker"}; hiding writes to this widget’s containers map in glance.yml.</p>
+    <div class="row wrap" style="gap: 8px; margin-bottom: 6px">
+      <button type="button" class="btn" disabled={disabled || filling || !docker?.length} onclick={fill}>{filling ? "Filling in…" : "Fill in icons and links"}</button>
+      <span class="help" style="margin: 0; flex: 1 1 220px">Each container's Unraid icon (downloaded into Glance's assets folder) or a library icon matching its image, and its Unraid web address. Only empty settings are filled; names are tidied.</span>
+    </div>
+    {#each fillNotes as n (n)}<p class="errtxt" style="margin: 0">{n}</p>{/each}
   {:else}
     <div class="notice" role="status" style="margin-bottom: 6px">
       <span><strong>Can't reach the Docker socket.</strong> Containers already named in the widget's map are still listed and can be toggled; new ones can't be discovered.</span>

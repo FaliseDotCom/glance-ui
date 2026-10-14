@@ -17,6 +17,10 @@ export interface ContainerInfo {
   glance: Record<string, string>;
   image?: string;
   unraidIcon?: string;
+  unraidWebui?: string;
+  ports?: { private: number; public?: number }[];
+  networkMode?: string;
+  networks?: Record<string, string>;
 }
 
 /** One item of the widget's `containers` list (the map, keyed by `container`). */
@@ -147,4 +151,42 @@ export function iconTerm(name: string, title: string | undefined, image: string 
   const ref = /^(sha256:)?[0-9a-f]{12,}$/.test(image ?? "") ? "" : (image ?? "");
   const img = ref.replace(/@sha256:.*$/, "").replace(/:[^/:]*$/, "").split("/").pop() ?? "";
   return (img || name).replace(/[-_]+/g, " ").trim();
+}
+
+/**
+ * A container's web address from its Unraid template's WebUI (`http://[IP]:[PORT:8096]/`), filled in the way Unraid
+ * fills it (webgui DockerClient.php getControlURL and getAllInfo, main at 26eb1b5, read 2026-10-14):
+ *   - host network, or a published port: the server's address, and for [PORT:n] the host port published for n;
+ *   - otherwise the container's own address on a network on the LAN (Unraid's br0 and the like: macvlan or ipvlan),
+ *     and n as it is.
+ * `server` is the server's address as the browser reaches it. Null when the address can't be worked out (a container
+ * on an internal bridge network with nothing published is not reachable from the LAN).
+ */
+export function resolveWebui(c: ContainerInfo, server: string): string | null {
+  const t = c.unraidWebui;
+  if (!t) return null;
+  if (!/\[(IP|PORT:\d+)\]/.test(t)) return t;
+  const ports = c.ports ?? [];
+  const published = ports.some((p) => p.public !== undefined);
+  let ip: string | null = null;
+  if (c.networkMode === "host" || published) ip = server;
+  else {
+    // Docker's own networks (bridge, user-defined bridges) are internal; Unraid's LAN networks are named after the
+    // interface (br0, eth0, bond0, br0.10…).
+    const lan = Object.entries(c.networks ?? {}).find(([name]) => /^(br|eth|bond|wlan|vhost)\d/.test(name));
+    ip = lan?.[1] ?? null;
+  }
+  if (!ip) return null;
+  const host = ip.includes(":") && !ip.startsWith("[") ? `[${ip}]` : ip;
+  return t.replace(/\[IP\]/g, host).replace(/\[PORT:(\d+)\]/g, (_m, n: string) => {
+    const p = ip === server && c.networkMode !== "host" ? ports.find((x) => x.private === Number(n) && x.public !== undefined) : undefined;
+    return String(p?.public ?? n);
+  });
+}
+
+/** What "Fill in icons and links" may fill: settings that neither the map nor the container's glance.* labels have. */
+export function emptyFields(w: Widget, c: ContainerInfo): { icon: boolean; url: boolean } {
+  const e = entryFor(w, c.name);
+  const has = (k: "icon" | "url") => (e?.[k] !== undefined && e[k] !== "") || !!c.glance[k];
+  return { icon: !has("icon"), url: !has("url") };
 }
