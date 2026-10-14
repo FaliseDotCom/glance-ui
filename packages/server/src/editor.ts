@@ -470,6 +470,12 @@ export class Editor {
 
     const check = await this.checkText(text, live !== null, true);
     if (check.report) check.report.includes = found.includes;
+    // Line numbers count in the joined text; name the uploaded file and its own line when an include has the line.
+    if (!check.parse.ok && check.parse.line !== null && found.includes.length) {
+      const wanted = text.split("\n")[check.parse.line - 1]?.trim();
+      const hits = [...found.yaml].flatMap(([p, d]) => d.toString("utf8").split("\n").flatMap((l, i) => (wanted && l.trim() === wanted ? [`${p}, line ${i + 1}`] : [])));
+      if (hits.length === 1) check.parse = { ...check.parse, message: `${check.parse.message} (In the zip: ${hits[0]}.)` };
+    }
     const d = (await this.importVersionText(text)).dashboard;
     const from = d?.server?.["assets-path"] ?? null;
     const assets = findAssets(z.files, found.config, from ?? undefined);
@@ -935,12 +941,52 @@ function parseError(text: string): ImportCheck["parse"] & { ok: false } | null {
   const offset = e.pos?.[0];
   const line = offset === undefined ? null : text.slice(0, offset).split("\n").length;
   const lines = text.split("\n");
-  const snippet = line === null ? "" : lines
+  const snippet = line === null ? "" : snippetAt(lines, line);
+  const split = splitQuoted(lines);
+  if (split) return { ok: false, line: split.line, message: split.message, snippet: snippetAt(lines, split.line) };
+  return { ok: false, line, message: e.message.split("\n")[0]!, snippet };
+}
+
+function snippetAt(lines: string[], line: number): string {
+  return lines
     .map((l, i) => ({ n: i + 1, l }))
     .filter(({ n }) => n >= line - 2 && n <= line + 1)
     .map(({ n, l }) => `${n === line ? ">" : " "} ${String(n).padStart(String(line + 1).length)} | ${l.replaceAll("\t", "→   ")}`)
     .join("\n");
-  return { ok: false, line, message: e.message.split("\n")[0]!, snippet };
+}
+
+/**
+ * A quoted value broken over two lines whose second part starts no further in than its key, usually a long line
+ * wrapped by a text editor:
+ *     url: 'https://example.org/a/very/long/pa
+ *   th/to/page'
+ * YAML doesn't allow it, so the editor can't read the file and its parser only says "Missing closing quote". Glance
+ * (v0.8.6, tested 2026-10-14) accepts it and reads the line break as a space, so the value Glance uses has a space
+ * in it. Explain that instead.
+ */
+function splitQuoted(raw: string[]): { line: number; message: string } | null {
+  const lines = raw.map((l) => l.replace(/\r$/, ""));
+  const indent = (l: string) => l.length - l.trimStart().length;
+  for (let i = 0; i < lines.length - 1; i++) {
+    const m = /^(\s*)(?:-\s+)?(?:[^'"#\s][^#]*?:\s+)?(['"])(.*)$/.exec(lines[i]!);
+    if (!m) continue;
+    const q = m[2]!;
+    const rest = m[3]!;
+    // Closed on this line? ('' is an escaped quote in single quotes; \ escapes in double quotes.)
+    const closed = q === "'" ? /^(?:[^']|'')*'/.test(rest) : /^(?:[^"\\]|\\.)*"/.test(rest);
+    if (closed) continue;
+    let j = i + 1;
+    while (j < lines.length && lines[j]!.trim() === "") j++;
+    if (j >= lines.length || indent(lines[j]!) > m[1]!.length) continue;
+    const first = rest.trimEnd();
+    const second = lines[j]!.trim().replace(new RegExp(`${q}.*$`), "");
+    const shown = `${first.length > 30 ? "…" : ""}${first.slice(-30)} ${second.slice(0, 30)}${second.length > 30 ? "…" : ""}`;
+    return {
+      line: j + 1,
+      message: `A quoted value is split over lines ${i + 1} and ${j + 1}, and its second part isn't indented, which YAML doesn't allow. Glance accepts it but reads the line break as a space (${q}${shown}${q}), which is probably not what you meant. Join the two lines into one: use Fix the YAML here, or fix your file and upload it again.`,
+    };
+  }
+  return null;
 }
 
 /** "H S L" as the editor writes it: whole numbers, hue ≤ 360, saturation and lightness ≤ 100. */

@@ -99,6 +99,25 @@ test.describe("Flow 1b: upload your Glance folder as a zip", () => {
     expect(editor.live()).not.toContain("$include");
   });
 
+  test("a long line wrapped by a text editor: the message says which lines and what Glance would read", async ({ page, editor }) => {
+    const home = "- name: Home\n  columns:\n    - size: full\n      widgets:\n        - type: bookmarks\n          groups:\n            - links:\n                - title: Example\n                  url: 'https://example.org/0123456789abcdef/w\nexample.net/dns/records'\n";
+    await page.goto(editor.url);
+    await page.locator("#zipfile").setInputFiles({ name: "glance.zip", mimeType: "application/zip", buffer: makeZip([
+      { name: "glance/config/glance.yml", data: "pages:\n  $include: home.yml\n" },
+      { name: "glance/config/home.yml", data: home },
+    ]) });
+    await expect(page.getByRole("heading", { name: "glance.yml has a problem" })).toBeVisible();
+    await expect(page.getByText(/A quoted value is split over lines 10 and 11/)).toBeVisible();
+    await expect(page.getByText(/In the zip: glance\/config\/home\.yml, line 10\./)).toBeVisible();
+    await shot(page, "upload-wrapped-line");
+    await page.getByRole("button", { name: "Fix the YAML here" }).click();
+    const box = page.getByLabel("glance.yml");
+    // config:print indents an included file's lines under the include, so the second part has a little indent here.
+    await box.fill((await box.inputValue()).replace(/\/w\n\s*example/, "/wexample"));
+    await page.getByRole("button", { name: "Check again" }).click();
+    await expect(page.getByRole("heading", { name: "Ready to import" })).toBeVisible();
+  });
+
   test("a zip without glance.yml: says what to zip; Choose another zip", async ({ page, editor }) => {
     await page.goto(editor.url);
     await page.locator("#zipfile").setInputFiles({ name: "photos.zip", mimeType: "application/zip", buffer: makeZip([{ name: "a.txt", data: "x" }]) });

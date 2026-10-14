@@ -163,6 +163,18 @@ describe("upload a Glance folder", () => {
   });
 });
 
+describe("upload: a quoted value wrapped onto an unindented line in an include file", () => {
+  it("names the file in the zip and its own line, besides the joined text's lines", async () => {
+    const e = await track(fresh());
+    const home = HOME_YML.replace("url: https://example.org/feed", "url: 'https://example.org/a/very/long/pa\nth/feed'");
+    const c = await e.checkUpload(makeZip(template().map((x) => (x.name.endsWith("home.yml") ? { ...x, data: home } : x))));
+    expect(c.ok).toBe(false);
+    const message = c.parse.ok ? "" : c.parse.message;
+    expect(message).toContain("split over lines");
+    expect(message).toContain("(In the zip: glance/config/home.yml, line 9.)");
+  });
+});
+
 describe("importing the data folder's glance.yml from another Glance", () => {
   it("assets-path /app/assets passes the check and becomes this container's folder (Glance won't start otherwise)", async () => {
     const s = setup();

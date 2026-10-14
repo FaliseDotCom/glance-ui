@@ -113,4 +113,22 @@ describe("can't write glance.yml (design 03)", () => {
     expect((await e.state()).draft!.pages[0]!.name).toBe("Renamed");
     expect(await e.save()).toMatchObject({ status: "saved", version: 1 }); // numbering has no gap
   });
+  it("a quoted value wrapped onto an unindented line: says which lines, and what Glance would read; joining them passes", async () => {
+    // A long line wrapped by a text editor. Glance v0.8.6 accepts it and reads the break as a space; YAML doesn't.
+    const head = "pages:\n  - name: Home\n    columns:\n      - size: full\n        widgets:\n          - type: bookmarks\n            groups:\n              - links:\n                  - title: Example\n";
+    for (const [q, nl] of [["'", "\n"], ['"', "\n"], ["'", "\r\n"]] as const) {
+      const s = setup();
+      mkdirSync(dirname(s.configPath), { recursive: true });
+      s.write(`${head}                    url: ${q}https://example.org/0123456789abcdef/w${nl}example.net/dns/records${q}${nl}`.replaceAll(/\r?\n/g, nl));
+      const e = await track(s);
+      const c = await e.checkImport();
+      expect(c.parse).toMatchObject({ ok: false, line: 11 });
+      const message = c.parse.ok ? "" : c.parse.message;
+      expect(message).toContain("split over lines 10 and 11");
+      expect(message).toContain(`(${q}…example.org/0123456789abcdef/w example.net/dns/records${q})`);
+      expect(c.parse.ok === false && c.parse.snippet).toContain("> 11 | example.net");
+      const joined = (c.text ?? "").replace(/\/w\r?\nexample/, "/wexample");
+      expect((await e.checkImport(joined)).ok).toBe(true);
+    }
+  });
 });

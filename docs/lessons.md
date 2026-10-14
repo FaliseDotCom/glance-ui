@@ -222,3 +222,8 @@ overwrites labels with map values. **Do:** treat source reading as a hypothesis 
 - Even root inside the container got "Permission denied" reading another user's `/proc/<pid>/environ` (again: see
   Unraid templates above). The all-in-one test reads the editor's environment as the editor's user, and checks for a
   value, not a name: the editor is given the names of Glance's variables on purpose.
+- A quoted value wrapped onto an unindented line (a long line hard-wrapped by a text editor) is accepted by Glance
+  v0.8.6, which reads the line break as a space (tested: the link gets `%20` in it), but isn't valid YAML, and the
+  `yaml` library refuses it with only "Missing closing quote". The import check now explains it and names the lines.
+  `config:print` indents an included file's lines under its `$include`, so line numbers in the joined text differ from
+  the uploaded file's: the upload check names the file and its own line too.
