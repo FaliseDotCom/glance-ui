@@ -1,6 +1,6 @@
 # 0022. Pixabay: key on the server, cached search, downloaded picks, a local rotating set
 
-- **Status:** proposed (non-UX; accepted when the Phase 10b PR is merged, per the ADR README)
+- **Status:** accepted (non-UX; by merging the Phase 10b PR, #14, 2026-10-14). The D-62 reading under Consequences awaits the PM's confirmation.
 - **Date:** 2026-10-14
 - **Decider:** PM
 - **UX impact:** the screens follow D-61 and D-62 as decided on 2026-10-13. One reading of D-62 is noted under
@@ -54,4 +54,4 @@
 - Not verified: the real API with a valid key (none available to Claude; the PM can try it on the dev editor).
 
 ## Decision record
-_Accepted when the Phase 10b PR is merged (non-UX)._
+Accepted 2026-10-14 by merging PR #14 (merged by Claude with the PM's standing permission).

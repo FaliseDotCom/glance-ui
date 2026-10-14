@@ -70,8 +70,12 @@ jobs:
           done
           echo "$out" | grep -q '"glanceBinaryPresent":true'
           docker run --rm --entrypoint glance glance-editor:ci --help | head -1
+          # ADR-0013: Glance's license and its source pointer ship with the binary.
+          docker run --rm --entrypoint sh glance-editor:ci -c 'test -s /usr/share/doc/glance/LICENSE && grep -q "Corresponding source" /usr/share/doc/glance/README.md && test -s /usr/share/doc/glance-editor/LICENSE'
           docker rm -f editor-ci
       - name: API end to end (editor image + a Glance watching the same config dir)
         run: GLANCE_EDITOR_IMAGE=glance-editor:ci test/editor-api.sh
       - name: Docker socket proxy (a POST is refused; the editor image lists containers through it)
         run: GLANCE_EDITOR_IMAGE=glance-editor:ci test/docker-proxy.sh
+      - name: All-in-one container (the Unraid install, ADR-0024)
+        run: GLANCE_EDITOR_IMAGE=glance-editor:ci test/all-in-one.sh

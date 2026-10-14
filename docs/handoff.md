@@ -1,11 +1,11 @@
 # Handoff
 
 The single place to see where the project stands. Updated at the end of every work session and every PR.
-Last updated: 2026-10-14 (Phase 10b PR opened).
+Last updated: 2026-10-14 (Phase 11: one container decided, ADR-0024; ready for a test release).
 
 ## Current state
-- **Phase:** 10b (Pixabay) **PR open**; Claude merges it when CI is green. 10a merged (PR #13). Then Phase 11, which
-  needs your decisions (deployment) and your hands (install, cutover).
+- **Phase:** 11 (deployment). One container with an Unraid template (ADR-0024, accepted). The PR waits for your merge
+  (it carries the release notes draft); then a test release `v1.0.0-rc.1` to install side by side. Phases 0 to 10 are merged.
 - **Merging:** you allowed Claude to merge the remaining phases' PRs, unless something needs your decision or
   agreement (CLAUDE.md rule 1). Live host, cutover and release notes stay with you.
 - **Phase plan:** approved 2026-10-13.
@@ -40,9 +40,15 @@ Last updated: 2026-10-14 (Phase 10b PR opened).
 ## Needs user decision
 Nothing below may be built on until you decide. ★ = affects user experience.
 
+- ★ **v1.0.0 release notes:** draft in `CHANGELOG.md` (Unreleased). Approve or edit; then you push the `v1.0.0` tag.
 - ★ **D-62 reading (confirm, or say otherwise):** in a slideshow, every image of a Pixabay set is a slide, so the
   set's daily/weekly/monthly switch only matters when the background is a single image (ADR-0022). Built this way;
   the alternative (a slideshow showing part of the set and swapping) is a small change.
+
+## Decided on 2026-10-14 (via chat)
+| ADR | Outcome |
+| --- | ------- |
+| [0024](adr/0024-all-in-one-container.md) | **One container** (editor, Glance, preview, Docker gate) with one Unraid template; ports 8080/8090; follows `:latest`; template with our releases now, Community Apps later. Supersedes ADR-0023 and in part ADR-0005 |
 
 ## Decided on 2026-10-13 (via chat)
 | ADR | Outcome |
@@ -169,11 +175,15 @@ Nothing below may be built on until you decide. ★ = affects user experience.
 - The real-binary tests caught a validator bug that my own model-based tests missed. Both kinds of test are kept.
 
 ## Next steps
-1. Claude: merge Phase 10b when CI is green, then prepare Phase 11 (deployment ADR, runbooks) and stop for your decisions.
-2. You, any time, on the dev editor (:18190): Theme → Background → Image → "Use Glance's assets folder" → Add
-   images; and a bookmark link's icon → Find.
+1. You: merge the Phase 11 PR; push the tag `v1.0.0-rc.1`; make the GHCR package public (todo-user).
+2. You: install it on Unraid beside your current Glance (`docs/runbooks/install.md`), compare, rehearse the fallback.
+3. You: approve the v1.0.0 notes, push `v1.0.0`, cut over. Then submit the template to Community Apps (Claude prepares
+   what CA needs).
 
 ## Session log
+- 2026-10-14: One container (ADR-0024) built and accepted: image/start.ts, the Docker gate, the Unraid template and icon, test releases; tested end to end on the dev machine.
+- 2026-10-14: PR #14 (Phase 10b) merged by Claude, after fixing a test teardown hang CI found.
+- 2026-10-14: Phase 11 prepared: ADR-0023 (proposed), runbook drafts, release workflow, Glance license in the image, v1.0.0 notes draft. PR opened; not merged (decisions pending).
 - 2026-10-14: PR #13 (Phase 10a) merged by Claude. Phase 10b implemented (Pixabay; two 10a fixes); dev Glance checked and restored; PR opened. ADR-0022.
 - 2026-10-14: PR #12 (Phase 9) merged by Claude. Phase 10a implemented (background image and slideshow); PR opened. ADR-0021 (non-UX).
 - 2026-10-14: PR #11 (Phase 8) merged. PM allowed Claude to merge the remaining phases. Phase 9 implemented (icon finder); PR opened. ADR-0020 (non-UX).

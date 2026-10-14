@@ -202,3 +202,13 @@ overwrites labels with map values. **Do:** treat source reading as a hypothesis 
   directly. Don't `source` `test/lib.sh` from the tool shell.
 - Docker is **rootful** 29.8.0 (`/var/run/docker.sock`), without the `compose` or `buildx` plugins. The harness and `dev/` use plain `docker run`.
 - Unrelated containers run on this machine. The harness must only ever touch `glance-editor-test=1` containers, and `dev/` only `glance-editor-dev=1`.
+
+## Unraid templates (2026-10-14, unraid/webgui main at 26eb1b5, include/Helpers.php and DockerClient.php)
+- A template's `<Network>` that doesn't exist on the host silently becomes `none` in the form. One container avoids it.
+- dockerMan creates missing host folders as 99:100 (`nobody:users`); our container gives its folder to PUID:PGID anyway.
+- dockerMan's image parser doesn't understand `tag@sha256:…`, so its update check misreads digest-pinned images. Pin
+  inside the image instead (Glance's binary is pinned by digest at build time).
+- Unraid's update check follows the template's tag: `:latest` for releases, an exact tag for test releases.
+- Inside a container started as root, `/proc/<pid>/environ` of another user's process isn't readable without
+  CAP_SYS_PTRACE: a test that greps it "passes" on a permission error. Read it as that process's own user.
+- `cmd | head -1` under `set -o pipefail` can fail the pipeline (SIGPIPE) and stop a test script with `set -e`.

@@ -1,6 +1,7 @@
 # 0005. Docker socket access
 
-- **Status:** accepted
+- **Status:** accepted; superseded in part by [ADR-0024](0024-all-in-one-container.md) (2026-10-14): in the released
+  image, a gate inside the one container replaces the proxy container. The editor still never gets the socket.
 - **Date:** 2026-10-13
 - **Decider:** PM
 - **UX impact:** **yes**. It decides whether the editor can show you a list of your containers to toggle, or whether you type names by hand.

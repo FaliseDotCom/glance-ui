@@ -19,7 +19,7 @@ docker run -d --name "$TEST_PREFIX-apiglance" --label "$TEST_LABEL" --network "$
   -v "$work/config:/app/config" "$GLANCE_IMAGE" >/dev/null
 docker run -d --name "$TEST_PREFIX-editor" --label "$TEST_LABEL" --network "$net" --user "$(id -u):$(id -g)" \
   -p "127.0.0.1:$port:3000" -e GLANCE_URL="http://$TEST_PREFIX-apiglance:8080/" \
-  -v "$work/config:/glance-config" -v "$work/data:/data" "$image" >/dev/null
+  -v "$work/config:/glance-config" -v "$work/data:/data" "$image" node build >/dev/null
 
 base="http://127.0.0.1:$port"
 origin=(-H "Origin: $base" -H "Content-Type: application/json")

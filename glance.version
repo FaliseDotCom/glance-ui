@@ -6,3 +6,5 @@ GLANCE_IMAGE=glanceapp/glance:v0.8.6@sha256:9dfb09470b207dcb67ac715994bdb1929374
 # downloaded at test time, not committed, because Glance is AGPL-3.0, see test/upstream-example.sh).
 GLANCE_COMMIT=fbd9c1b6ae0c50ec015843f1bea48c400cddb518
 GLANCE_EXAMPLE_SHA256=7be339f0136e573e3a9ee237ff9f52d69d27ef037517f4b300dc78abdc6f1d38
+# sha256 of Glance's LICENSE at that commit, copied to third_party/glance/LICENSE (shipped in the editor image, ADR-0013).
+GLANCE_LICENSE_SHA256=8486a10c4393cee1c25392769ddd3b2d6c242d6ec7928e1414efff7dfb2f07ef

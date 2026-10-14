@@ -64,7 +64,7 @@ if [[ -n "${GLANCE_EDITOR_IMAGE:-}" ]]; then
   cp "$REPO_ROOT/test/fixtures/import/commented.yml" "$work/config/glance.yml"
   docker run -d --name "$TEST_PREFIX-pxyeditor" --label "$TEST_LABEL" --network "$net" --user "$(id -u):$(id -g)" \
     -p "127.0.0.1:$eport:3000" -e DOCKER_PROXY_URL="tcp://$proxy:2375" \
-    -v "$work/config:/glance-config" -v "$work/data:/data" "$GLANCE_EDITOR_IMAGE" >/dev/null
+    -v "$work/config:/glance-config" -v "$work/data:/data" "$GLANCE_EDITOR_IMAGE" node build >/dev/null
   ebase="http://127.0.0.1:$eport"
   for _ in $(seq 1 40); do curl -fsS -o /dev/null "$ebase/healthz" 2>/dev/null && break; sleep 0.5; done
   curl -fsS "$ebase/api/containers" > "$work/containers.json" || true

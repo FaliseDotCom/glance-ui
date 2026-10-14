@@ -1,0 +1,27 @@
+<?xml version="1.0"?>
+<!-- Unraid template (ADR-0024). The placeholders in double braces are filled in by scripts/render-unraid-template.sh in the release workflow, which attaches the result to each release. -->
+<Container version="2">
+  <Name>glance-editor</Name>
+  <Repository>ghcr.io/{{OWNER}}/glance-editor:latest</Repository>
+  <Registry>https://github.com/{{REPO}}/pkgs/container/glance-editor</Registry>
+  <Network>bridge</Network>
+  <Shell>sh</Shell>
+  <Privileged>false</Privileged>
+  <Support>https://github.com/{{REPO}}/issues</Support>
+  <Project>https://github.com/{{REPO}}</Project>
+  <Overview>Your Glance dashboard and a no-code editor for it, in one container. Build pages, columns and widgets, pick a theme, icons and a background image, all in the browser, without writing YAML. See your changes in Preview before you save; every save is checked by Glance first and kept in History, so you can go back to any earlier version. Includes Glance (github.com/glanceapp/glance) at the version the editor is tested with. Open the editor from WebUI; your dashboard is on the Dashboard port. No login: keep it on your LAN.</Overview>
+  <Category>Productivity: Tools:</Category>
+  <WebUI>http://[IP]:[PORT:3000]/</WebUI>
+  <TemplateURL>https://github.com/{{REPO}}/releases/latest/download/glance-editor.xml</TemplateURL>
+  <Icon>https://raw.githubusercontent.com/{{REPO}}/v{{VERSION}}/unraid/glance-editor.png</Icon>
+  <ExtraParams/>
+  <PostArgs/>
+  <Requires>Nothing else to install. To keep your current Glance dashboard, copy its glance.yml into the config folder inside the data folder before the first start, and choose Import in the editor. Guide: https://github.com/{{REPO}}/blob/v{{VERSION}}/docs/runbooks/install.md</Requires>
+  <Config Name="Editor" Target="3000" Default="8090" Mode="tcp" Description="The editor (WebUI)." Type="Port" Display="always" Required="true" Mask="false">8090</Config>
+  <Config Name="Dashboard" Target="8080" Default="8080" Mode="tcp" Description="Your Glance dashboard. Use another port if something else, like your current Glance, already uses this one." Type="Port" Display="always" Required="true" Mask="false">8080</Config>
+  <Config Name="Data" Target="/data" Default="/mnt/user/appdata/glance-editor" Mode="rw" Description="Everything in one folder: config/glance.yml (your dashboard), assets/ (icons and backgrounds), editor/ (every saved version and the settings). Include it in your backups." Type="Path" Display="always" Required="true" Mask="false">/mnt/user/appdata/glance-editor</Config>
+  <Config Name="Docker socket (read only)" Target="/var/run/docker.sock" Default="/var/run/docker.sock" Mode="ro" Description="For the Docker containers widget, and so the editor can list your containers to show or hide them. The editor itself never gets the socket: it can only list containers. Remove this if you don't need it." Type="Path" Display="always" Required="false" Mask="false">/var/run/docker.sock</Config>
+  <Config Name="Photos (optional)" Target="/photos" Default="" Mode="ro" Description="A folder of your own photos to use as backgrounds, read only." Type="Path" Display="always" Required="false" Mask="false"></Config>
+  <Config Name="PUID" Target="PUID" Default="99" Mode="" Description="The user the editor runs as and writes files as (Unraid: nobody)." Type="Variable" Display="advanced" Required="true" Mask="false">99</Config>
+  <Config Name="PGID" Target="PGID" Default="100" Mode="" Description="The group the editor writes files as (Unraid: users)." Type="Variable" Display="advanced" Required="true" Mask="false">100</Config>
+</Container>
