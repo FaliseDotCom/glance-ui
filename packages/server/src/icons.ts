@@ -312,6 +312,32 @@ export class Icons {
     return { results, libraries };
   }
 
+  /**
+   * ADR-0027: one icon for a name, only when a library has that exact name (or title, or alias): Dashboard Icons
+   * first, then selfh.st, Simple Icons and Material Design Icons. Null when no library has it exactly.
+   */
+  async exact(name: string): Promise<LibraryIcon | null> {
+    const slug = iconSlug(name);
+    if (!slug) return null;
+    await this.libraries();
+    for (const l of ["di", "sh", "si", "mdi"] as const) {
+      const hit = this.indexes.get(l)?.icons.find((i) => [i.name, i.title ?? "", ...(i.aliases ?? [])].some((x) => iconSlug(x) === slug));
+      if (hit) return hit;
+    }
+    return null;
+  }
+
+  /** ADR-0027: download an image from an address (a container's Unraid icon) into the assets folder, with its source. */
+  async downloadUrl(url: string, name: string, credit: Record<string, string>): Promise<DownloadResult> {
+    try {
+      const u = new URL(url);
+      if (u.protocol !== "http:" && u.protocol !== "https:") throw new Error();
+    } catch {
+      return { ok: false, message: "That icon's address isn't an http(s) address." };
+    }
+    return this.download(this.offer({ title: name, name: iconSlug(name), url, credit }));
+  }
+
   // ---- web (D-55, D-56) ---------------------------------------------------------------------------------------------
 
   async web(query: string): Promise<WebSearch> {

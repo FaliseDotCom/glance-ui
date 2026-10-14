@@ -1,0 +1,13 @@
+# A Docker containers widget for another server's Docker (ADR-0026 follow-up): its sock-path is that server's proxy.
+server:
+  host: 127.0.0.1
+  port: {{GLANCE_PORT}}
+
+pages:
+  - name: Home
+    columns:
+      - size: full
+        widgets:
+          - type: docker-containers
+            title: Other server
+            sock-path: {{REMOTE_DOCKER_URL}}

@@ -37,7 +37,10 @@ Install it once, and it's all there.
 - **Drag and drop** on desktop, or move buttons on a phone. The editor works on both.
 - **Bookmarks** with groups, colours and icons.
 - **Docker containers.** Show or hide each container with one tap, and give it an icon, a name, a link and a
-  description. On Unraid, the icon Unraid already uses for the container is offered too.
+  description. On Unraid, the icon Unraid already uses for the container is offered too. Containers on other servers
+  work as well: point a widget's Docker socket path at a read-only proxy there (`tcp://<server>:2375`).
+  **Fill in icons and links** does it for all of them at once: Unraid's icons (downloaded) and web UI addresses,
+  library icons by image name, and tidy names.
 - **Icon finder** for bookmarks, monitors and containers. It searches Simple Icons, selfh.st Icons, Dashboard Icons
   and Material Design Icons, the site's own icon, and openly licensed images on the web. Web images are downloaded
   into Glance's assets folder, with their licence.

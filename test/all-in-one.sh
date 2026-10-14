@@ -12,7 +12,7 @@ eport=18087
 name="$TEST_PREFIX-aio"
 work="$(mktemp -d)"
 # The container gives the data folder to 99:100; remove it as root through the image.
-trap 'cleanup_test_containers; docker run --rm -v "$work:/w" --entrypoint sh "$image" -c "rm -rf /w/data /w/data2" >/dev/null 2>&1 || true; rm -rf "$work"' EXIT
+trap 'cleanup_test_containers; docker run --rm -v "$work:/w" --entrypoint sh "$image" -c "rm -rf /w/data /w/data2 /w/data3" >/dev/null 2>&1 || true; rm -rf "$work"' EXIT
 cleanup_test_containers
 mkdir -p "$work/data/assets/icons"
 echo "copied in by someone else" > "$work/data/assets/icons/note.txt"
@@ -94,6 +94,24 @@ desc=".env is readable by its owner only";                check test "$(stat -c 
 docker exec "$name" sh -c 'echo "PAGE_NAME=Changed" > /data/config/.env'
 for _ in $(seq 1 40); do curl -fsS "http://127.0.0.1:$gport/" 2>/dev/null | grep -q '<title>Changed' && break; sleep 0.5; done
 desc="a changed .env restarts Glance with it";            check bash -c "curl -fsS http://127.0.0.1:$gport/ | grep -q '<title>Changed'"
+desc="container stops cleanly";                           check bash -c "docker stop -t 10 $name >/dev/null && test \"\$(docker inspect -f '{{.State.ExitCode}}' $name)\" = 0"
+
+docker rm "$name" >/dev/null
+
+# ---- HTTPS from Glance: widgets that fetch from the web need the image's CA certificates (Go reads the system's) ----
+mkdir -p "$work/data3/config"
+printf 'pages:\n  - name: Home\n    columns:\n      - size: full\n        widgets:\n          - type: weather\n            location: Berlin, Germany\n' > "$work/data3/config/glance.yml"
+docker run -d --name "$name" --label "$TEST_LABEL" -p "127.0.0.1:$gport:8080" -p "127.0.0.1:$eport:3000" -v "$work/data3:/data" "$image" >/dev/null
+desc="the image has a CA certificate bundle";              check docker exec "$name" test -s /etc/ssl/certs/ca-certificates.crt
+for _ in $(seq 1 40); do curl -fsS -o /dev/null "http://127.0.0.1:$gport/" 2>/dev/null && break; sleep 0.5; done
+weather="$(curl -fsS --max-time 30 "http://127.0.0.1:$gport/api/pages/home/content/" 2>/dev/null || true)"
+if grep -q "x509\|certificate" <<<"$weather"; then
+  desc="Glance verifies HTTPS sites (weather)";          check false
+elif grep -qi "weather-column\|°" <<<"$weather"; then
+  desc="Glance verifies HTTPS sites (weather)";          check true
+else
+  log "skip Glance's HTTPS check: no answer from open-meteo.com (offline?)"
+fi
 desc="container stops cleanly";                           check bash -c "docker stop -t 10 $name >/dev/null && test \"\$(docker inspect -f '{{.State.ExitCode}}' $name)\" = 0"
 
 [[ $failures -eq 0 ]] || { docker logs "$name" >&2; fail "$failures all-in-one check(s) failed"; }

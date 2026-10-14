@@ -18,7 +18,7 @@ import { describeChanges, type Change } from "./changes.ts";
 import { listContainers, type ContainersResult } from "./docker.ts";
 import { Icons, type IconSources } from "./icons.ts";
 import { assetsWritable, copyImages, listFolder, resolveImages, storeImage, writeEditorFiles, type BuildEnv, type FolderEntry, type Problemish } from "./background.ts";
-import { needsEditorCss, PREVIEW_CSS } from "@glance-editor/editing";
+import { iconTerm, needsEditorCss, PREVIEW_CSS } from "@glance-editor/editing";
 import { Pixabay } from "./pixabay.ts";
 import { backup, openDb, type Db } from "./db.ts";
 import { pastStamp, readLive, reloadStamp, sha256, waitForReload, writeLiveAtomically, type ReloadResult } from "./live.ts";
@@ -756,9 +756,47 @@ export class Editor {
 
   // ---- Docker containers (D-22 to D-24, ADR-0005) ---------------------------------------------------------------------
 
-  /** The containers the editor's Docker connection reports, for the Containers section. Read only. */
-  containers(): Promise<ContainersResult> {
-    return listContainers(this.cfg.dockerUrl);
+  /**
+   * The containers the Containers section lists, read only. A widget whose `sock-path` is another server's Docker
+   * (`tcp://`, `http://`, `https://`: Glance v0.8.6 widget-docker-containers.go 295) is listed from that address, with
+   * the same one request (ADR-0026 follow-up); any other widget from the editor's own connection (ADR-0005). The editor
+   * asks only addresses a Docker containers widget in the draft names, and never resolves a placeholder in one.
+   */
+  async containers(sockPath?: string): Promise<ContainersResult> {
+    if (!sockPath || !isRemoteDocker(sockPath)) return listContainers(this.cfg.dockerUrl);
+    if (sockPath.includes("${")) {
+      return { status: "unreachable", message: "This widget's Docker socket path is a placeholder. The editor never resolves those, so it can't list that server's containers; Glance can." };
+    }
+    const row = this.draftRow();
+    const draft = row ? this.loadDraftModel(row) : null;
+    if (!draft || !dockerSockPaths(draft).includes(sockPath)) {
+      return { status: "unreachable", message: "No Docker containers widget in the draft uses this address." };
+    }
+    return listContainers(sockPath);
+  }
+
+  /**
+   * ADR-0027 "Fill in icons and links": an icon for each named container of a widget's list. Its Unraid icon, downloaded
+   * into Glance's assets folder (so the dashboard doesn't load it from the web); else the libraries' exact match for its
+   * image's name. Addresses come only from Docker's own list, never from the request.
+   */
+  async containerIcons(sockPath: string | undefined, names: readonly string[]): Promise<{ icons: Record<string, string>; notes: string[] }> {
+    const list = await this.containers(sockPath);
+    if (list.status !== "ok") return { icons: {}, notes: [list.status === "unreachable" ? list.message : "The editor has no Docker connection set up."] };
+    const icons: Record<string, string> = {};
+    const notes: string[] = [];
+    for (const name of names) {
+      const c = list.containers.find((x) => x.name === name);
+      if (!c) continue;
+      if (c.unraidIcon) {
+        const r = await this.icons.downloadUrl(c.unraidIcon, c.glance.name || c.name, { source: "the container's Unraid template (net.unraid.docker.icon)", landing: c.unraidIcon });
+        if (r.ok) { icons[name] = r.value; continue; }
+        notes.push(`${name}: Unraid's icon couldn't be downloaded (${r.message}).`);
+      }
+      const hit = await this.icons.exact(iconTerm(c.name, c.glance.name, c.image)).catch(() => null);
+      if (hit) icons[name] = hit.value;
+    }
+    return { icons, notes };
   }
 
   // ---- preview (handoff §4b, D-39, D-47 to D-49; ADR-0019) ------------------------------------------------------------
@@ -991,6 +1029,26 @@ function splitQuoted(raw: string[]): { line: number; message: string } | null {
     };
   }
   return null;
+}
+
+/** Glance treats these socket paths as a remote Docker; anything else is a Unix socket on Glance's own machine. */
+const isRemoteDocker = (p: string) => /^(tcp|https?):\/\//.test(p);
+
+/** The `sock-path` of every Docker containers widget in the draft, nested ones included. */
+function dockerSockPaths(d: DashboardT): string[] {
+  const out: string[] = [];
+  const visit = (list: WidgetT[] | undefined) => {
+    for (const w of list ?? []) {
+      const x = w as { type: string; "sock-path"?: unknown; widgets?: WidgetT[] };
+      if (x.type === "docker-containers" && typeof x["sock-path"] === "string") out.push(x["sock-path"]);
+      visit(x.widgets);
+    }
+  };
+  for (const p of d.pages) {
+    visit(p["head-widgets"]);
+    for (const c of p.columns) visit(c.widgets);
+  }
+  return out;
 }
 
 /** "H S L" as the editor writes it: whole numbers, hue ≤ 360, saturation and lightness ≤ 100. */

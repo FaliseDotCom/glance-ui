@@ -5,6 +5,17 @@ All notable changes are recorded here. The format follows Keep a Changelog; vers
 
 ## [Unreleased]
 
+## [1.0.1] - 2026-10-14
+### Fixed
+- **Widgets that fetch from the web work again.** Weather, RSS, releases and every other widget that loads data over
+  HTTPS failed with "x509: certificate signed by unknown authority": the image had no certificates for Glance to check
+  sites against. It now has the same ones as Glance's own image. Update the container (Docker tab → update) to get it.
+- **Two Docker features the 1.0.0 notes describe are now really in the release.** Showing another server's containers,
+  and **Fill in icons and links**, were left out of the 1.0.0 image by mistake (they were tested in release candidates
+  5 and 6, but didn't make it into the release).
+- When checking a config before saving, a `${VARIABLE}` used as a URL's port (`http://${HOST}:${PORT}/`) no longer makes
+  the check fail.
+
 ## [1.0.0] - 2026-10-14
 The first release: a no-code editor for your [Glance](https://github.com/glanceapp/glance) dashboard, in one container
 with Glance itself.

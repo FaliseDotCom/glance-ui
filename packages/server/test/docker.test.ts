@@ -7,7 +7,9 @@ import { dockerBase, listContainers } from "../src/docker.ts";
 import { open, setup } from "./helpers.ts";
 
 const SAMPLE = [
-  { Names: ["/paperless"], State: "running", Image: "ghcr.io/paperless-ngx/paperless-ngx:2.15", Labels: { "glance.name": "Paperless", "traefik.http.middlewares.auth.basicauth.users": "secret", "net.unraid.docker.icon": "https://example.org/paperless.png", "net.unraid.docker.webui": "http://[IP]:[PORT:8000]/" } },
+  { Names: ["/paperless"], State: "running", Image: "ghcr.io/paperless-ngx/paperless-ngx:2.15", Labels: { "glance.name": "Paperless", "traefik.http.middlewares.auth.basicauth.users": "secret", "net.unraid.docker.icon": "https://example.org/paperless.png", "net.unraid.docker.webui": "http://[IP]:[PORT:8000]/" },
+    Ports: [{ IP: "0.0.0.0", PrivatePort: 8000, PublicPort: 8010, Type: "tcp" }, { PrivatePort: 9000, Type: "tcp" }],
+    HostConfig: { NetworkMode: "bridge" }, NetworkSettings: { Networks: { bridge: { IPAddress: "172.17.0.4", MacAddress: "x" } } } },
   { Names: ["/watchtower"], State: "running", Labels: { "glance.hide": "true", "net.unraid.docker.icon": "javascript:alert(1)" } },
   { Names: ["/old-nextcloud"], State: "Exited", Labels: null },
   { Names: [], State: "running", Labels: {} },
@@ -32,14 +34,15 @@ describe("listContainers", () => {
     expect(await listContainers(undefined)).toEqual({ status: "not-configured" });
   });
 
-  it("makes Glance's one GET and passes on only names, states, images, glance.* labels and Unraid's icon (http only)", async () => {
+  it("makes Glance's one GET and passes on only names, states, images, glance.* labels, Unraid's icon and WebUI (http only) with what fills the WebUI in", async () => {
     const url = await fakeDocker(() => ({ status: 200, body: SAMPLE }));
     const r = await listContainers(url);
     expect(seen).toEqual(["GET /containers/json?all=true"]);
     expect(r).toEqual({
       status: "ok",
       containers: [
-        { name: "paperless", state: "running", glance: { name: "Paperless" }, image: "ghcr.io/paperless-ngx/paperless-ngx:2.15", unraidIcon: "https://example.org/paperless.png" },
+        { name: "paperless", state: "running", glance: { name: "Paperless" }, image: "ghcr.io/paperless-ngx/paperless-ngx:2.15", unraidIcon: "https://example.org/paperless.png",
+          unraidWebui: "http://[IP]:[PORT:8000]/", ports: [{ private: 8000, public: 8010 }, { private: 9000 }], networkMode: "bridge", networks: { bridge: "172.17.0.4" } },
         { name: "watchtower", state: "running", glance: { hide: "true" } },
         { name: "old-nextcloud", state: "exited", glance: {} },
       ],
