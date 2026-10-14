@@ -58,7 +58,7 @@ log "dev Docker proxy: internal only, read-only ($DOCKER_PROXY_VERSION)"
 EDITOR_IMAGE="${EDITOR_IMAGE:-glance-editor:dev}"
 if docker image inspect "$EDITOR_IMAGE" >/dev/null 2>&1; then
   docker rm -f "$DEV_EDITOR" >/dev/null 2>&1 || true
-  docker run -d --name "$DEV_EDITOR" --label "$DEV_LABEL" --network "$DEV_NETWORK" \
+  docker run -d --name "$DEV_EDITOR" --label "$DEV_LABEL" --network "$DEV_NETWORK" --user node \
     --restart unless-stopped \
     -p "$DEV_BIND:$DEV_EDITOR_PORT:3000" \
     -v "$DEV_CONFIG_DIR:/glance-config" \
@@ -71,7 +71,7 @@ if docker image inspect "$EDITOR_IMAGE" >/dev/null 2>&1; then
     -e PREVIEW_CONFIG=/preview-config/glance.yml \
     -e PREVIEW_GLANCE_URL="http://$DEV_PREVIEW:8080/" \
     -e DOCKER_PROXY_URL="tcp://$DEV_DOCKER_PROXY:2375" \
-    "$EDITOR_IMAGE" >/dev/null
+    "$EDITOR_IMAGE" node build >/dev/null
   log "dev editor:  http://<this-host>:$DEV_EDITOR_PORT/"
 else
   log "dev editor:  skipped (no image '$EDITOR_IMAGE' yet; it arrives with Phase 1)"

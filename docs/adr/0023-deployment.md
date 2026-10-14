@@ -1,6 +1,6 @@
 # 0023. Deployment on Unraid
 
-- **Status:** proposed. **Needs the PM's decision** (questions at the end). Nothing is deployed until then.
+- **Status:** superseded by [ADR-0024](0024-all-in-one-container.md) (2026-10-14): the PM chose one container over these options.
 - **Date:** 2026-10-14
 - **Decider:** PM
 - **UX impact:** yes, operationally: how you install, update and roll back the stack.
@@ -79,4 +79,4 @@
 7. **Image hosting.** OK to publish the editor image on GitHub Container Registry as a public package?
 
 ## Decision record
-_Filled in by the PM._
+Superseded 2026-10-14 by ADR-0024 (PM: "As a user I want to install only one docker container").

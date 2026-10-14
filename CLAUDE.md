@@ -59,6 +59,7 @@ data model; `glance.yml` is generated on every explicit Save and is output only.
 | `docs/api.md` | The editor's HTTP API |
 | `packages/editing` | Page/column and widget operations, layout rules (D-07–D-10), form parsing, colours and palettes, wording, line diff: UI logic without a DOM, tested in Node |
 | `apps/editor` | SvelteKit 3 app: `src/lib/client` (state, API), `src/lib/components`, `src/lib/styles/app.css` (design tokens + prototype CSS). `Dockerfile` builds it with the glance binary |
+| `image/` | The all-in-one container's start program and Docker gate (ADR-0024). `unraid/`: the Unraid template and icon |
 | `test/e2e` | Playwright UI tests: built app + real Glance per test, desktop and 390 px, axe and 44 px checks (`npx playwright test`) |
 | `docs/screenshots/` | Screenshots per phase, captured by the UI tests |
 | `test/` | Harness scripts and fixtures (`test/fixtures/model/v2/` = model fixtures) |

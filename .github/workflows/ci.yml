@@ -77,3 +77,5 @@ jobs:
         run: GLANCE_EDITOR_IMAGE=glance-editor:ci test/editor-api.sh
       - name: Docker socket proxy (a POST is refused; the editor image lists containers through it)
         run: GLANCE_EDITOR_IMAGE=glance-editor:ci test/docker-proxy.sh
+      - name: All-in-one container (the Unraid install, ADR-0024)
+        run: GLANCE_EDITOR_IMAGE=glance-editor:ci test/all-in-one.sh

@@ -23,17 +23,23 @@ ARG GLANCE_VERSION
 LABEL org.opencontainers.image.title="Glance Editor" \
       org.opencontainers.image.licenses="GPL-3.0-only" \
       org.glance-editor.glance-commit="${GLANCE_COMMIT}"
-# Unmodified glance binary (AGPL-3.0, source: github.com/glanceapp/glance at the commit above), used only for
-# `config:validate` (ADR-0001, ADR-0013).
+# Unmodified glance binary (AGPL-3.0, source: github.com/glanceapp/glance at the commit above): the editor's
+# `config:validate` (ADR-0001, ADR-0013), and your Glance and the preview Glance in the all-in-one container (ADR-0024).
 COPY --from=glance /app/glance /usr/local/bin/glance
 COPY third_party/glance/LICENSE third_party/glance/README.md /usr/share/doc/glance/
 COPY LICENSE /usr/share/doc/glance-editor/LICENSE
 WORKDIR /app
 COPY --from=build /src/apps/editor/build build
-RUN echo '{"type":"module"}' > package.json
+COPY image/start.ts image/docker-gate.ts image/
+# ADR-0024: only root reaches /run, so the editor (PUID) can't open the Docker socket mounted at /var/run/docker.sock,
+# whatever its permissions; and no setuid program can make it root.
+RUN echo '{"type":"module"}' > package.json \
+ && chmod 0700 /run && find / -xdev -perm -4000 -type f -exec chmod u-s {} +
 ENV NODE_ENV=production PORT=3000 GLANCE_BIN=/usr/local/bin/glance GLANCE_VERSION=${GLANCE_VERSION} \
     GLANCE_CONFIG=/glance-config/glance.yml EDITOR_DATA_DIR=/data BODY_SIZE_LIMIT=32M
-USER node
-EXPOSE 3000
+# Starts as root: image/start.ts runs Glance and the Docker gate, and the editor as PUID:PGID (default 99:100).
+# Editor only (tests, dev, the four-container layout): run `node build` with --user.
+ENV PUID=99 PGID=100
+EXPOSE 8080 3000
 HEALTHCHECK --interval=30s --timeout=3s CMD node -e "fetch('http://127.0.0.1:3000/healthz').then(r=>process.exit(r.ok?0:1),()=>process.exit(1))"
-CMD ["node", "build"]
+CMD ["node", "/app/image/start.ts"]

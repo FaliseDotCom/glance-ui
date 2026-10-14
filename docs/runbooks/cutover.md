@@ -11,12 +11,12 @@ changed, so the fallback brings it back exactly as it was.
 ## Cutover
 1. Make sure the editor shows no unsaved changes, and History's latest version is live.
 2. Docker tab: **stop** the current Glance and turn its autostart **off**. Don't remove or edit it.
-3. Edit the `glance-new` template: change its port mapping from `<GLANCE_PORT>` to `<OLD_PORT>`. Apply.
+3. Edit `glance-editor`: change **Dashboard** from `<GLANCE_PORT>` to `<OLD_PORT>`. Apply.
 4. Open `<OLD_PORT>`: the new dashboard.
-5. In the editor nothing changes (it talks to Glance by container name, not by port).
+5. In the editor nothing changes (it talks to Glance inside the container, not through the port).
 
 ## Fallback (any time after cutover)
-1. Edit `glance-new`: port back to `<GLANCE_PORT>` (or stop it).
+1. Edit `glance-editor`: Dashboard back to `<GLANCE_PORT>` (or stop it).
 2. Start the current Glance and turn its autostart back on.
 3. Open `<OLD_PORT>`: your original dashboard, unchanged.
 

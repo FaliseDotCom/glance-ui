@@ -7,6 +7,11 @@ Claude's own backlog. Items that need the PM go in [todo-user.md](todo-user.md) 
 - [ ] Verify the design handoff path with the PM's sample (ADR-0012), and archive it to `design/handoffs/`.
 - [ ] Add the live host details to Phase 7 docs once provided (keep addresses out of the public repo).
 
+## Phase 11
+- [ ] Before the Community Apps submission: a CA template repository layout (`ca_profile.xml`, icon, templates) per
+      ca.unraid.net/submit/help/builders, and run their Validate and Scan on the rendered template.
+- [ ] After the PM's first Unraid install: record what the Docker tab showed (icon, WebUI, update check) in ADR-0024.
+
 ## Phase 1 (done in the Phase 1 PR; kept for the record)
 - [x] Check for a newer Glance release than v0.8.6 (ADR-0006).
 - [ ] Phase 3: check `node:sqlite` stability for the pinned Node (ADR-0002).

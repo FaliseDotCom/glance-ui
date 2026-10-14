@@ -4,10 +4,15 @@ Things only you can do or decide. Claude adds items here and never ticks them. Y
 Decisions on ADRs are tracked in [handoff.md](handoff.md#needs-user-decision), not here.
 
 ## Now
-- [ ] **Decide ADR-0023** (deployment on Unraid) and answer its 7 questions; approve the v1.0.0 notes in CHANGELOG.md.
+- [ ] Merge the Phase 11 PR, then publish a test release: `git tag v1.0.0-rc.1 origin/main && git push origin v1.0.0-rc.1`
+      (or GitHub → Releases → Draft a new release → new tag `v1.0.0-rc.1`, "Set as a pre-release").
+- [ ] After that first release: GitHub → your profile → Packages → `glance-editor` → Package settings → Change
+      visibility → **Public**, so Unraid can pull it without a login.
+- [ ] Install on Unraid side by side (`docs/runbooks/install.md`), compare, rehearse the fallback.
+- [ ] Approve the v1.0.0 notes in CHANGELOG.md; push `v1.0.0`; cut over.
+- [ ] Later: submit the template to Community Apps (ADR-0024, "both"). Claude prepares the files CA needs.
 - [ ] Confirm or change the D-62 reading in handoff.md (Pixabay set in a slideshow).
 - [ ] Optional: try Pixabay on the dev editor with your own key (Claude has none).
-- [ ] After the first release: make the `glance-editor` package on GitHub Container Registry public (or log Unraid in to GHCR).
 - [ ] Add `Editor image builds and starts` to the required checks; set the repo to squash-merge only (ADR-0007), or tell Claude you prefer merge commits.
 - [ ] Optional: try Claude Design's "Handoff to Claude Code" once, so we know whether it works better than the zip (ADR-0012).
 
@@ -36,5 +41,5 @@ at `/app/assets`, and the Docker socket mounted. The host name and paths are kep
 - [ ] Off-host backup of the editor's data volume, once it exists (ADR-0008).
 
 ## Open questions
-- Unraid deployment format: now ADR-0023.
+- Unraid deployment: decided, ADR-0024 (one container).
 - Optional security hygiene: the gh token on the dev machine has the `delete_repo` scope, which Claude doesn't need.

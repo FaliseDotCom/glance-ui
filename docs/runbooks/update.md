@@ -1,16 +1,19 @@
-# Updates (draft)
+# Updates (draft, ADR-0024)
 
-## A new editor release
+## A new release
 1. Read the release notes (CHANGELOG.md, which you approved for that version).
-2. Docker tab → `glance-editor` → edit → change the tag to the new `<VERSION>` → Apply.
-3. Open the editor: the draft and History are kept (they live in `<BASE>/editor-data`; migrations run on start, ADR-0003).
+2. Docker tab: glance-editor shows **update ready** → **apply update**. Nothing updates until you click.
+3. Open the editor: the draft and History are kept (`/mnt/user/appdata/glance-editor/editor`; migrations run on start,
+   ADR-0003). Your dashboard restarts with the container, for a few seconds.
 
-## A new pinned Glance version (ADR-0006)
-1. Claude opens a PR that bumps `/glance.version` after the upgrade checks; you merge it. The next editor release
-   bundles the same Glance for validation.
-2. Update the editor first (above), then change the image line in **both** `glance-new` and `glance-preview` to the new
-   pinned image. Apply.
-3. Open the editor: "Glance reachable". Make a small change, Preview, Discard.
+## A new Glance version (ADR-0006)
+Glance is inside the image, pinned by digest. A new Glance version arrives as a new release: Claude opens a PR that
+bumps `/glance.version` after the upgrade checks; you merge it and approve the release. Then update as above.
 
-## Never use `:latest`
-Every image is pinned by digest, so nothing changes under you. An update is always a template edit you make.
+## From a test release to the real one
+A test release (say `1.0.0-rc.1`) names its exact version. When the release is out: edit glance-editor → Repository:
+replace `:1.0.0-rc.1` with `:latest` → Apply. Your folder, draft and History stay.
+
+## Going back to an earlier release
+Edit glance-editor → Repository: change `:latest` to the earlier version, say `:1.0.0` → Apply. Change it back to
+`:latest` to follow releases again.

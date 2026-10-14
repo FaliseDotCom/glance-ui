@@ -23,7 +23,7 @@ One file per decision: `NNNN-short-title.md`, copied from [0000-template.md](000
 | [0002](0002-data-store.md) | Data store | accepted | no |
 | [0003](0003-data-model-migrations.md) | Data-model migration approach | accepted | no |
 | [0004](0004-authentication.md) | Authentication | accepted (none, LAN only) | **yes** |
-| [0005](0005-docker-socket-access.md) | Docker socket access | accepted (proxy, editor only) | **yes** |
+| [0005](0005-docker-socket-access.md) | Docker socket access | accepted (proxy, editor only); in part superseded (0024) | **yes** |
 | [0006](0006-glance-version-pinning.md) | Glance version pinning and upgrade policy | accepted (our stack only) | **yes** |
 | [0007](0007-versioning-and-release-notes.md) | Versioning and release-notes process | accepted | no |
 | [0008](0008-backup-and-rollback.md) | Backup and rollback | accepted; superseded in part (0016) | **yes** |
@@ -41,4 +41,5 @@ One file per decision: `NNNN-short-title.md`, copied from [0000-template.md](000
 | [0020](0020-icon-finder.md) | The icon finder: name lists, web sources, downloads into Glance's assets folder | accepted (PR #12) | no |
 | [0021](0021-background-files.md) | Background: the editor's own section in glance.yml, and its CSS file in Glance's assets folder | accepted (PR #13) | no |
 | [0022](0022-pixabay.md) | Pixabay: key on the server, cached search, downloaded picks, a local rotating set | accepted (PR #14) | no (one D-62 reading to confirm) |
-| [0023](0023-deployment.md) | Deployment on Unraid | **proposed: needs your decision** | **yes** |
+| [0023](0023-deployment.md) | Deployment on Unraid | superseded (0024) | **yes** |
+| [0024](0024-all-in-one-container.md) | One container: the editor, your Glance, the preview Glance and the Docker gate | accepted (PM, 2026-10-14) | **yes** |

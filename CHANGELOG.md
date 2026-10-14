@@ -20,14 +20,17 @@ Draft notes for **v1.0.0**, for the PM to approve before the release (ADR-0007).
 - **Theme.** Start from one of Glance's published themes, adjust each colour from swatches or a picker, keep your own
   colours.
 - **Preview.** See the draft on a separate preview Glance, at desktop or phone width, before it goes live.
-- **Docker containers.** Show or hide each container with one tap, from the containers Docker reports. The editor reads
-  Docker through a read-only proxy and never changes your containers.
+- **Docker containers.** Show or hide each container with one tap, from the containers Docker reports. The editor can
+  only list containers; it never gets Docker itself and never changes your containers.
 - **Icon finder.** Pick icons for bookmarks and monitors from Simple Icons, selfh.st, Dashboard Icons and Material
   Design Icons, from the site itself, or from openly licensed images on the web. Downloaded images are kept in
   Glance's assets folder with their licence.
 - **Backgrounds.** An image or a slideshow behind your dashboard, from this device, a folder on the server or Pixabay,
   with dim, blur and see-through widgets. A rotating Pixabay set downloads only when you ask, and your Pixabay key stays
   on the server.
+
+- **One container to install.** The editor, Glance, the preview and everything they need come as one container, with
+  an Unraid template (icon, description, two ports, one folder). Updates show in Unraid's Docker tab.
 
 ### Notes
 - Pinned to Glance v0.8.6. The editor has no login and is meant for your LAN only (ADR-0004).
