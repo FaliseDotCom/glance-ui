@@ -20,6 +20,8 @@ export function getEditor(): Promise<Editor> {
     glanceAssetsPath: env.GLANCE_ASSETS_PATH || undefined,
     pixabayApi: env.PIXABAY_API || undefined,
     serverFolders: (env.SERVER_FOLDERS ?? "").split(",").map((x) => x.trim()).filter(Boolean),
+    // ADR-0025: set by the all-in-one container only (names, never values).
+    glanceEnvNames: env.GLANCE_ENV_NAMES === undefined ? undefined : env.GLANCE_ENV_NAMES.split(",").filter(Boolean),
     // The icon finder's sources (ADR-0020); only tests change them.
     iconSources: {
       ...(env.ICON_CDN ? { cdn: env.ICON_CDN } : {}),

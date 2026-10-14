@@ -1,7 +1,9 @@
 // Plan v2 Phase 5 acceptance: the design's key flows, at desktop width and at 390 px (projects in playwright.config.ts).
 // The widget steps of flows 1 and 6 (Add widget, the inspector, Phase 6) are in widgets.spec.ts; flow 6's Glance-only
 // problem below goes on to the widget's YAML tab.
-import { readFileSync } from "node:fs";
+import { readFileSync, statSync } from "node:fs";
+import { dirname, join } from "node:path";
+import { makeZip } from "../../packages/server/test/zip-writer.ts";
 import type { Page } from "@playwright/test";
 import { expect, expectAccessible, expectTargets, fixture, isPhone, test } from "./fixtures.ts";
 import { shot } from "./shots.ts";
@@ -29,7 +31,7 @@ test.describe("Flow 1: create a dashboard from scratch", () => {
     await expect(page.getByRole("heading", { name: "Set up the editor" })).toBeVisible();
     // noFile: Import is disabled and says why (design 03).
     await expect(page.getByRole("button", { name: /Import glance\.yml/ })).toBeDisabled();
-    await expect(page.getByText("No glance.yml found at the mounted path.")).toBeVisible();
+    await expect(page.getByText("No glance.yml in the data folder.")).toBeVisible();
     await expectAccessible(page, "welcome");
     await expectTargets(page, "welcome");
     await shot(page, "first-run");
@@ -59,6 +61,54 @@ test.describe("Flow 1: create a dashboard from scratch", () => {
     await expect(page.getByRole("heading", { name: "History" })).toBeVisible();
     await expect(page.getByRole("button", { name: /Version 1/ })).toBeVisible();
     await expectAccessible(page, "history");
+  });
+});
+
+// ADR-0025: the first-run upload of a Glance folder (Glance's Docker Compose template layout, v0.8.6 README).
+test.describe("Flow 1b: upload your Glance folder as a zip", () => {
+  test.use({ opts: { assets: true, glanceAssetsPath: true } });
+
+  test("checks show what came with glance.yml; Import copies the assets and .env; Save writes one glance.yml", async ({ page, editor }) => {
+    const zip = makeZip([
+      { name: "glance/.env", data: "FEED_TITLE=News\n" },
+      { name: "glance/config/glance.yml", data: "server:\n  assets-path: /app/assets\ntheme:\n  custom-css-file: /assets/user.css\npages:\n  $include: home.yml\n", deflate: true },
+      { name: "glance/config/home.yml", data: "- name: Home\n  columns:\n    - size: full\n      widgets:\n        - type: rss\n          title: ${FEED_TITLE}\n          feeds:\n            - url: https://example.org/feed\n", deflate: true },
+      { name: "glance/assets/user.css", data: "body { color: red }\n" },
+    ]);
+    await page.goto(editor.url);
+    await expect(page.getByText("Upload your Glance folder", { exact: true })).toBeVisible();
+    await page.locator("#zipfile").setInputFiles({ name: "glance.zip", mimeType: "application/zip", buffer: zip });
+    await expect(page.getByRole("heading", { name: "Ready to import" })).toBeVisible();
+    await expect(page.getByText("Found glance/config/glance.yml")).toBeVisible();
+    await expect(page.getByText(/Joined with 1 include file \(glance\/config\/home\.yml\)/)).toBeVisible();
+    await expect(page.getByText("1 file in glance/assets/")).toBeVisible();
+    await expect(page.getByText(".env with 1 variable")).toBeVisible();
+    await expect(page.getByText(`Assets folder set to ${editor.assetsDir}`)).toBeVisible();
+    await expectAccessible(page, "upload check");
+    await expectTargets(page, "upload check");
+    await shot(page, "upload-check");
+
+    await page.getByRole("button", { name: "Import 1 page" }).click();
+    await expect(page.getByText("Imported. 1 file copied into the assets folder; .env stored for your Glance.")).toBeVisible();
+    expect(readFileSync(join(editor.assetsDir!, "user.css"), "utf8")).toBe("body { color: red }\n");
+    expect(statSync(join(dirname(editor.configPath), ".env")).mode & 0o777).toBe(0o600);
+    await save(page);
+    await expect(page.getByRole("heading", { name: "Version 1 is written" })).toBeVisible();
+    expect(editor.live()).toContain(`assets-path: ${editor.assetsDir}`);
+    expect(editor.live()).toContain("title: ${FEED_TITLE}");
+    expect(editor.live()).not.toContain("$include");
+  });
+
+  test("a zip without glance.yml: says what to zip; Choose another zip", async ({ page, editor }) => {
+    await page.goto(editor.url);
+    await page.locator("#zipfile").setInputFiles({ name: "photos.zip", mimeType: "application/zip", buffer: makeZip([{ name: "a.txt", data: "x" }]) });
+    await expect(page.getByRole("heading", { name: "The zip can't be used" })).toBeVisible();
+    await expect(page.getByText(/The zip has no glance\.yml/)).toBeVisible();
+    await expectAccessible(page, "upload error");
+    await expectTargets(page, "upload error");
+    await shot(page, "upload-error");
+    await page.getByRole("button", { name: "Back" }).click();
+    await expect(page.getByRole("heading", { name: "Set up the editor" })).toBeVisible();
   });
 });
 

@@ -11,16 +11,21 @@ curl -fsSL -o /boot/config/plugins/dockerMan/templates-user/my-glance-editor.xml
 For a test release, use its own address instead: `…/releases/download/v<VERSION>/glance-editor.xml`.
 (Templates that aren't in the Apps tab are installed this way since Unraid 6.10.)
 
-## 2. Copy (don't move) your current config and assets
+## 2. Your current config and assets
+**Easiest: upload them in step 4.** On the computer you use for the browser, zip your current Glance folder (the one
+with `glance.yml`, any files it includes, `assets/` and `.env`; Glance's Docker Compose template keeps them together).
+Over the network share: right-click the folder → Compress (macOS) or Send to → Compressed folder (Windows).
+Nothing else to do here; skip to step 3.
+
+**Or copy them on the server** (Unraid terminal):
 ```sh
 mkdir -p /mnt/user/appdata/glance-editor/config /mnt/user/appdata/glance-editor/assets
 cp -a <CURRENT_CONFIG> /mnt/user/appdata/glance-editor/config/glance.yml
 # and any files it includes ($include), next to it, keeping their relative paths
 cp -a <CURRENT_ASSETS>/. /mnt/user/appdata/glance-editor/assets/
 ```
-In the copy (any text editor):
-- if it sets `server: assets-path`, make it `/data/assets`;
-- if it sets `server: port`, remove it (or keep it and use that number as the Dashboard port's container side).
+Either way: if your config sets `server: port`, remove it in the editor's YAML (or keep it and use that number as the
+Dashboard port's container side). `server: assets-path` is set to `/data/assets` by the editor on import.
 
 Skip this step to start a new dashboard from scratch.
 
@@ -31,12 +36,17 @@ Docker tab → **Add Container** → Template: **glance-editor**.
 - **Data:** leave as is (`/mnt/user/appdata/glance-editor`).
 - **Docker socket:** keep it if your dashboard has a Docker containers widget.
 - **Photos:** optional, a photo share for backgrounds.
-- If your config uses `${VAR}`s: **Add another Path, Port, Variable** → Variable, one per name, with its value.
+- If your config uses `${VAR}`s and you don't upload a `.env`: **Add another Path, Port, Variable** → Variable, one
+  per name, with its value. (A variable set here wins over the same name in `.env`.)
 - Apply. Autostart is on by default.
 
 ## 4. Import
-Docker tab → glance-editor → **WebUI** → **Import glance.yml** → read the report → **Import**. Your copy becomes
-version 0 in History. Nothing is written until you press Save. (No copy in step 2: **Start empty**.)
+Docker tab → glance-editor → **WebUI**, then:
+- **Upload your Glance folder** → pick the zip → read the checks (include files, assets, `.env`, variables with no
+  value) → **Import**. The assets and `.env` are copied into the data folder; glance.yml is written on your first Save.
+- or **Import glance.yml** (copied in step 2) → read the report → **Import**. Your copy becomes version 0 in History.
+- or **Start empty**.
+Nothing is written to glance.yml until you press Save.
 
 ## 5. Check
 - The editor's top bar says "Glance reachable"; `http://<server>:<GLANCE_PORT>/` shows the dashboard.

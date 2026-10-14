@@ -5,7 +5,7 @@
 //   POSTs as form submissions and compares them with an app origin adapter-node doesn't know here (Phase 3 finding).
 // The preview Glance's own requests (ADR-0019: its theme picker posts with no body) need only the Origin check: they
 // change nothing in the editor, and the preview is rebuilt from the draft anyway.
-// An image upload (ADR-0021) is sent as `application/octet-stream`: like JSON, a cross-site page can't send that type
+// An image upload (ADR-0021) and the first-run zip (ADR-0025) are sent as `application/octet-stream`: like JSON, a cross-site page can't send that type
 // without a preflight.
 export function mutationAllowed(method: string, headers: Headers, opts: { json?: boolean; binary?: boolean } = {}): boolean {
   if (method === "GET" || method === "HEAD" || method === "OPTIONS") return true;

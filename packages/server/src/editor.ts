@@ -1,13 +1,15 @@
 // The editor's server core (plan v2, Phase 3). Design references: handoff §2 (draft), §4 (save pipeline), §5 (versions);
 // D-26 to D-35, D-46. No HTTP here: apps/editor's routes call these methods.
 
-import { mkdir, rm, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { randomBytes } from "node:crypto";
+import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import {
   checkDashboard, hasErrors, parseDashboard, SCHEMA_VERSION, type ColumnT, type DashboardT, type WidgetT,
 } from "@glance-editor/model";
 import { generate, toGlanceJson } from "@glance-editor/generator";
-import { validateConfig } from "@glance-editor/glance";
+import { printConfig, validateConfig } from "@glance-editor/glance";
 import {
   glanceParse, importFile, importText, widgetFromYaml, widgetTextIn, widgetYaml, writeDraft, type ImportReport, type ImportResult,
   type WidgetYamlResult,
@@ -21,6 +23,8 @@ import { Pixabay } from "./pixabay.ts";
 import { backup, openDb, type Db } from "./db.ts";
 import { pastStamp, readLive, reloadStamp, sha256, waitForReload, writeLiveAtomically, type ReloadResult } from "./live.ts";
 import { migrateModel } from "./migrations.ts";
+import { assetLinks, findAssets, findConfig } from "./upload.ts";
+import { readZip, type ZipFile } from "./zip.ts";
 import { fromGlance, fromIssue, widgetCandidates, widgetErrorChain, type Location, type Problem } from "./problems.ts";
 
 export interface EditorConfig {
@@ -52,6 +56,11 @@ export interface EditorConfig {
   serverFolders?: readonly string[] | undefined;
   /** Pixabay's API URL (tests use a stand-in). */
   pixabayApi?: string | undefined;
+  /**
+   * The names (never the values) of the variables your Glance gets from the container (ADR-0025), to tell which
+   * `${VAR}`s have no value. Unknown outside the all-in-one container: then nothing is reported.
+   */
+  glanceEnvNames?: readonly string[] | undefined;
 }
 
 export type VersionSource = "import" | "editor" | "outside";
@@ -93,6 +102,37 @@ export interface ImportCheck {
   problems: Problem[];
   /** All checks passed: Import may proceed. */
   ok: boolean;
+}
+
+/** What an uploaded Glance folder holds besides glance.yml (ADR-0025). Paths are inside the zip. */
+export interface UploadInfo {
+  id: string;
+  config: string;
+  /** Include files joined into glance.yml. */
+  includes: string[];
+  /** Other glance.yml files in the zip, not used. */
+  others: string[];
+  /** The assets folder found, its file count and size; `existing`: files already in Glance's assets folder with
+   *  different content, which are kept. */
+  assets: { folder: string | null; files: number; bytes: number; existing: string[] };
+  /** `/assets/…` links in glance.yml with no file, uploaded or already there. */
+  missingAssets: string[];
+  /** `.env`: the variable names only. `kept`: a .env is already in the data folder and stays. */
+  env: { path: string; names: string[]; kept: boolean } | null;
+  /** `${VAR}`s with no value in .env or the container (only known in the all-in-one container). */
+  unset: string[];
+  /** `server: assets-path` is set to Glance's assets folder in this container on Import (Review lists it). */
+  assetsPath: { from: string | null; to: string } | null;
+}
+
+/** The import screen's checks on an uploaded zip. `error`: the zip couldn't be used at all (nothing checked). */
+export type UploadCheck = ImportCheck & { upload: UploadInfo | null; error?: string };
+
+interface Upload {
+  info: UploadInfo;
+  text: string;
+  assets: ZipFile[];
+  env: Buffer | null;
 }
 
 export type GlanceStatus = "reachable" | "unreachable" | "not-configured";
@@ -198,6 +238,8 @@ export class Editor {
   readonly icons: Icons;
   /** Pixabay search, picks and rotating sets (D-61, D-62; ADR-0022). The key stays on the server. */
   readonly pixabay: Pixabay;
+  /** The last zip checked on the first-run screen, until it is imported (ADR-0025). Memory only. */
+  private upload: Upload | null = null;
 
   private constructor(db: Db, cfg: EditorConfig) {
     this.db = db;
@@ -350,16 +392,20 @@ export class Editor {
    */
   async checkImport(fixedText?: string): Promise<ImportCheck> {
     const live = await readLive(this.cfg.configPath);
-    const text = fixedText ?? live;
+    return this.checkText(fixedText ?? live, live !== null, fixedText !== undefined);
+  }
+
+  /** The checks on some text: the live file (`given` false: read through config:print), or text given to the editor. */
+  private async checkText(text: string | null, fileFound: boolean, given: boolean): Promise<ImportCheck> {
     const none: ImportCheck = {
-      fileFound: live !== null, text, parse: { ok: true }, glance: { ran: false, ok: false, output: "" }, report: null, problems: [], ok: false,
+      fileFound, text, parse: { ok: true }, glance: { ran: false, ok: false, output: "" }, report: null, problems: [], ok: false,
     };
     if (text === null) return none;
     const parse = parseError(text);
     if (parse) return { ...none, parse };
     let result: ImportResult;
     try {
-      result = await this.importText(text, fixedText !== undefined);
+      result = await this.importText(text, given);
     } catch (e) {
       return { ...none, glance: { ran: false, ok: false, output: (e as Error).message } };
     }
@@ -368,8 +414,14 @@ export class Editor {
     let glance: ImportCheck["glance"] = { ran: false, ok: false, output: "" };
     if (result.base) {
       try {
-        const hints = result.dashboard ? toGlanceJson(result.dashboard).placeholderHints : undefined;
-        const v = await validateConfig(result.base, { hints, glanceBin: this.cfg.glanceBin });
+        const d = result.dashboard;
+        const hints = d ? toGlanceJson(d).placeholderHints : undefined;
+        // Glance checks that server.assets-path exists. A moved config names the old Glance's folder (/app/assets in
+        // Glance's Docker example), which the import replaces with this container's (ADR-0025), so check with a real one.
+        const v = await validateConfig(
+          d?.server?.["assets-path"] === undefined ? result.base : (dir: string) => writeDraft(result.base, { ...d, server: { ...d.server, "assets-path": dir } }).text,
+          { hints, glanceBin: this.cfg.glanceBin },
+        );
         glance = { ran: true, ok: v.ok, output: v.output.trim() };
       } catch (e) {
         glance = { ran: false, ok: false, output: (e as Error).message };
@@ -377,20 +429,113 @@ export class Editor {
     }
     if (!result.dashboard) return { ...none, report: result.report, problems, glance };
     const blocking = problems.some((p) => p.severity === "error");
-    return { fileFound: live !== null, text, parse: { ok: true }, glance, report: result.report, problems, ok: glance.ok && !blocking };
+    return { fileFound, text, parse: { ok: true }, glance, report: result.report, problems, ok: glance.ok && !blocking };
+  }
+
+  /**
+   * The first-run screen's upload (ADR-0025): a .zip of your Glance folder. glance.yml and its include files are joined
+   * by Glance's config:print, then checked like an import. The assets folder and .env are kept in memory until Import.
+   */
+  async checkUpload(zip: Buffer): Promise<UploadCheck> {
+    this.upload = null;
+    const live = await readLive(this.cfg.configPath);
+    const failed = (error: string): UploadCheck => ({
+      fileFound: live !== null, text: null, parse: { ok: true }, glance: { ran: false, ok: false, output: "" }, report: null, problems: [], ok: false, upload: null, error,
+    });
+    const z = readZip(zip);
+    if ("error" in z) return failed(z.error);
+    const found = findConfig(z.files);
+    if ("error" in found) return failed(found.error);
+    if (found.outside.length || found.missing.length) {
+      const lines = [
+        ...found.missing.map((f) => `${f} isn't in the zip.`),
+        ...found.outside.map((f) => `${f} is outside the folder you zipped. Use a path relative to ${found.config}.`),
+      ];
+      return failed(`${found.config} includes files the editor can't read:\n${lines.join("\n")}`);
+    }
+    // config:print joins the includes exactly as Glance does, from a copy of the YAML files in a temporary folder.
+    const tmp = await mkdtemp(join(tmpdir(), "glance-editor-upload-"));
+    let text: string;
+    try {
+      for (const [p, data] of found.yaml) {
+        await mkdir(dirname(join(tmp, p)), { recursive: true });
+        await writeFile(join(tmp, p), data);
+      }
+      const printed = await printConfig(join(tmp, found.config), { glanceBin: this.cfg.glanceBin });
+      if (!printed.ok) return failed(`Glance couldn't read ${found.config}: ${printed.output.trim()}`);
+      text = printed.text;
+    } finally {
+      await rm(tmp, { recursive: true, force: true });
+    }
+
+    const check = await this.checkText(text, live !== null, true);
+    if (check.report) check.report.includes = found.includes;
+    const d = (await this.importVersionText(text)).dashboard;
+    const from = d?.server?.["assets-path"] ?? null;
+    const assets = findAssets(z.files, found.config, from ?? undefined);
+    const existing: string[] = [];
+    if (assets && this.cfg.assetsDir) {
+      for (const f of assets.files) {
+        const there = await readFile(join(this.cfg.assetsDir, f.path)).catch(() => null);
+        if (there && !there.equals(f.data)) existing.push(f.path);
+      }
+    }
+    const have = new Set(assets?.files.map((f) => f.path) ?? []);
+    const missingAssets: string[] = [];
+    for (const link of assetLinks(text)) {
+      if (have.has(link)) continue;
+      if (this.cfg.assetsDir && (await readFile(join(this.cfg.assetsDir, link)).then(() => true, () => false))) continue;
+      missingAssets.push(link);
+    }
+    const envNames = new Set([...(found.env?.names ?? []), ...(this.cfg.glanceEnvNames ?? [])]);
+    const unset = this.cfg.glanceEnvNames === undefined ? [] : (check.report?.placeholders ?? [])
+      .filter((p) => p.kind === "env" || p.kind === "readFileFromEnv")
+      .map((p) => p.text.replace(/^\$\{(?:readFileFromEnv:)?|\}$/g, ""))
+      .filter((n, i, all) => !envNames.has(n) && all.indexOf(n) === i);
+    const to = this.cfg.glanceAssetsPath;
+    const info: UploadInfo = {
+      id: randomBytes(8).toString("hex"),
+      config: found.config, includes: found.includes, others: found.others,
+      assets: { folder: assets?.folder ?? null, files: assets?.files.length ?? 0, bytes: assets?.files.reduce((n, f) => n + f.data.length, 0) ?? 0, existing },
+      missingAssets,
+      env: found.env ? { path: found.env.path, names: found.env.names, kept: await readFile(this.envPath()).then(() => true, () => false) } : null,
+      unset,
+      assetsPath: to && from !== to && (from !== null || (assets?.files.length ?? 0) > 0) ? { from, to } : null,
+    };
+    this.upload = { info, text, assets: assets?.files ?? [], env: found.env?.data ?? null };
+    return { ...check, upload: info };
+  }
+
+  /** `.env` for your Glance, next to glance.yml; the container passes its values to Glance only (ADR-0025). */
+  private envPath(): string {
+    return join(dirname(this.cfg.configPath), ".env");
   }
 
   /**
    * Import the live glance.yml (or the user's corrected text) as the draft. The checks must pass (design 03: "Import
    * stays disabled until it passes"). The file on disk becomes version 0 (D-35) and is never modified here.
    */
-  async importLive(fixedText?: string): Promise<{ ok: boolean; result: ImportResult; check: ImportCheck }> {
-    const check = await this.checkImport(fixedText);
+  async importLive(fixedText?: string, uploadId?: string): Promise<{ ok: boolean; result: ImportResult; check: ImportCheck; copied?: { assets: number; env: boolean } }> {
+    let up: Upload | null = null;
+    if (uploadId !== undefined) {
+      if (this.upload?.info.id !== uploadId) throw new Error("The uploaded zip is no longer held by the editor (it restarted, or another zip was checked). Upload it again.");
+      up = this.upload;
+    }
     const live = await readLive(this.cfg.configPath);
-    const text = fixedText ?? live;
+    const text = fixedText ?? up?.text ?? live;
+    const given = fixedText !== undefined || up !== null;
+    const check = await this.checkText(text, live !== null, given);
     if (!check.ok || text === null) return { ok: false, result: importText("", []), check };
-    const result = await this.importText(text, fixedText !== undefined);
+    const result = await this.importText(text, given);
     if (!result.dashboard) return { ok: false, result, check };
+    let model = result.dashboard;
+    // ADR-0025: the old Glance's assets folder (/app/assets in Glance's Docker example) doesn't exist here, and Glance
+    // won't start with an assets-path that doesn't exist. Use this container's; Review lists the change.
+    const to = this.cfg.glanceAssetsPath;
+    const from = model.server?.["assets-path"];
+    if (to && from !== to && (from !== undefined || (up?.assets.length ?? 0) > 0)) model = { ...model, server: { ...model.server, "assets-path": to } };
+    let copied: { assets: number; env: boolean } | undefined;
+    if (up) copied = await this.unpack(up);
     let v = this.latestApplied();
     if (live !== null && !v) {
       this.addVersion("import", live, [], true); // D-35: the hand-written file is never lost
@@ -398,9 +543,32 @@ export class Editor {
     } else if (live !== null && v && v.sha256 !== sha256(live)) {
       v = await this.recordOutsideChange();
     }
-    // Corrected text: the live file can't be read as a dashboard, so changes are measured against nothing.
-    this.putDraft(result.dashboard, result.base, v?.number ?? null, live === null ? null : sha256(live), fixedText === undefined ? result.base : "");
-    return { ok: true, result, check };
+    // Corrected or uploaded text: it isn't the live file, so changes are measured against nothing.
+    this.putDraft(model, result.base, v?.number ?? null, live === null ? null : sha256(live), given ? "" : result.base);
+    this.upload = null;
+    return { ok: true, result, check, ...(copied ? { copied } : {}) };
+  }
+
+  /** Import step 2 for an upload: its assets into Glance's assets folder, its .env next to glance.yml. Never overwrites. */
+  private async unpack(up: Upload): Promise<{ assets: number; env: boolean }> {
+    let assets = 0;
+    if (up.assets.length) {
+      const w = await assetsWritable(this.cfg.assetsDir);
+      if (w) throw new Error(w.message.replace("Couldn't store the background", "Couldn't copy your assets"));
+      for (const f of up.assets) {
+        const dest = join(this.cfg.assetsDir!, f.path);
+        if (await readFile(dest).then(() => true, () => false)) continue; // the same file, or one kept (listed before Import)
+        await mkdir(dirname(dest), { recursive: true });
+        await writeFile(dest, f.data, { flag: "wx" });
+        assets++;
+      }
+    }
+    let env = false;
+    if (up.env && !up.info.env?.kept) {
+      await writeFile(this.envPath(), up.env, { flag: "wx", mode: 0o600 });
+      env = true;
+    }
+    return { assets, env };
   }
 
   /** Import text as Glance sees it: the live file through config:print (includes merged), or given text. */

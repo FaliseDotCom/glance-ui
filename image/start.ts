@@ -4,15 +4,17 @@
 //
 // Everything lives in one mounted folder, /data:
 //   config/glance.yml   your dashboard (the editor writes it on Save; Glance reloads it)
+//   config/.env         optional values for your ${VAR}s, for Glance only (ADR-0025; the container's own win)
 //   assets/             Glance's assets folder (icons, backgrounds), served by Glance under /assets/
 //   editor/             the editor's versions and settings
 //   preview/glance.yml  the preview Glance's config (only the editor writes it)
 import { spawn, type ChildProcess } from "node:child_process";
-import { existsSync } from "node:fs";
+import { existsSync, readFileSync, statSync } from "node:fs";
 import { lchown, lstat, mkdir, readdir } from "node:fs/promises";
 import { join } from "node:path";
 import { createInterface } from "node:readline";
 import { dockerGate } from "./docker-gate.ts";
+import { parseDotenv } from "./dotenv.ts";
 
 const DATA = process.env.DATA_DIR || "/data";
 const GLANCE = process.env.GLANCE_BIN || "/usr/local/bin/glance";
@@ -28,6 +30,7 @@ const paths = {
   assets: join(DATA, "assets"),
   editor: join(DATA, "editor"),
   preview: join(DATA, "preview", "glance.yml"),
+  env: join(DATA, "config", ".env"),
 };
 
 // Settings the editor gets. Nothing else from the container's environment reaches it: variables you add for your
@@ -52,14 +55,30 @@ async function own(path: string): Promise<void> {
   if (s.isDirectory()) for (const e of await readdir(path)) await own(join(path, e));
 }
 
+/** Glance's environment: config/.env under the container's own variables, which win (ADR-0025). Read at each start. */
+function glanceEnv(): NodeJS.ProcessEnv {
+  let file: Record<string, string> = {};
+  try {
+    file = parseDotenv(readFileSync(paths.env, "utf8"));
+  } catch (e) {
+    if ((e as NodeJS.ErrnoException).code !== "ENOENT") log(`couldn't read ${paths.env}: ${(e as Error).message}`);
+  }
+  return { ...file, ...process.env };
+}
+
 const children = new Set<ChildProcess>();
 let stopping = false;
 
-/** Runs a process and starts it again whenever it ends, after `ready()` holds (Glance exits on a missing config). */
-function keep(name: string, cmd: string, args: string[], opts: { env: NodeJS.ProcessEnv; uid?: number; gid?: number },
-  ready: () => boolean = () => true, waiting?: string): void {
+/**
+ * Runs a process and starts it again whenever it ends, after `ready()` holds (Glance exits on a missing config).
+ * `restart()` stops it and starts it again at once, with a fresh environment.
+ */
+function keep(name: string, cmd: string, args: string[], opts: { env: () => NodeJS.ProcessEnv; uid?: number; gid?: number },
+  ready: () => boolean = () => true, waiting?: string): { restart: () => void } {
   let delay = 1_000;
   let said = false;
+  let current: ChildProcess | null = null;
+  let restarting = false;
   const run = (): void => {
     if (stopping) return;
     if (!ready()) {
@@ -69,18 +88,39 @@ function keep(name: string, cmd: string, args: string[], opts: { env: NodeJS.Pro
     }
     said = false;
     const started = Date.now();
-    const child = spawn(cmd, args, { ...opts, cwd: "/app", stdio: ["ignore", "pipe", "pipe"] });
+    const { env, ...ids } = opts;
+    const child = spawn(cmd, args, { ...ids, env: env(), cwd: "/app", stdio: ["ignore", "pipe", "pipe"] });
+    current = child;
     children.add(child);
     prefixed(child, name);
     child.on("exit", (code, signal) => {
       children.delete(child);
+      current = null;
       if (stopping) return;
+      if (restarting) { restarting = false; delay = 1_000; run(); return; }
       delay = Date.now() - started > 30_000 ? 1_000 : Math.min(delay * 2, 30_000);
       log(`${name} stopped (${signal ?? `exit ${code}`}); starting it again in ${delay / 1000} s`);
       setTimeout(run, delay);
     });
   };
   run();
+  return {
+    restart: () => {
+      if (!current || restarting) return;
+      restarting = true;
+      current.kill("SIGTERM");
+    },
+  };
+}
+
+/** A cheap fingerprint of a file (none when it's missing), to notice a new or changed .env. */
+function stamp(path: string): string {
+  try {
+    const s = statSync(path);
+    return `${s.mtimeMs}:${s.size}`;
+  } catch {
+    return "";
+  }
 }
 
 async function main(): Promise<void> {
@@ -96,6 +136,8 @@ async function main(): Promise<void> {
   log(existsSync(SOCKET) ? "Docker socket found: the editor can list containers (read only)" : "no Docker socket mounted: Docker widgets and the Containers section won't list anything");
 
   const editorEnv: NodeJS.ProcessEnv = Object.fromEntries(PASS_TO_EDITOR.filter((k) => process.env[k] !== undefined).map((k) => [k, process.env[k]]));
+  // The names (never the values) of Glance's variables, so the editor can tell which ${VAR}s have no value (ADR-0025).
+  editorEnv.GLANCE_ENV_NAMES = Object.keys(glanceEnv()).join(",");
   // Photo folders for backgrounds (D-59), /photos unless set: only those actually mounted, so none listed if empty.
   editorEnv.SERVER_FOLDERS = (process.env.SERVER_FOLDERS ?? "/photos").split(",").map((x) => x.trim()).filter((x) => x && existsSync(x)).join(",");
   Object.assign(editorEnv, {
@@ -106,10 +148,20 @@ async function main(): Promise<void> {
     DOCKER_PROXY_URL: `tcp://127.0.0.1:${GATE_PORT}`,
     ASSETS_DIR: paths.assets, GLANCE_ASSETS_PATH: paths.assets,
   });
-  keep("editor", process.execPath, ["/app/build"], { env: editorEnv, uid, gid });
-  keep("glance", GLANCE, ["--config", paths.config], { env: process.env }, () => existsSync(paths.config),
+  keep("editor", process.execPath, ["/app/build"], { env: () => editorEnv, uid, gid });
+  const glance = keep("glance", GLANCE, ["--config", paths.config], { env: glanceEnv }, () => existsSync(paths.config),
     `waiting for ${paths.config}: open the editor and import or start a dashboard`);
-  keep("preview", GLANCE, ["--config", paths.preview], { env: process.env }, () => existsSync(paths.preview));
+  const preview = keep("preview", GLANCE, ["--config", paths.preview], { env: glanceEnv }, () => existsSync(paths.preview));
+  // Glance reads its environment only when it starts: a new or changed .env (an import writes one) restarts both.
+  let envStamp = stamp(paths.env);
+  setInterval(() => {
+    const now = stamp(paths.env);
+    if (now === envStamp) return;
+    envStamp = now;
+    log(`${paths.env} changed: restarting Glance and the preview Glance`);
+    glance.restart();
+    preview.restart();
+  }, 2_000).unref();
 
   const stop = (): void => {
     if (stopping) return;

@@ -55,7 +55,7 @@
   socket mounted, there is nothing to reach.
 - Glance's port comes from glance.yml (`server: port`, default 8080). An imported config that sets another port needs
   the Dashboard port's container side changed to match, or the setting removed.
-- An imported config's `server: assets-path` must be `/data/assets` (the editor offers it when it's missing).
+- An imported config's `server: assets-path` must be `/data/assets`: the import sets it (ADR-0025).
 - Logs: one container log, each line marked `[glance]`, `[preview]`, `[editor]` or `[start]`.
 - The tested four-container layout (dev environment, `test/docker-proxy.sh`) stays as a development setup.
 

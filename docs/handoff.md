@@ -41,8 +41,8 @@ Last updated: 2026-10-14 (Phase 11: one container decided, ADR-0024; ready for a
 Nothing below may be built on until you decide. ★ = affects user experience.
 
 - ★ **v1.0.0 release notes:** draft in `CHANGELOG.md` (Unreleased). Approve or edit; then you push the `v1.0.0` tag.
-- ★ **[ADR-0025](adr/0025-upload-on-first-run.md) Upload on the first-run screen:** upload your Glance folder
-  (glance.yml, include files, assets, `.env`) instead of copying it into the data folder. Four questions in the ADR.
+- ★ **ADR-0025 leftovers (say if you want otherwise):** `.env` from the zip is stored and given to Glance; no assets
+  file list in the editor yet; the screen was built from the ADR's text, without a design pass.
 - ★ **D-62 reading (confirm, or say otherwise):** in a slideshow, every image of a Pixabay set is a slide, so the
   set's daily/weekly/monthly switch only matters when the background is a single image (ADR-0022). Built this way;
   the alternative (a slideshow showing part of the set and swapping) is a small change.
@@ -50,6 +50,7 @@ Nothing below may be built on until you decide. ★ = affects user experience.
 ## Decided on 2026-10-14 (via chat)
 | ADR | Outcome |
 | --- | ------- |
+| [0025](adr/0025-upload-on-first-run.md) | **Upload your Glance folder as a .zip** on first run (option C): includes, assets and `.env` come with it |
 | [0024](adr/0024-all-in-one-container.md) | **One container** (editor, Glance, preview, Docker gate) with one Unraid template; ports 8080/8090; follows `:latest`; template with our releases now, Community Apps later. Supersedes ADR-0023 and in part ADR-0005 |
 
 ## Decided on 2026-10-13 (via chat)
@@ -72,6 +73,9 @@ Nothing below may be built on until you decide. ★ = affects user experience.
 | Repo / identity | Public GitHub repo. PRs from your gh login, so branch protection has 0 required approvals |
 
 ## Findings you should know about
+- Importing a config moved from another Glance failed the check whenever it set `server: assets-path` (Glance's
+  Docker example sets `/app/assets`): Glance's validator refuses a folder that doesn't exist. Fixed with ADR-0025: the
+  import sets it to this container's folder, and Review lists the change.
 - Glance v0.8.6 **exits with code 0** on an invalid startup config (the docs say "exits with an error").
 - With a **single-file bind mount**, Glance does not see atomic saves. A directory mount works. Our stack uses a directory mount; your current Glance (file mount) is unaffected because it gets replaced.
 - `config:validate` / `config:print` behave well (validate exits 1 on errors; print keeps placeholders literal).
@@ -183,7 +187,7 @@ Nothing below may be built on until you decide. ★ = affects user experience.
    what CA needs).
 
 ## Session log
-- 2026-10-14: Test release v1.0.0-rc.1 published (image and template). ADR-0025 proposed (upload on first run).
+- 2026-10-14: Test release v1.0.0-rc.1 published (image and template). ADR-0025 (upload a .zip on first run) proposed, accepted as option C, built.
 - 2026-10-14: One container (ADR-0024) built and accepted: image/start.ts, the Docker gate, the Unraid template and icon, test releases; tested end to end on the dev machine.
 - 2026-10-14: PR #14 (Phase 10b) merged by Claude, after fixing a test teardown hang CI found.
 - 2026-10-14: Phase 11 prepared: ADR-0023 (proposed), runbook drafts, release workflow, Glance license in the image, v1.0.0 notes draft. PR opened; not merged (decisions pending).

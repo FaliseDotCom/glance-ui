@@ -29,6 +29,8 @@ Draft notes for **v1.0.0**, for the PM to approve before the release (ADR-0007).
   with dim, blur and see-through widgets. A rotating Pixabay set downloads only when you ask, and your Pixabay key stays
   on the server.
 
+- **Bring your Glance folder.** On first run, upload a .zip of your current Glance folder: glance.yml and the files it
+  includes are checked together, and your assets (icons, custom CSS) and `.env` come with it.
 - **One container to install.** The editor, Glance, the preview and everything they need come as one container, with
   an Unraid template (icon, description, two ports, one folder). Updates show in Unraid's Docker tab.
 
