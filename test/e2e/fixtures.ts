@@ -150,7 +150,7 @@ export const test = base.extend<{ opts: EditorOptions; editor: Editor }>({
       if (assetsDir) env.ASSETS_DIR = assetsDir;
       if (assetsDir && opts.glanceAssetsPath) env.GLANCE_ASSETS_PATH = assetsDir;
       if (pixabay) env.PIXABAY_API = pixabay.api;
-      env.BODY_SIZE_LIMIT = "32M"; // as in the image (Dockerfile): background uploads
+      env.BODY_SIZE_LIMIT = "100M"; // as in the image (Dockerfile): background uploads, the first-run zip
       for (const [name, files] of Object.entries(opts.serverFolders ?? {})) {
         const f = join(dir, "mounts", name);
         mkdirSync(f, { recursive: true });

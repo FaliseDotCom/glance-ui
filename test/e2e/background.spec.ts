@@ -204,6 +204,28 @@ test.describe("Background: design 03 states", () => {
     await shot(page, "background-no-folders");
     expect(editor.live()).not.toMatch(/^glance-editor:/m);
   });
+
+  test("an open sheet holds the page behind it still: scrolling over the dimmed page or past the sheet's end", async ({ page, editor }) => {
+    await importSeed(page, editor.url);
+    await openTheme(page);
+    await bgType(page, "Image").click();
+    await page.getByRole("button", { name: "Add images" }).click();
+    const sheet = page.getByRole("dialog", { name: "Add images" });
+    await expect(sheet).toBeVisible();
+    await page.evaluate(() => window.scrollTo(0, 0));
+    const before = await page.evaluate(() => window.scrollY);
+    await page.mouse.move(8, 120); // over the dimmed page, outside the sheet
+    await page.mouse.wheel(0, 600);
+    const box = (await sheet.boundingBox())!;
+    await page.mouse.move(box.x + box.width / 2, box.y + 40);
+    await page.mouse.wheel(0, 3000); // past the end of the sheet's own scroll
+    await page.waitForTimeout(300);
+    expect(await page.evaluate(() => window.scrollY)).toBe(before);
+    await sheet.getByRole("button", { name: "Close" }).first().click();
+    await expect(sheet).toBeHidden();
+    await page.mouse.wheel(0, 300);
+    await expect.poll(() => page.evaluate(() => window.scrollY)).toBeGreaterThan(before); // and scrolls again once closed
+  });
 });
 
 test.describe("Background: Glance's assets folder not set in glance.yml", () => {

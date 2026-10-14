@@ -7,7 +7,7 @@ import {
   addWidget, deleteWidget, deletePage, editWidget, findWidget, parentOf, plural, typeLabel, widgetAt, widgetName,
   type ListRef, type WidgetRef,
 } from "@glance-editor/editing";
-import { api, type Change, type DraftState, type GlanceStatus, type ImportCheck, type Problem, type VersionSummary } from "./api.ts";
+import { api, type Change, type DraftState, type GlanceStatus, type ImportCheck, type Problem, type UploadCheck, type VersionSummary } from "./api.ts";
 
 export type Screen = "loading" | "welcome" | "import" | "layout" | "pages" | "theme" | "history";
 
@@ -106,6 +106,8 @@ export class App {
   /** The import screen's checks, and YAML the user is correcting in the editor (never written to disk). */
   importCheck = $state<ImportCheck | null>(null);
   fixText = $state<string | null>(null);
+  /** ADR-0025: the uploaded zip being imported (its file name, then what the editor found), or why it can't be used. */
+  upload = $state<{ name: string; info: UploadCheck["upload"]; error: string | null } | null>(null);
   busy = $state(false);
   loadError = $state<string | null>(null);
   /** The widget open in the inspector (D-04), and its tab (D-12). */
@@ -422,18 +424,46 @@ export class App {
     }
   }
 
+  /** ADR-0025: check an uploaded .zip of a Glance folder. Nothing is written until Import. */
+  async runUploadCheck(file: File) {
+    this.fixText = null;
+    this.importCheck = null;
+    this.upload = { name: file.name, info: null, error: null };
+    this.screen = "import";
+    this.busy = true;
+    try {
+      const r = await api.checkUpload(file);
+      if (r.error) this.upload = { name: file.name, info: null, error: r.error };
+      else {
+        this.upload = { name: file.name, info: r.upload, error: null };
+        this.importCheck = r;
+      }
+    } catch (e) {
+      this.upload = { name: file.name, info: null, error: `Couldn't upload ${file.name}: ${(e as Error).message}.` };
+    } finally {
+      this.busy = false;
+    }
+  }
+
   async doImport() {
     this.busy = true;
     try {
-      const r = await api.importLive(this.fixText ?? undefined);
+      const r = await api.importLive(this.fixText ?? undefined, this.upload?.info?.id);
       if (!r.ok) {
         this.importCheck = r.check;
         return;
       }
       this.fixText = null;
+      this.upload = null;
       await this.reload();
       this.screen = "pages";
-      this.say(this.liveVersion === 0 ? "Imported. Your file is kept in History as version 0." : "Imported.");
+      const extra = [
+        r.copied?.assets ? `${r.copied.assets === 1 ? "1 file" : `${r.copied.assets} files`} copied into the assets folder` : "",
+        r.copied?.env ? ".env stored for your Glance" : "",
+      ].filter(Boolean);
+      this.say(extra.length ? `Imported. ${extra.join("; ")}.` : this.liveVersion === 0 ? "Imported. Your file is kept in History as version 0." : "Imported.");
+    } catch (e) {
+      this.say(`Couldn't import: ${(e as Error).message}`);
     } finally {
       this.busy = false;
     }

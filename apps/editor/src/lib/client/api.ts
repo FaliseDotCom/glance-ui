@@ -1,9 +1,9 @@
 // The editor's JSON API (docs/api.md). Mutations send JSON from this origin, as ADR-0004 requires.
 import type { DashboardT, WidgetT } from "@glance-editor/model";
-import type { Change, ContainersResult, DownloadResult, FolderEntry, PixabayHit, DraftState, IconHit, LibraryStatus, SiteIcon, WebResult, WebSearch, GlanceStatus, ImportCheck, PreviewCheck, PreviewResult, Problem, SaveResult, VersionSummary } from "@glance-editor/server";
+import type { Change, ContainersResult, DownloadResult, FolderEntry, PixabayHit, DraftState, IconHit, LibraryStatus, SiteIcon, WebResult, WebSearch, GlanceStatus, ImportCheck, PreviewCheck, PreviewResult, Problem, SaveResult, UploadCheck, VersionSummary } from "@glance-editor/server";
 
 export type { PixabayHit };
-export type { Change, ContainersResult, DownloadResult, DraftState, IconHit, LibraryStatus, SiteIcon, WebResult, WebSearch, GlanceStatus, ImportCheck, PreviewCheck, PreviewResult, Problem, SaveResult, VersionSummary };
+export type { Change, ContainersResult, DownloadResult, DraftState, IconHit, LibraryStatus, SiteIcon, WebResult, WebSearch, GlanceStatus, ImportCheck, PreviewCheck, PreviewResult, Problem, SaveResult, UploadCheck, VersionSummary };
 export type VersionDetail = VersionSummary & { text: string; pages: number | null; widgets: number | null };
 
 async function call<T>(method: string, path: string, body?: unknown): Promise<T> {
@@ -22,7 +22,8 @@ export const api = {
   putDraft: (d: DashboardT) =>
     call<{ ok: boolean; changes?: Change[]; problems: Problem[] }>("PUT", "/api/draft", d),
   checkImport: (text?: string) => call<ImportCheck>("POST", "/api/import/check", text === undefined ? {} : { text }),
-  importLive: (text?: string) => call<{ ok: boolean; check: ImportCheck }>("POST", "/api/import", text === undefined ? {} : { text }),
+  importLive: (text?: string, upload?: string) =>
+    call<{ ok: boolean; check: ImportCheck; copied?: { assets: number; env: boolean } }>("POST", "/api/import", { ...(text === undefined ? {} : { text }), ...(upload === undefined ? {} : { upload }) }),
   startEmpty: (pageName: string, layout: string) => call<DraftState>("POST", "/api/start-empty", { pageName, layout }),
   save: (acceptOutside?: number) => call<SaveResult>("POST", "/api/save", acceptOutside === undefined ? {} : { acceptOutside }),
   discard: () => call<DraftState>("POST", "/api/discard"),
@@ -56,6 +57,13 @@ export const api = {
     call<{ ok: true; hits: PixabayHit[] } | { ok: false; message: string }>("GET", `/api/pixabay/search?cats=${encodeURIComponent(cats.join(","))}&q=${encodeURIComponent(q)}`),
   pixabayAdd: (ids: string[]) => call<{ ok: true; images: { file: string; name: string }[] } | { ok: false; message: string }>("POST", "/api/pixabay/add", { ids }),
   pixabayPool: (set: string, chips: string[], count: number) => call<{ ok: true; files: number } | { ok: false; message: string }>("POST", "/api/pixabay/pool", { set, chips, count }),
+  /** ADR-0025: the first-run zip, as bytes (application/octet-stream, like an image upload). */
+  async checkUpload(f: Blob): Promise<UploadCheck> {
+    const res = await fetch("/api/import/upload", { method: "POST", headers: { "content-type": "application/octet-stream" }, body: f });
+    const data = (await res.json().catch(() => ({ error: `HTTP ${res.status}` }))) as UploadCheck & { error?: string };
+    if (!res.ok) throw new Error(res.status === 413 ? "the zip is larger than the editor accepts (100 MB)" : data.error ?? `HTTP ${res.status}`);
+    return data;
+  },
   /** D-59 "This device": the file's bytes, not JSON (the editor accepts application/octet-stream only here). */
   async uploadImage(f: Blob): Promise<Stored> {
     const res = await fetch("/api/backgrounds/upload", { method: "POST", headers: { "content-type": "application/octet-stream" }, body: f });

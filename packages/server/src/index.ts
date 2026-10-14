@@ -1,4 +1,4 @@
-export { Editor, START_LAYOUTS, PREVIEW_BASE, previewServer, previewSeed, type PreviewCheck, type PreviewResult, type DraftState, type GlanceStatus, type ImportCheck, type EditorConfig, type SaveResult, type VersionSummary, type VersionSource } from "./editor.ts";
+export { Editor, START_LAYOUTS, PREVIEW_BASE, previewServer, previewSeed, type PreviewCheck, type PreviewResult, type DraftState, type GlanceStatus, type ImportCheck, type UploadCheck, type UploadInfo, type EditorConfig, type SaveResult, type VersionSummary, type VersionSource } from "./editor.ts";
 export { describeChanges, type Change } from "./changes.ts";
 export { locate, type Location, type Problem } from "./problems.ts";
 export { migrateModel, MODEL_MIGRATIONS, type ModelMigration } from "./migrations.ts";
@@ -8,3 +8,5 @@ export { listContainers, dockerBase, type ContainersResult, type DockerContainer
 export { Icons, ICON_SOURCES, normalizeIndex, matchScore, suggestScore, sniff, unsafeSvg, iconLinks, type IconHit, type IconSources, type LibraryStatus, type WebResult, type WebSearch, type SiteIcon, type DownloadResult } from "./icons.ts";
 export { backgroundCss, SLIDESHOW_JS, storeImage, listFolder, insideRoots, IMAGE_EXTS, type FolderEntry } from "./background.ts";
 export { Pixabay, PIXABAY_CHIPS, PIXABAY_API, type PixabayHit, type PixabayError } from "./pixabay.ts";
+export { readZip, safePath, ZIP_LIMITS, type ZipFile, type ZipLimits } from "./zip.ts";
+export { findConfig, findAssets, assetLinks, type UploadFound } from "./upload.ts";

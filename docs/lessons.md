@@ -212,3 +212,21 @@ overwrites labels with map values. **Do:** treat source reading as a hypothesis 
 - Inside a container started as root, `/proc/<pid>/environ` of another user's process isn't readable without
   CAP_SYS_PTRACE: a test that greps it "passes" on a permission error. Read it as that process's own user.
 - `cmd | head -1` under `set -o pipefail` can fail the pipeline (SIGPIPE) and stop a test script with `set -e`.
+
+## Moving a config from another Glance (2026-10-14, Glance v0.8.6, tested; ADR-0025)
+- `config:validate` fails when `server: assets-path` names a folder that doesn't exist ("assets directory does not
+  exist: /app/assets"). Glance's Docker example uses `/app/assets`, so a moved config fails any check that validates
+  it as written. Validate with a real temporary folder in its place, and write this container's folder on import.
+- Glance's Docker Compose template splits the config (`config/glance.yml` + `config/home.yml` via `$include`) and keeps
+  `.env` and `assets/` beside it: a lone glance.yml from such a setup can't be checked without its include file.
+- Even root inside the container got "Permission denied" reading another user's `/proc/<pid>/environ` (again: see
+  Unraid templates above). The all-in-one test reads the editor's environment as the editor's user, and checks for a
+  value, not a name: the editor is given the names of Glance's variables on purpose.
+- A quoted value wrapped onto an unindented line (a long line hard-wrapped by a text editor) is accepted by Glance
+  v0.8.6, which reads the line break as a space (tested: the link gets `%20` in it), but isn't valid YAML, and the
+  `yaml` library refuses it with only "Missing closing quote". The import check now explains it and names the lines.
+  `config:print` indents an included file's lines under its `$include`, so line numbers in the joined text differ from
+  the uploaded file's: the upload check names the file and its own line too.
+- A fixed full-screen scrim doesn't stop the page behind it from scrolling: wheel and touch scrolling over the scrim,
+  or past the end of the sheet's own scroll, move the document. Lock the root's overflow while a modal is open, and
+  measure scroll in tests *after* opening it (Playwright scrolls the button it clicks into view).
