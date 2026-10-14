@@ -33,4 +33,15 @@ describe("describeChanges", () => {
     const r = (feeds: string[]) => ({ ...dash([]), pages: [{ _id: "p", name: "Home", columns: [{ _id: "c", size: "full", widgets: [{ _id: "r", type: "rss", feeds: feeds.map((url, i) => ({ _id: `f${i}`, url })) }] }] }] } as unknown as DashboardT);
     expect(describeChanges(r(["https://a.example/", "https://b.example/"]), r(["https://b.example/", "https://a.example/"]))).toHaveLength(1);
   });
+
+  it("sees a background change on its own (ADR-0021): changing only Dim is a change to save", () => {
+    const a = dash([]);
+    a["glance-editor"] = { background: { mode: "image", images: [{ _id: "i1", file: "x.png" }], dim: 30 } };
+    const b = structuredClone(a);
+    b["glance-editor"]!.background!.dim = 50;
+    expect(describeChanges(a, b)).toEqual([{ kind: "changed", label: "Background" }]);
+    const c = structuredClone(a);
+    c["glance-editor"]!.background!.images![0]!._id = "other";
+    expect(describeChanges(a, c)).toEqual([]);
+  });
 });

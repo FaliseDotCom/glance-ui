@@ -25,6 +25,20 @@
   const useGlanceAssets = () => app.mutate((d: DashboardT) => { d.server = { ...d.server, "assets-path": info!.glanceAssetsPath! }; }, { toast: "Glance's assets folder is set in the draft (server: assets-path)" });
   const swap = <T,>(a: T[], i: number, j: number) => { [a[i], a[j]] = [a[j]!, a[i]!]; };
 
+  // D-62: a rotating Pixabay set downloads new images only when this is pressed.
+  let refreshing = $state<string | null>(null);
+  let refreshError = $state("");
+  async function getNew(im: { pixabay?: string; categories?: string[]; count?: number }) {
+    if (!im.pixabay) return;
+    refreshing = im.pixabay;
+    refreshError = "";
+    const r = await api.pixabayPool(im.pixabay, im.categories ?? [], im.count ?? 20).catch((e: Error) => ({ ok: false as const, message: e.message }));
+    refreshing = null;
+    if (!r.ok) refreshError = r.message;
+    else app.say(`Downloaded ${r.files} new images for the set`);
+  }
+  const swapText = { daily: "switches daily", weekly: "switches weekly", monthly: "switches monthly", never: "doesn't switch" } as const;
+
   type Opt<K extends keyof typeof BACKGROUND_DEFAULTS> = [NonNullable<BackgroundT[K]>, string][];
   const INTERVALS: Opt<"interval"> = [["1m", "1 min"], ["5m", "5 min"], ["15m", "15 min"], ["1h", "1 hour"]];
   const ORDERS: Opt<"order"> = [["in-order", "In order"], ["shuffle", "Shuffle"]];
@@ -68,14 +82,16 @@
       {@const name = im.name ?? im.file ?? im.folder ?? "image"}
       {@const inUse = show || (o.use ?? 0) === i}
       <div class="crow" class:dimmed={!inUse}>
-        {#if im.folder}
+        {#if im.pixabay}
+          <span class="thumb" aria-hidden="true"><img src={`/assets/glance-editor/pixabay/${im.pixabay}/current.jpg`} alt="" loading="lazy" /></span>
+        {:else if im.folder}
           <span class="thumb folder" aria-hidden="true"><Icon name="folder" size={20} /></span>
         {:else}
           <span class="thumb" aria-hidden="true"><img src={`/assets/${im.file}`} alt="" loading="lazy" /></span>
         {/if}
         <button type="button" class="crowmain" style="padding-left: 10px" aria-pressed={show ? undefined : inUse} onclick={() => { if (!show) edit((b) => { b.use = i; }); }}>
           <span class="mono" style="color: var(--ink); overflow-wrap: anywhere">{im.folder ?? name}</span>
-          <span class="wsum" style="white-space: normal">{im.folder ? "Server folder · new images in it are picked up on the next save" : im.name ? "Stored in Glance's assets folder" : im.file}{show ? ` · Slide ${i + 1}` : inUse ? " · In use" : " · Tap to use"}</span>
+          <span class="wsum" style="white-space: normal">{im.pixabay ? `Rotating set · ${im.count ?? 20} images · ${swapText[im.swap ?? "weekly"]}` : im.folder ? "Server folder · new images in it are picked up on the next save" : im.name ? "Stored in Glance's assets folder" : im.file}{show ? ` · Slide ${i + 1}` : inUse ? " · In use" : " · Tap to use"}</span>
         </button>
         {#if show}
           <button type="button" class="ib sm" aria-label={`Move ${name} up`} disabled={i === 0} onclick={() => edit((b) => swap(b.images!, i, i - 1))}><Icon name="up" /></button>
@@ -84,10 +100,16 @@
         <button type="button" class="ib sm" aria-label={`Remove ${name}`}
           onclick={() => edit((b) => { b.images!.splice(i, 1); if (!b.images!.length) delete b.images; if ((b.use ?? 0) >= (b.images?.length ?? 0)) delete b.use; })}><Icon name="trash" /></button>
       </div>
+      {#if im.pixabay}
+        <div class="row" style="padding-left: 52px; margin-top: -2px">
+          <button type="button" class="btn" disabled={refreshing !== null} aria-label={`Get new images for ${name}`} onclick={() => getNew(im)}>{refreshing === im.pixabay ? "Downloading…" : "Get new images"}</button>
+        </div>
+      {/if}
     {/each}
     {#if !images.length}<div class="empty">No images yet.</div>{/if}
+    {#if refreshError}<p class="errtxt" role="alert" style="margin: 0">{refreshError}</p>{/if}
     <button type="button" class="btn add" onclick={() => (app.sheet = { kind: "images" })}><Icon name="plus" />Add images</button>
-    <p class="help" style="margin: 0">From this device or a folder on the server. Images end up in Glance's assets folder and are served from /assets/.</p>
+    <p class="help" style="margin: 0">From this device, a folder on the server, or Pixabay. Images end up in Glance's assets folder and are served from /assets/.</p>
   </div>
   {#if show}
     {@render seg("Change image every", "interval", INTERVALS)}

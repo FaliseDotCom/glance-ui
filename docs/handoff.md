@@ -1,11 +1,11 @@
 # Handoff
 
 The single place to see where the project stands. Updated at the end of every work session and every PR.
-Last updated: 2026-10-14 (Phase 10a PR opened).
+Last updated: 2026-10-14 (Phase 10b PR opened).
 
 ## Current state
-- **Phase:** 10a (background image and slideshow) **PR open**; Claude merges it when CI is green. Phase 9 merged (PR #12).
-  10b (Pixabay) is next.
+- **Phase:** 10b (Pixabay) **PR open**; Claude merges it when CI is green. 10a merged (PR #13). Then Phase 11, which
+  needs your decisions (deployment) and your hands (install, cutover).
 - **Merging:** you allowed Claude to merge the remaining phases' PRs, unless something needs your decision or
   agreement (CLAUDE.md rule 1). Live host, cutover and release notes stay with you.
 - **Phase plan:** approved 2026-10-13.
@@ -33,12 +33,16 @@ Last updated: 2026-10-14 (Phase 10a PR opened).
   - Phase 10a: the background. Colour only, Image or Slideshow (in order, or shuffled by a small script), from this
     device or a server folder; fit, dim, blur, see-through widgets. The editor writes its own CSS file into Glance's
     assets folder on Save; Preview uses its own copy.
-  - The dev editor on :18190 runs this branch (Phase 10a) against the dev Glance, its preview Glance and the proxy.
+  - Phase 10b: Pixabay as the third image source: your key (checked, kept on the server), pick images, or keep a
+    rotating set that downloads only when you press Get new images and switches image on a schedule.
+  - The dev editor on :18190 runs this branch (Phase 10b) against the dev Glance, its preview Glance and the proxy.
 
 ## Needs user decision
 Nothing below may be built on until you decide. ★ = affects user experience.
 
-_No decisions open._
+- ★ **D-62 reading (confirm, or say otherwise):** in a slideshow, every image of a Pixabay set is a slide, so the
+  set's daily/weekly/monthly switch only matters when the background is a single image (ADR-0022). Built this way;
+  the alternative (a slideshow showing part of the set and swapping) is a small change.
 
 ## Decided on 2026-10-13 (via chat)
 | ADR | Outcome |
@@ -68,6 +72,12 @@ _No decisions open._
 - Correction: the Phase 0 docs called the dev machine's Docker "rootless". It is rootful. Fixed in lessons and ADR-0009.
 
 ## Phase 10 findings
+- Checked on the dev Glance (2026-10-14): a background image set through the dev editor showed in Preview and on the
+  dev Glance. Your dev dashboard was then restored to version 2 (same content, saved as version 4); the test image
+  stays in the dev assets folder.
+- That check found a bug, fixed in 10b: changing only the background (Dim, say) counted as no change.
+- Pixabay is built but not tried with a real key (Claude has none). Try it on the dev editor: Theme → Background →
+  Add images → Pixabay.
 - Glance has no background setting, so the editor writes a CSS file into Glance's assets folder and keeps the
   background settings in glance.yml under its own `glance-editor:` key, which Glance ignores (tested). They travel with
   every version, so Restore brings a background back too.
@@ -159,11 +169,12 @@ _No decisions open._
 - The real-binary tests caught a validator bug that my own model-based tests missed. Both kinds of test are kept.
 
 ## Next steps
-1. Claude: merge Phase 10a when CI is green, then 10b (Pixabay).
+1. Claude: merge Phase 10b when CI is green, then prepare Phase 11 (deployment ADR, runbooks) and stop for your decisions.
 2. You, any time, on the dev editor (:18190): Theme → Background → Image → "Use Glance's assets folder" → Add
    images; and a bookmark link's icon → Find.
 
 ## Session log
+- 2026-10-14: PR #13 (Phase 10a) merged by Claude. Phase 10b implemented (Pixabay; two 10a fixes); dev Glance checked and restored; PR opened. ADR-0022.
 - 2026-10-14: PR #12 (Phase 9) merged by Claude. Phase 10a implemented (background image and slideshow); PR opened. ADR-0021 (non-UX).
 - 2026-10-14: PR #11 (Phase 8) merged. PM allowed Claude to merge the remaining phases. Phase 9 implemented (icon finder); PR opened. ADR-0020 (non-UX).
 - 2026-10-14: PR #10 (Phase 7) merged; ADR-0019 accepted. Phase 8 implemented (socket proxy, Containers section); PR opened.

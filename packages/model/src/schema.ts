@@ -160,6 +160,11 @@ export const BackgroundImage = z.strictObject({
   folder: str.optional(),
   /** What the user knows it as: the original file name. */
   name: str.optional(),
+  /** D-62: a rotating Pixabay set, by name: its pool lives in `glance-editor/pixabay/<name>/` in the assets folder. */
+  pixabay: z.string().regex(/^[a-z0-9-]{1,40}$/).optional(),
+  categories: z.array(str).optional(),
+  count: z.union([z.literal(10), z.literal(20), z.literal(40)]).optional(),
+  swap: z.enum(["daily", "weekly", "monthly", "never"]).optional(),
   extra,
 });
 

@@ -1,15 +1,16 @@
 <!-- Add images (design D-59, D-60; flow 9 step 4): This device (files, or a whole folder on desktop browsers) and Server
      folder (folders mounted into the editor: pick images, or use a whole folder, whose new images are picked up on the
-     next save). Files end up in Glance's assets folder. Pixabay is the third source (plan v2 Phase 10b). -->
+     next save), and Pixabay (D-61, D-62). Files end up in Glance's assets folder. -->
 <script lang="ts">
   import { editBackground, newId, plural } from "@glance-editor/editing";
   import type { BackgroundImageT } from "@glance-editor/model";
   import { api, type FolderList } from "../client/api.ts";
   import type { App } from "../client/app.svelte.ts";
   import Icon from "./Icon.svelte";
+  import PixabayTab from "./PixabayTab.svelte";
 
   let { app }: { app: App } = $props();
-  let tab = $state<"device" | "server">("device");
+  let tab = $state<"device" | "server" | "pixabay">("device");
   let busy = $state("");
   let error = $state("");
 
@@ -80,11 +81,14 @@
 <div class="seg" role="tablist" aria-label="Image source">
   <button type="button" role="tab" class:on={tab === "device"} aria-selected={tab === "device"} onclick={() => (tab = "device")}>This device</button>
   <button type="button" role="tab" class:on={tab === "server"} aria-selected={tab === "server"} onclick={() => (tab = "server")}>Server folder</button>
+  <button type="button" role="tab" class:on={tab === "pixabay"} aria-selected={tab === "pixabay"} onclick={() => (tab = "pixabay")}>Pixabay</button>
 </div>
 {#if error}<p class="errtxt" role="alert" style="margin: 0">{error}</p>{/if}
 {#if busy}<p class="note pulse" style="margin: 0">{busy}</p>{/if}
 
-{#if tab === "device"}
+{#if tab === "pixabay"}
+  <PixabayTab {app} />
+{:else if tab === "device"}
   <label class="drop" for="devfiles">
     <span class="h3" style="font-size: 16px">Choose files or a folder from this device</span>
     <span class="help" style="margin: 0">JPEG, PNG or WebP. On a phone this opens your photo library. Files are uploaded to Glance's assets folder.</span>

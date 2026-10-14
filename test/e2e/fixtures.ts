@@ -9,6 +9,7 @@ import { dirname, join } from "node:path";
 import { test as base, expect, type Page } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
 import { startIconSources, type IconSourcesStandIn } from "../support/icon-sources.ts";
+import { startPixabay, type PixabayStandIn } from "../support/pixabay.ts";
 
 export interface EditorOptions {
   /** glance.yml content; `{{GLANCE_PORT}}` is replaced with the test Glance's port. Omit for "no file". */
@@ -39,6 +40,8 @@ export interface EditorOptions {
   serverFolders?: Record<string, Record<string, Buffer>>;
   /** Tell the editor where Glance's assets folder is (GLANCE_ASSETS_PATH = the assets folder). */
   glanceAssetsPath?: boolean;
+  /** A stand-in for Pixabay's API (test/support/pixabay.ts) as PIXABAY_API. */
+  pixabay?: boolean;
 }
 
 export interface FakeContainer {
@@ -62,6 +65,8 @@ export interface Editor {
   assetsDir: string | null;
   /** The mounted server folders' paths, by name. */
   serverFolders: Record<string, string>;
+  /** Requests the Pixabay stand-in received (null without `pixabay`). */
+  pixabayRequests: string[] | null;
   /** The icon sources stand-in's URL and the requests it received (null without `icons`). */
   iconSources: { url: string; requests: string[] } | null;
 }
@@ -118,11 +123,13 @@ export const test = base.extend<{ opts: EditorOptions; editor: Editor }>({
     const dockerRequests: string[] = [];
     let docker: { server: Server; url: string } | null = null;
     let icons: IconSourcesStandIn | null = null;
+    let pixabay: PixabayStandIn | null = null;
     const assetsDir = opts.assets ? join(dir, "assets") : null;
     const serverFolders: Record<string, string> = {};
     try {
       if (assetsDir) mkdirSync(assetsDir);
       if (opts.icons) icons = await startIconSources();
+      if (opts.pixabay) pixabay = await startPixabay();
       if (Array.isArray(opts.docker)) docker = await fakeDocker(opts.docker, dockerRequests);
       // "dead": a port the OS just gave out, with nothing listening (fetch refuses some low ports outright).
       const dockerUrl = opts.docker === "dead" ? `tcp://127.0.0.1:${await port()}` : docker?.url ?? "";
@@ -142,6 +149,7 @@ export const test = base.extend<{ opts: EditorOptions; editor: Editor }>({
       if (dockerUrl) env.DOCKER_PROXY_URL = dockerUrl;
       if (assetsDir) env.ASSETS_DIR = assetsDir;
       if (assetsDir && opts.glanceAssetsPath) env.GLANCE_ASSETS_PATH = assetsDir;
+      if (pixabay) env.PIXABAY_API = pixabay.api;
       env.BODY_SIZE_LIMIT = "32M"; // as in the image (Dockerfile): background uploads
       for (const [name, files] of Object.entries(opts.serverFolders ?? {})) {
         const f = join(dir, "mounts", name);
@@ -193,7 +201,7 @@ export const test = base.extend<{ opts: EditorOptions; editor: Editor }>({
       const url = `http://127.0.0.1:${editorPort}`;
       await waitFor(`${url}/healthz`, e, () => log);
       await use({
-        url, configPath, glancePort, previewPath, dockerRequests, assetsDir, serverFolders,
+        url, configPath, glancePort, previewPath, dockerRequests, assetsDir, serverFolders, pixabayRequests: pixabay?.requests ?? null,
         iconSources: icons ? { url: icons.url, requests: icons.requests } : null,
         live: () => readFileSync(configPath, "utf8"),
         write: (text) => writeFileSync(configPath, text),
@@ -201,8 +209,10 @@ export const test = base.extend<{ opts: EditorOptions; editor: Editor }>({
       });
     } finally {
       for (const c of children) c.kill();
+      docker?.server.closeAllConnections();
       docker?.server.close();
       await icons?.close();
+      await pixabay?.close();
       try { chmodSync(configDir, 0o755); } catch { /* already gone */ }
       rmSync(dir, { recursive: true, force: true });
     }

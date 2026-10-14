@@ -1,6 +1,6 @@
 # 0021. Background: the editor's own section in glance.yml, and its CSS file in Glance's assets folder
 
-- **Status:** proposed (non-UX; accepted when the Phase 10 PR is merged, per the ADR README)
+- **Status:** accepted (non-UX; by merging the Phase 10a PR, #13, 2026-10-14)
 - **Date:** 2026-10-14
 - **Decider:** PM
 - **UX impact:** no new decision. The screens are the design's (D-52, D-53, D-59, D-60). This ADR is about where the
@@ -66,4 +66,4 @@
 - Not verified: Firefox and Safari (whether Fade cross-fades or cuts); very large folders; HEIC photos (not accepted).
 
 ## Decision record
-_Accepted when the Phase 10 PR is merged (non-UX)._
+Accepted 2026-10-14 by merging PR #13 (merged by Claude with the PM's standing permission).

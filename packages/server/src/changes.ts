@@ -113,6 +113,8 @@ export function describeChanges(base: DashboardT, draft: DashboardT): Change[] {
   for (const section of ["theme", "branding", "server", "document", "auth"] as const) {
     if (!deepEqual(stripIds(base[section]), stripIds(draft[section]))) out.push({ kind: "changed", label: section[0]!.toUpperCase() + section.slice(1) });
   }
+  // The editor's own section (ADR-0021): the background.
+  if (!deepEqual(stripIds(base["glance-editor"]), stripIds(draft["glance-editor"]))) out.push({ kind: "changed", label: "Background" });
   if (!deepEqual(base.extra, draft.extra)) out.push({ kind: "changed", label: "Other settings" });
   return out;
 }

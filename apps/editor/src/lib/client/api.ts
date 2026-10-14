@@ -1,7 +1,8 @@
 // The editor's JSON API (docs/api.md). Mutations send JSON from this origin, as ADR-0004 requires.
 import type { DashboardT, WidgetT } from "@glance-editor/model";
-import type { Change, ContainersResult, DownloadResult, FolderEntry, DraftState, IconHit, LibraryStatus, SiteIcon, WebResult, WebSearch, GlanceStatus, ImportCheck, PreviewCheck, PreviewResult, Problem, SaveResult, VersionSummary } from "@glance-editor/server";
+import type { Change, ContainersResult, DownloadResult, FolderEntry, PixabayHit, DraftState, IconHit, LibraryStatus, SiteIcon, WebResult, WebSearch, GlanceStatus, ImportCheck, PreviewCheck, PreviewResult, Problem, SaveResult, VersionSummary } from "@glance-editor/server";
 
+export type { PixabayHit };
 export type { Change, ContainersResult, DownloadResult, DraftState, IconHit, LibraryStatus, SiteIcon, WebResult, WebSearch, GlanceStatus, ImportCheck, PreviewCheck, PreviewResult, Problem, SaveResult, VersionSummary };
 export type VersionDetail = VersionSummary & { text: string; pages: number | null; widgets: number | null };
 
@@ -48,6 +49,13 @@ export const api = {
   folders: (path?: string) =>
     call<{ roots: string[] } | FolderList | { error: string }>("GET", path === undefined ? "/api/folders" : `/api/folders?path=${encodeURIComponent(path)}`),
   copyImages: (paths: string[]) => call<{ ok: true; images: { file: string; name: string }[] } | { ok: false; message: string }>("POST", "/api/backgrounds/copy", { paths }),
+  pixabay: () => call<{ hasKey: boolean; masked: string | null; chips: string[] }>("GET", "/api/pixabay"),
+  setPixabayKey: (key: string) => call<{ ok: true; masked: string } | { ok: false; reason: string; message: string }>("PUT", "/api/pixabay/key", { key }),
+  clearPixabayKey: () => call<{ hasKey: boolean; masked: string | null }>("DELETE", "/api/pixabay/key"),
+  pixabaySearch: (cats: string[], q: string) =>
+    call<{ ok: true; hits: PixabayHit[] } | { ok: false; message: string }>("GET", `/api/pixabay/search?cats=${encodeURIComponent(cats.join(","))}&q=${encodeURIComponent(q)}`),
+  pixabayAdd: (ids: string[]) => call<{ ok: true; images: { file: string; name: string }[] } | { ok: false; message: string }>("POST", "/api/pixabay/add", { ids }),
+  pixabayPool: (set: string, chips: string[], count: number) => call<{ ok: true; files: number } | { ok: false; message: string }>("POST", "/api/pixabay/pool", { set, chips, count }),
   /** D-59 "This device": the file's bytes, not JSON (the editor accepts application/octet-stream only here). */
   async uploadImage(f: Blob): Promise<Stored> {
     const res = await fetch("/api/backgrounds/upload", { method: "POST", headers: { "content-type": "application/octet-stream" }, body: f });

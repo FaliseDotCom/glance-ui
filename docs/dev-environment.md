@@ -36,6 +36,7 @@ Overrides via env: `DEV_BIND`, `DEV_GLANCE_PORT`, `DEV_EDITOR_PORT`, `DEV_STATE`
 | `ASSETS_DIR` | unset (no web or site icons) | `/glance-assets` (`~/.local/share/glance-editor-dev/assets`, also `/app/assets` in the dev and preview Glance) |
 | `GLANCE_ASSETS_PATH` | unset | `/app/assets` (lets the editor offer "Use Glance's assets folder" when glance.yml has no `assets-path`) |
 | `SERVER_FOLDERS` | unset (no server folders) | unset. To try it, mount a folder read-only into the editor and list it, e.g. `SERVER_FOLDERS=/photos` |
+| `PIXABAY_API` | Pixabay's API (only tests change it) | unset |
 | `BODY_SIZE_LIMIT` | `32M` (image uploads) | same |
 | `DOCKER_PROXY_URL` | unset (the Containers section says it can't reach Docker; names already in the map can still be toggled) | `tcp://glance-editor-dev-docker-proxy:2375` (same Docker network) |
 

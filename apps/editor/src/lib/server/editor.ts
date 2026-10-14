@@ -4,6 +4,7 @@ import { Editor } from "@glance-editor/server";
 
 let editor: Promise<Editor> | undefined;
 let timer: ReturnType<typeof setInterval> | undefined;
+let rotation: ReturnType<typeof setInterval> | undefined;
 
 export function getEditor(): Promise<Editor> {
   editor ??= Editor.open({
@@ -17,6 +18,7 @@ export function getEditor(): Promise<Editor> {
     dockerUrl: env.DOCKER_PROXY_URL || undefined,
     assetsDir: env.ASSETS_DIR || undefined,
     glanceAssetsPath: env.GLANCE_ASSETS_PATH || undefined,
+    pixabayApi: env.PIXABAY_API || undefined,
     serverFolders: (env.SERVER_FOLDERS ?? "").split(",").map((x) => x.trim()).filter(Boolean),
     // The icon finder's sources (ADR-0020); only tests change them.
     iconSources: {
@@ -29,6 +31,10 @@ export function getEditor(): Promise<Editor> {
     // ADR-0008: a daily snapshot of the editor's data (retention handled in the store).
     timer ??= setInterval(() => e.dailyBackup(), 24 * 60 * 60 * 1000);
     timer.unref?.();
+    // D-62: rotating Pixabay sets swap their current image on schedule (files only, no save).
+    rotation ??= setInterval(() => void e.rotatePixabay().catch(() => undefined), 60 * 60 * 1000);
+    rotation.unref?.();
+    void e.rotatePixabay().catch(() => undefined);
     return e;
   });
   return editor;
