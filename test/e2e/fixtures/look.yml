@@ -1,0 +1,31 @@
+# Test dashboard for the dashboard's look and menu (ADR-0026): lines, themes in the menu, the Edit link.
+server:
+  host: 127.0.0.1
+  port: {{GLANCE_PORT}}
+  assets-path: {{ASSETS_DIR}}
+
+pages:
+  - name: Home
+    columns:
+      - size: full
+        widgets:
+          - type: docker-containers
+            sock-path: {{DOCKER_URL}}
+          - type: bookmarks
+            groups:
+              - title: Media
+                links:
+                  - title: One
+                    url: https://example.com/1
+                  - title: Two
+                    url: https://example.com/2
+              - title: Tools
+                links:
+                  - title: Three
+                    url: https://example.com/3
+  - name: Ops
+    columns:
+      - size: full
+        widgets:
+          - type: html
+            source: <p>Ops notes</p>

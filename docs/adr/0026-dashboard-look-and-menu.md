@@ -1,6 +1,6 @@
 # 0026. Five findings from the first install: lines, background jumps, an Edit link, theme choices, container icons
 
-- **Status:** proposed
+- **Status:** accepted by the PM, 2026-10-14 (via chat). Built as described under Decision.
 - **Date:** 2026-10-14
 - **Decider:** PM
 - **UX impact:** yes. Items 1, 3 and 4 change the dashboard Glance shows; items 2 and 5 change editor screens.
@@ -95,5 +95,48 @@ The spacing stays as it is.
 5. Container icons only, or also title, URL and description?
 6. Screens: build from this text (as with ADR-0025), or ask Claude Design first?
 
+## Decision
+As proposed, with the PM's answers:
+1. **Lines between items:** a switch on the Theme screen, on by default. Off writes Glance's own selectors with no
+   border into the editor's CSS file. The setting is `glance-editor: hide-lines: true`.
+   - The editor's CSS file is now written whenever a background or hidden lines need it.
+   - Your own custom CSS file moves to `glance-editor: import-css`. Older files keep it under `background`, and it is
+     moved up the next time the background changes.
+2. **Background:**
+   - Every layer is as tall as the window gets (`100lvh`, with `100vh` for older browsers).
+   - "Whole image" gets two options: **Around the image** (Background colour or Blurred copy) and **Position**
+     (Centre or Top). The blurred copy is `html::before`, under the image, and follows a slideshow. Shuffle's script
+     draws the same layers.
+3. **Edit link:** a switch, off by default.
+   - Its address defaults to the one the editor is open at, and you can change it.
+   - The script `glance-editor/edit-link.js` comes in through `document: head:` with the address in `data-editor`.
+     It adds a pencil to Glance's header and "Edit dashboard" to the phone menu, linking to `<editor>/?page=<slug>`.
+     The editor opens that page.
+4. **Themes in the menu:** all 14 themes of Glance's docs can be ticked; each is written as a `theme: presets:` entry
+   under its name in lower case with dashes, in the docs' order after presets of your own. Glance's two defaults stay
+   (not answered; recommended).
+5. **Containers:** each row opens its settings in the widget's map:
+   - **icon**, through the icon finder, which offers Unraid's own icon first (the `net.unraid.docker.icon` label,
+     webgui Helpers.php 443) and suggestions by the image's name;
+   - **name** (Glance's `glance.name`, not "title");
+   - **URL**, **description** and **same tab**.
+   The container's own `glance.*` labels show greyed. The editor's Docker list now passes on each container's image
+   and Unraid icon (http(s) only); other labels still never leave the server.
+6. Built from this text, without a design pass.
+
+## Tested
+- `packages/editing/test/look.test.ts`, `packages/server/test/background.test.ts`, `docker.test.ts`: the settings, the CSS
+  (lvh, blurred copy, top, no lines), the script tags, presets, the container map and icon lookups.
+- `test/e2e/look.spec.ts` (desktop and 390 px, real Glance v0.8.6):
+  - Glance's lines measured before (1 px) and after Save (0 px), between containers and between bookmark groups;
+  - Dracula and Catppuccin Latte in Glance's theme picker;
+  - the Edit link in Glance's header (desktop) and phone menu, opening the editor on the Ops page;
+  - turning both off unlinks the editor's files.
+- `test/e2e/background.spec.ts`: whole image, top, blurred copy, measured on Glance's page.
+- `test/e2e/containers.spec.ts`: Unraid's icon and suggestions in the finder; name and URL saved; Glance shows the
+  icon, name and link, and the label's description where nothing is set.
+- Not tested: the background jump itself on a real phone (the cause is inferred from how the layer was sized);
+  Safari's `lvh`.
+
 ## Decision record
-_Pending._
+2026-10-14, PM via chat: "1. Switch 2. It was phone - both options 3.yes 4.from all 14 5. All 6.you can do it".

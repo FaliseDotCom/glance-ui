@@ -20,7 +20,7 @@ describe("background", () => {
     const d = dash({ theme: { "custom-css-file": "/assets/mine.css", light: true } });
     setBackgroundMode(d, "slideshow");
     expect(d.theme).toEqual({ "custom-css-file": BACKGROUND_CSS, light: true });
-    expect(d["glance-editor"]?.background?.["import-css"]).toBe("/assets/mine.css");
+    expect(d["glance-editor"]?.["import-css"]).toBe("/assets/mine.css");
     setBackgroundMode(d, null);
     expect(d.theme).toEqual({ "custom-css-file": "/assets/mine.css", light: true });
   });

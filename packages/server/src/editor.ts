@@ -17,8 +17,8 @@ import {
 import { describeChanges, type Change } from "./changes.ts";
 import { listContainers, type ContainersResult } from "./docker.ts";
 import { Icons, type IconSources } from "./icons.ts";
-import { assetsWritable, copyImages, listFolder, resolveImages, storeImage, writeBackground, type BuildEnv, type FolderEntry, type Problemish } from "./background.ts";
-import { PREVIEW_CSS } from "@glance-editor/editing";
+import { assetsWritable, copyImages, listFolder, resolveImages, storeImage, writeEditorFiles, type BuildEnv, type FolderEntry, type Problemish } from "./background.ts";
+import { needsEditorCss, PREVIEW_CSS } from "@glance-editor/editing";
 import { Pixabay } from "./pixabay.ts";
 import { backup, openDb, type Db } from "./db.ts";
 import { pastStamp, readLive, reloadStamp, sha256, waitForReload, writeLiveAtomically, type ReloadResult } from "./live.ts";
@@ -624,9 +624,9 @@ export class Editor {
 
     // The background's CSS first, so the reloaded page never links a file that isn't there yet (D-52, D-60: a server
     // folder's new images are picked up now).
-    const bg = draft["glance-editor"]?.background;
-    if (bg) {
-      const p = await writeBackground(bg, this.buildEnv(), "background.css");
+    const ed = draft["glance-editor"];
+    if (ed && (needsEditorCss(draft) || ed["edit-link"])) {
+      const p = await writeEditorFiles(ed, this.buildEnv(), "background.css");
       if (p.length) return { status: "problems", problems: p.map(backgroundProblem) };
     }
 
@@ -669,6 +669,10 @@ export class Editor {
       const w = await assetsWritable(this.cfg.assetsDir);
       const found = w ? { problems: [w] } : await resolveImages(bg, this.buildEnv(), false);
       if (found.problems.length) return { ok: false, problems: found.problems.map(backgroundProblem) };
+    } else if (needsEditorCss(draft) || draft["glance-editor"]?.["edit-link"]) {
+      // ADR-0026: hidden lines and the Edit link are files in Glance's assets folder too.
+      const w = await assetsWritable(this.cfg.assetsDir);
+      if (w) return { ok: false, problems: [backgroundProblem({ code: w.code, message: w.message.replace("Couldn't store the background", "Couldn't write the editor's files (hidden lines, the Edit link)") })] };
     }
 
     const render = (d: DashboardT) =>
@@ -790,12 +794,12 @@ export class Editor {
     // unchanged draft would never load. The build time in a closing comment makes every build, and so every Refresh, a
     // reload: widgets fetch fresh data, as design 04 describes.
     // The preview's background CSS is its own file, so Preview never changes what the live dashboard links.
-    const bg = draft["glance-editor"]?.background;
-    if (bg) {
-      const p = await writeBackground(bg, this.buildEnv(), "preview.css");
+    const ed = draft["glance-editor"];
+    if (ed && (needsEditorCss(draft) || ed["edit-link"])) {
+      const p = await writeEditorFiles(ed, this.buildEnv(), "preview.css");
       if (p.length) return { status: "problems", problems: p.map(backgroundProblem) };
     }
-    const theme = bg ? { theme: { ...draft.theme, "custom-css-file": PREVIEW_CSS } } : {};
+    const theme = needsEditorCss(draft) ? { theme: { ...draft.theme, "custom-css-file": PREVIEW_CSS } } : {};
     const body = checked.render({ ...draft, ...theme, server: { ...draft.server, ...previewServer(url) } }).text;
     const text = `${body.endsWith("\n") ? body : `${body}\n`}# Glance Editor preview build ${this.now().toISOString()}\n`;
     const before = await reloadStamp(url);

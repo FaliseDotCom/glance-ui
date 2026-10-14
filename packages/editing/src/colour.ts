@@ -6,6 +6,7 @@
 // The gallery's themes are the ones in Glance v0.8.6 docs/themes.md (GLANCE_THEMES, extracted in Phase 4).
 
 import { GLANCE_THEMES, type DashboardT } from "@glance-editor/model";
+import { newId } from "./layout.ts";
 
 export type Hsl = [number, number, number];
 
@@ -131,6 +132,38 @@ export function isGalleryTheme(theme: Theme | undefined, t: GalleryTheme): boole
     if (k.endsWith("-color")) return normHsl(mine) === normHsl(theirs);
     return (mine === undefined ? undefined : Number(mine)) === (theirs === undefined ? undefined : Number(theirs));
   });
+}
+
+// ---- themes in the dashboard's menu (ADR-0026) ------------------------------------------------------------------------
+// Glance's theme picker lists "default-dark" (when your theme differs from Glance's default), "default-light" and every
+// `theme: presets:` entry (v0.8.6 glance.go 104-128, read 2026-10-14). Ticking a theme of Glance's docs writes it as a
+// preset under its name in lower case with dashes; presets of your own are kept as written.
+
+/** The preset key a docs theme is written under ("Catppuccin Frappe" → "catppuccin-frappe"). */
+export const presetKey = (t: GalleryTheme) => t.name.toLowerCase().normalize("NFKD").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+
+/** The docs themes that can be offered in the menu (all 14; "Glance default" is always there already). */
+export const MENU_THEMES: readonly GalleryTheme[] = GLANCE_THEMES;
+
+export const inMenu = (d: DashboardT | null | undefined, t: GalleryTheme) => !!d?.theme?.presets?.some((p) => p.key === presetKey(t));
+
+/** Add a docs theme to the menu (as a preset) or take it out. Other presets stay as they are. */
+export function setInMenu(d: DashboardT, t: GalleryTheme, on: boolean): void {
+  const key = presetKey(t);
+  const presets = (d.theme?.presets ?? []).filter((p) => p.key !== key);
+  if (on) {
+    const props: Record<string, unknown> = {};
+    for (const [k, v] of Object.entries(t.properties)) props[k] = k.endsWith("-color") ? normHsl(v) ?? v : v;
+    // In the docs' order among the docs themes already ticked; after presets of your own.
+    const order = (k: string) => MENU_THEMES.findIndex((x) => presetKey(x) === k);
+    const at = presets.findIndex((p) => order(p.key) > order(key));
+    presets.splice(at < 0 ? presets.length : at, 0, { _id: newId("preset"), key, ...props } as (typeof presets)[number]);
+  }
+  const theme = { ...(d.theme ?? {}) };
+  if (presets.length) theme.presets = presets;
+  else delete theme.presets;
+  if (Object.keys(theme).length) d.theme = theme;
+  else delete d.theme;
 }
 
 /** D-50: applying a gallery theme sets all its keys and removes the theme keys it doesn't set. Other keys stay. */

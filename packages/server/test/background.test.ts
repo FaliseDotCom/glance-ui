@@ -4,15 +4,17 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import type { BackgroundT } from "@glance-editor/model";
-import { backgroundCss, listFolder, resolveImages, storeImage, writeBackground } from "../src/background.ts";
+import { backgroundCss, EDIT_LINK_JS, editorCss, listFolder, NO_LINES_CSS, resolveImages, storeImage, writeEditorFiles } from "../src/background.ts";
 import { solidPng } from "../../../test/support/png.ts";
 
 const tmp = () => mkdtempSync(join(tmpdir(), "glance-editor-bg-"));
 
 describe("backgroundCss", () => {
   it("image: the chosen image, cover, dim; relative URLs; the user's CSS imported first", () => {
-    const css = backgroundCss({ mode: "image", use: 1, "import-css": "/assets/mine.css", dim: 40 } as BackgroundT, ["glance-editor/backgrounds/b.png"]);
+    const css = editorCss({ "import-css": "/assets/mine.css", background: { mode: "image", use: 1, dim: 40 } as BackgroundT }, ["glance-editor/backgrounds/b.png"]);
     expect(css.split("\n")[1]).toBe('@import url("/assets/mine.css");');
+    // An older file keeps import-css under background: still imported.
+    expect(editorCss({ background: { mode: "image", "import-css": "/assets/old.css" } }, [])).toContain('@import url("/assets/old.css");');
     expect(css).toContain('background: url("backgrounds/b.png") center / cover no-repeat, var(--color-background);');
     expect(css).toContain("background: rgba(0, 0, 0, 0.40);");
     expect(css).not.toContain("@keyframes");
@@ -35,8 +37,34 @@ describe("backgroundCss", () => {
     expect(css).toContain('--glance-editor-slides: "backgrounds/a.png|../x/b.png";');
     expect(css).toContain("--color-widget-background: hsla(var(--color-widget-background-hsl-values), 0.72);");
     expect(css).toContain("filter: blur(5px);");
-    expect(css).toContain("inset: -10px;");
+    expect(css).toContain("top: -10px;");
     expect(css).toContain("center / contain no-repeat");
+    expect(css).toContain("--glance-editor-around: colour;");
+  });
+
+  it("ADR-0026: every layer is as tall as the window gets (lvh), so a phone's address bar doesn't move the image", () => {
+    const css = backgroundCss({ mode: "image", dim: 30 }, ["glance-editor/backgrounds/a.png"]);
+    expect(css).not.toContain("inset: 0");
+    expect(css.match(/height: calc\(100lvh \+ 0px\);/g)).toHaveLength(2); // the image and the dim
+    expect(css).toContain("height: calc(100vh + 0px);"); // older browsers
+  });
+
+  it("ADR-0026: a whole image at the top, over a blurred copy of itself; both layers follow a slideshow", () => {
+    const one = backgroundCss({ mode: "image", fit: "whole", align: "top", around: "blurred" }, ["glance-editor/backgrounds/a.png"]);
+    expect(one).toMatch(/html::before \{[^}]*url\("backgrounds\/a.png"\) center \/ cover no-repeat;[^}]*filter: blur\(30px\);/);
+    expect(one).toContain('background: url("backgrounds/a.png") center top / contain no-repeat;'); // no colour over the blurred copy
+    const fill = backgroundCss({ mode: "image", fit: "fill", align: "top", around: "blurred" }, ["glance-editor/backgrounds/a.png"]);
+    expect(fill).not.toContain("html::before"); // only for a whole image
+    expect(fill).toContain("center / cover no-repeat, var(--color-background);");
+    const show = backgroundCss({ mode: "slideshow", fit: "whole", around: "blurred" }, ["glance-editor/backgrounds/a.png", "glance-editor/backgrounds/b.png"]);
+    expect(show.match(/animation: glance-editor-slides/g)).toHaveLength(2);
+  });
+
+  it("ADR-0026: hidden lines, alone or with a background; the Edit link script adds nothing without an address", () => {
+    expect(editorCss({ "hide-lines": true }, [])).toContain(NO_LINES_CSS);
+    expect(editorCss({ "hide-lines": true }, [])).not.toContain("body::before");
+    expect(editorCss({ background: { mode: "image" } }, ["glance-editor/backgrounds/a.png"])).not.toContain("border-top: none");
+    expect(EDIT_LINK_JS).toContain("if (!editor) return;");
   });
 });
 
@@ -70,7 +98,7 @@ describe("files", () => {
     writeFileSync(join(root, "a.png"), solidPng([10, 0, 0]));
     writeFileSync(join(root, "b.png"), solidPng([0, 10, 0]));
     const bg: BackgroundT = { mode: "slideshow", images: [{ _id: "f", folder: root }] };
-    expect(await writeBackground(bg, { assetsDir: assets, roots: [root] }, "background.css")).toEqual([]);
+    expect(await writeEditorFiles({ background: bg }, { assetsDir: assets, roots: [root] }, "background.css")).toEqual([]);
     const css = readFileSync(join(assets, "glance-editor", "background.css"), "utf8");
     expect(new Set(css.match(/backgrounds\/[0-9a-f]{16}\.png/g))).toHaveProperty("size", 2);
     expect(await resolveImages({ mode: "image", images: [{ _id: "x", file: "glance-editor/backgrounds/gone.png" }] }, { assetsDir: assets, roots: [] }, false))
@@ -80,7 +108,7 @@ describe("files", () => {
     const empty = tmp();
     expect(await resolveImages({ mode: "slideshow", images: [{ _id: "x", folder: empty }] }, { assetsDir: assets, roots: [empty] }, false))
       .toMatchObject({ problems: [{ code: "background.folder-empty" }] });
-    expect(await writeBackground(bg, { assetsDir: undefined, roots: [root] }, "background.css")).toMatchObject([{ code: "background.assets" }]);
+    expect(await writeEditorFiles({ background: bg }, { assetsDir: undefined, roots: [root] }, "background.css")).toMatchObject([{ code: "background.assets" }]);
     expect(existsSync(join(assets, "glance-editor", "slideshow.js"))).toBe(false);
     // Image mode resolves only the chosen entry: a folder gives one image.
     const one = await resolveImages({ mode: "image", use: 1, images: [{ _id: "a", file: "glance-editor/backgrounds/gone.png" }, { _id: "f", folder: root }] }, { assetsDir: assets, roots: [root] }, false);

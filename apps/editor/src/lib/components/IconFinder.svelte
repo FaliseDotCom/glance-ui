@@ -9,13 +9,14 @@
   import type { App } from "../client/app.svelte.ts";
   import Icon from "./Icon.svelte";
 
-  type Target = { label: string; title: string; url: string; current: string; apply: (value: string | undefined) => void };
+  /** `offers`: ready-made icons for this item, shown first in Suggested (a container's Unraid icon, ADR-0026). */
+  type Target = { label: string; title: string; url: string; current: string; apply: (value: string | undefined) => void; offers?: { value: string; name: string; note: string }[] };
   let { app, target }: { app: App; target: Target } = $props();
 
   type Tab = "sug" | "all" | "si" | "sh" | "di" | "mdi" | "web" | "url";
   const TABS: [Tab, string][] = [["sug", "Suggested"], ["all", "All libraries"], ...LIBRARIES.map((l) => [l.id, l.short] as [Tab, string]), ["web", "Web"], ["url", "URL"]];
   // svelte-ignore state_referenced_locally
-  let tab = $state<Tab>(target.title ? "sug" : "all");
+  let tab = $state<Tab>(target.title || target.offers?.length ? "sug" : "all");
   let info = $state<IconInfo | null>(null);
   const cdn = $derived(info?.cdn);
   const assetsOk = $derived(info?.assets.ok === true);
@@ -166,6 +167,16 @@
 <div id="icpanel" role="tabpanel" aria-labelledby={`ictab-${tab}`} class="stack" style="gap: 10px">
   {#if tab === "sug"}
     <p class="help" style="margin: 0">{target.title ? `Matches for “${target.title}” in every icon library, plus the site’s own icon when the URL allows it.` : "Give the item a title to get suggestions."}</p>
+    {#if target.offers?.length}
+      <div class="icongrid">
+        {#each target.offers as o (o.value)}
+          <button type="button" class="icell" onclick={() => pick(o.value)}>
+            {@render thumb(o.value, "url")}
+            <span class="grow" style="min-width: 0"><span class="iname" style="font-family: var(--ui)">{o.name}</span><span class="wsum" style="white-space: normal; font-family: var(--ui)">{o.note}</span></span>
+          </button>
+        {/each}
+      </div>
+    {/if}
     {#each sugNotes as n (n)}<p class="errtxt" style="margin: 0">{n}</p>{/each}
     {#if target.title && sug === null}<p class="note pulse" style="margin: 0">Looking for matches…</p>{/if}
     {#if sug?.length}{@render hits(sug)}{/if}

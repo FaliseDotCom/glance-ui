@@ -15,6 +15,8 @@ export interface ContainerInfo {
   name: string;
   state: string;
   glance: Record<string, string>;
+  image?: string;
+  unraidIcon?: string;
 }
 
 /** One item of the widget's `containers` list (the map, keyed by `container`). */
@@ -105,4 +107,44 @@ export function setContainerVisible(w: Widget, name: string, visible: boolean, i
   }
   if (list.length) w.containers = list;
   else delete w.containers;
+}
+
+/** ADR-0026: the per-container settings the Containers section edits (glance.* label names, the map's keys). */
+export const CONTAINER_FIELDS = ["icon", "name", "url", "description", "same-tab"] as const;
+export type ContainerField = (typeof CONTAINER_FIELDS)[number];
+
+/** The container's entry in the widget's map, if any. */
+export const containerEntry = (w: Widget, name: string): ContainerEntry | undefined => entryFor(w, name);
+
+/**
+ * Set or clear one setting of a container in the widget's map (ADR-0026). A cleared key is removed, so the container's
+ * own label (if any) applies again; an entry left with nothing in it is dropped.
+ */
+export function setContainerField(w: Widget, name: string, key: ContainerField, value: string | boolean | undefined): void {
+  const list = entries(w).slice();
+  let e = list.find((x) => x.container === name);
+  const empty = value === undefined || value === "" || value === false;
+  if (empty) {
+    if (!e) return;
+    delete e[key];
+    const rest = Object.keys(e).filter((k) => k !== "_id" && k !== "container");
+    if (!rest.length) list.splice(list.indexOf(e), 1);
+  } else {
+    if (!e) list.push((e = { _id: newId("container"), container: name }));
+    e[key] = value;
+  }
+  if (list.length) w.containers = list;
+  else delete w.containers;
+}
+
+/**
+ * A name to look icons up by: the name set for the container, else its image without registry, owner and tag
+ * (`lscr.io/linuxserver/plex:latest` → `plex`), else its name.
+ */
+export function iconTerm(name: string, title: string | undefined, image: string | undefined): string {
+  if (title?.trim()) return title.trim();
+  // A container started from an image ID (`sha256:…`) has no name to go by.
+  const ref = /^(sha256:)?[0-9a-f]{12,}$/.test(image ?? "") ? "" : (image ?? "");
+  const img = ref.replace(/@sha256:.*$/, "").replace(/:[^/:]*$/, "").split("/").pop() ?? "";
+  return (img || name).replace(/[-_]+/g, " ").trim();
 }

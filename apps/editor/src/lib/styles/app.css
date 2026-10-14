@@ -112,7 +112,7 @@ textarea.input { min-height: 96px; resize: vertical; }
 /* focus (D-44: focus ring in accent) */
 .input:focus, .btn:focus-visible, .ib:focus-visible, .navbtn:focus-visible, .seg button:focus-visible, .tog:focus-visible,
 .choice:focus-visible, .choice:has(input:focus-visible), .vrow:focus-visible, .grip:focus-visible, .tabs button:focus-visible, .wmain:focus-visible, .crowmain:focus-visible,
-.blinkmain:focus-visible, .trow:focus-visible, .thcard:focus-visible, .swb:focus-visible, .sl input:focus-visible, .syspick:focus-within { outline: 2px solid var(--accent); outline-offset: 2px; }
+.blinkmain:focus-visible, .mtheme:focus-visible, .trow:focus-visible, .thcard:focus-visible, .swb:focus-visible, .sl input:focus-visible, .syspick:focus-within { outline: 2px solid var(--accent); outline-offset: 2px; }
 
 /* segmented control and toggle */
 .seg { display: inline-flex; background: var(--fill); border-radius: 12px; padding: 3px; gap: 2px; flex-wrap: wrap; }
@@ -277,6 +277,12 @@ fieldset.subcard { padding: 10px 12px; }
 .choice { display: flex; flex-direction: column; gap: 6px; align-items: flex-start; text-align: left; padding: 20px; border-radius: 22px; border: 0; background: var(--fill-card); box-shadow: inset 0 0 0 1px var(--line-strong); cursor: pointer; min-height: 120px; color: inherit; }
 .choice.on, .choice.drag { box-shadow: inset 0 0 0 2px var(--accent); }
 .choices.three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+/* ADR-0026: themes in the dashboard's menu */
+.menuthemes { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 8px; }
+.mtheme { display: flex; align-items: center; gap: 10px; min-height: var(--touch); padding: 6px 12px 6px 6px; border: 0; border-radius: 12px; background: var(--fill-card); box-shadow: inset 0 0 0 1px var(--line); color: inherit; text-align: left; cursor: pointer; font: inherit; }
+.mtheme.on { box-shadow: inset 0 0 0 2px var(--accent); }
+.mswatch { width: 44px; height: 32px; border-radius: 8px; display: inline-flex; align-items: center; justify-content: center; gap: 3px; flex: none; box-shadow: inset 0 0 0 1px var(--line); }
+.mcheck { width: 18px; color: var(--accent); font-weight: 700; flex: none; }
 .choice:disabled { opacity: 0.5; cursor: not-allowed; }
 .choice .wsum { white-space: normal; }
 .checks { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }

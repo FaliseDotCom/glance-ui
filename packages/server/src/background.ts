@@ -8,7 +8,7 @@
 import { createHash } from "node:crypto";
 import { access, constants, mkdir, readdir, readFile, realpath, rename, stat, writeFile } from "node:fs/promises";
 import { basename, extname, join, posix, sep } from "node:path";
-import type { BackgroundT } from "@glance-editor/model";
+import type { BackgroundT, EditorSectionT } from "@glance-editor/model";
 import { BACKGROUND_DEFAULTS, BACKGROUNDS, EDITOR_ASSETS, intervalSeconds } from "@glance-editor/editing";
 import { sniff } from "./icons.ts";
 
@@ -29,33 +29,49 @@ export function backgroundCss(bg: BackgroundT, files: readonly string[]): string
   // Image mode: `files` holds the one chosen image (resolveImages); a slideshow, every slide.
   const slides = bg.mode === "slideshow" ? files : files.slice(0, 1);
   const urls = slides.map((f) => `url(${q(cssUrl(f))})`);
-  const lines = [
-    "/* Written by Glance Editor (design D-52). It is rewritten on every save: change the background on the Theme screen. */",
-  ];
-  if (o["import-css"]) lines.push(`@import url(${q(o["import-css"])});`);
-  const size = o.fit === "whole" ? "contain" : "cover";
+  const lines: string[] = [];
+  const whole = o.fit === "whole";
+  const size = whole ? "contain" : "cover";
+  const position = whole && o.align === "top" ? "center top" : "center";
+  const blurred = whole && o.around === "blurred";
   const blur = o.blur ?? 0;
-  lines.push(
-    "body::before {",
-    '  content: "";',
-    "  position: fixed;",
-    `  inset: ${blur ? `-${blur * 2}px` : "0"};`,
-    "  z-index: -1;",
-    "  pointer-events: none;",
-    `  background: ${urls[0] ?? "none"} center / ${size} no-repeat, var(--color-background);`,
-    ...(blur ? [`  filter: blur(${blur}px);`] : []),
-  );
   const n = urls.length;
   const shuffle = bg.mode === "slideshow" && o.order === "shuffle";
-  if (bg.mode === "slideshow" && n > 1 && !shuffle) {
-    // In order, CSS alone (D-53): one keyframe set over the whole cycle. Each image holds for its interval; with Fade the
-    // last 2 s (or a quarter of the interval) cross-fade where the browser interpolates background-image (Chromium);
-    // elsewhere it cuts.
+  const animated = bg.mode === "slideshow" && n > 1 && !shuffle;
+  // ADR-0026: as tall as the window ever gets (lvh). On a phone the window's height changes while the address bar
+  // slides in and out; a layer sized to it moved or re-scaled the image as you scrolled. vh first, for older browsers.
+  const layer = (out: number) => [
+    '  content: "";',
+    "  position: fixed;",
+    `  top: ${out ? `-${out}px` : "0"};`,
+    `  left: ${out ? `-${out}px` : "0"};`,
+    `  right: ${out ? `-${out}px` : "0"};`,
+    `  height: calc(100vh + ${2 * out}px);`,
+    `  height: calc(100lvh + ${2 * out}px);`,
+    "  z-index: -1;",
+    "  pointer-events: none;",
+  ];
+  const animation = () => {
     const t = intervalSeconds(o.interval);
-    lines.push(`  animation: glance-editor-slides ${n * t}s infinite${o.transition === "cut" ? " step-end" : " linear"};`);
+    return [`  animation: glance-editor-slides ${n * t}s infinite${o.transition === "cut" ? " step-end" : " linear"};`];
+  };
+  if (blurred) {
+    // ADR-0026: behind a whole image, a blurred copy of it fills the window. html::before is painted before (under) body::before.
+    lines.push("html::before {", ...layer(60), `  background: ${urls[0] ?? "none"} center / cover no-repeat;`, "  filter: blur(30px);",
+      ...(animated ? animation() : []), "}");
   }
+  lines.push(
+    "body::before {",
+    ...layer(blur * 2),
+    `  background: ${urls[0] ?? "none"} ${position} / ${size} no-repeat${blurred ? "" : ", var(--color-background)"};`,
+    ...(blur ? [`  filter: blur(${blur}px);`] : []),
+  );
+  // In order, CSS alone (D-53): one keyframe set over the whole cycle. Each image holds for its interval; with Fade the
+  // last 2 s (or a quarter of the interval) cross-fade where the browser interpolates background-image (Chromium);
+  // elsewhere it cuts.
+  if (animated) lines.push(...animation());
   lines.push("}");
-  if (bg.mode === "slideshow" && n > 1 && !shuffle) {
+  if (animated) {
     const t = intervalSeconds(o.interval);
     const fade = o.transition === "cut" ? 0 : Math.min(2, t / 4) / (n * t);
     const pct = (x: number) => `${+(x * 100).toFixed(4)}%`;
@@ -69,16 +85,39 @@ export function backgroundCss(bg: BackgroundT, files: readonly string[]): string
   if (shuffle) {
     // Shuffle: the script (slideshow.js) reads these and cross-fades two layers above body::before.
     lines.push(":root {", `  --glance-editor-slides: ${q(slides.map(cssUrl).join("|"))};`, `  --glance-editor-interval: ${intervalSeconds(o.interval)};`,
-      `  --glance-editor-fade: ${o.transition === "cut" ? 0 : 1};`, `  --glance-editor-fit: ${size};`, `  --glance-editor-blur: ${blur}px;`, "}");
+      `  --glance-editor-fade: ${o.transition === "cut" ? 0 : 1};`, `  --glance-editor-fit: ${size};`, `  --glance-editor-blur: ${blur}px;`,
+      `  --glance-editor-position: ${position};`, `  --glance-editor-around: ${blurred ? "blurred" : "colour"};`, "}");
   }
   if (o.dim) {
-    lines.push("body::after {", '  content: "";', "  position: fixed;", "  inset: 0;", "  z-index: -1;", "  pointer-events: none;",
-      `  background: rgba(0, 0, 0, ${(o.dim / 100).toFixed(2)});`, "}");
+    lines.push("body::after {", ...layer(0), `  background: rgba(0, 0, 0, ${(o.dim / 100).toFixed(2)});`, "}");
   }
   if (o.surfaces === "see-through") {
     lines.push(":root {", "  --color-widget-background: hsla(var(--color-widget-background-hsl-values), 0.72);", "}");
   }
   return `${lines.join("\n")}\n`;
+}
+
+/**
+ * ADR-0026: no lines between list items (Docker containers, Monitor, Bookmarks, Markets) or between bookmark groups.
+ * The selectors are Glance's own (v0.8.6 utils.css 102-106, 130-134, 273-276, read 2026-10-14); the spacing stays.
+ */
+export const NO_LINES_CSS = `.list.list-with-separator > *:not(:first-child),
+.dynamic-columns.list-with-separator > *:not(:first-child) {
+  border-top: none;
+}
+.dynamic-columns > * {
+  border-left: none;
+}
+`;
+
+/** The editor's whole CSS file: the user's own file first, then the background, then the look settings. Pure. */
+export function editorCss(ed: EditorSectionT, files: readonly string[]): string {
+  const parts = ["/* Written by Glance Editor (design D-52, ADR-0026). It is rewritten on every save: change it on the Theme screen. */\n"];
+  const own = ed["import-css"] ?? ed.background?.["import-css"];
+  if (own) parts.push(`@import url(${q(own)});\n`);
+  if (ed.background) parts.push(backgroundCss(ed.background, files));
+  if (ed["hide-lines"]) parts.push(NO_LINES_CSS);
+  return parts.join("");
 }
 
 /** D-53 Shuffle: a random order, cross-faded with two layers. Static: the slides come from the CSS. */
@@ -94,28 +133,78 @@ export const SLIDESHOW_JS = `// Written by Glance Editor (design D-53): the back
   for (let i = urls.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [urls[i], urls[j]] = [urls[j], urls[i]]; }
   const seconds = Number(get("--glance-editor-interval")) || 900;
   const fade = get("--glance-editor-fade") === "1";
+  const blur = get("--glance-editor-blur");
+  const blurred = get("--glance-editor-around") === "blurred";
+  // As tall as the window ever gets (ADR-0026), so a phone's address bar doesn't move the image.
+  const fixed = (out) => ({ position: "fixed", top: -out + "px", left: -out + "px", right: -out + "px", height: "calc(100lvh + " + 2 * out + "px)",
+    pointerEvents: "none", backgroundRepeat: "no-repeat" });
   const layers = [0, 1].map(() => {
     const el = document.createElement("div");
     el.setAttribute("aria-hidden", "true");
     el.className = "glance-editor-slide";
-    Object.assign(el.style, { position: "fixed", inset: get("--glance-editor-blur") === "0px" ? "0" : "-40px", zIndex: "-1", pointerEvents: "none",
-      backgroundPosition: "center", backgroundRepeat: "no-repeat", backgroundSize: get("--glance-editor-fit") || "cover",
-      filter: get("--glance-editor-blur") === "0px" ? "" : "blur(" + get("--glance-editor-blur") + ")", opacity: "0",
-      transition: fade ? "opacity 2s" : "none" });
+    Object.assign(el.style, { position: "fixed", inset: "0", zIndex: "-1", pointerEvents: "none", opacity: "0", transition: fade ? "opacity 2s" : "none" });
+    const parts = [];
+    if (blurred) {
+      const back = document.createElement("div");
+      Object.assign(back.style, fixed(60), { backgroundPosition: "center", backgroundSize: "cover", filter: "blur(30px)" });
+      parts.push(back);
+    }
+    const front = document.createElement("div");
+    Object.assign(front.style, fixed(blur === "0px" ? 0 : 40), { backgroundPosition: get("--glance-editor-position") || "center",
+      backgroundSize: get("--glance-editor-fit") || "cover", filter: blur === "0px" ? "" : "blur(" + blur + ")" });
+    parts.push(front);
+    el.append(...parts);
     document.body.prepend(el);
-    return el;
+    return { el, parts };
   });
   let i = 0, top = 0;
   const show = () => {
     const next = layers[1 - top];
-    next.style.backgroundImage = 'url("' + urls[i % urls.length] + '")';
-    next.style.opacity = "1";
-    layers[top].style.opacity = "0";
+    for (const p of next.parts) p.style.backgroundImage = 'url("' + urls[i % urls.length] + '")';
+    next.el.style.opacity = "1";
+    layers[top].el.style.opacity = "0";
     top = 1 - top;
     i++;
   };
   show();
   setInterval(show, seconds * 1000);
+})();
+`;
+
+/**
+ * ADR-0026: an Edit link in the dashboard's menu, to the editor's address in this script's data-editor attribute, on
+ * the page being shown. Glance v0.8.6 has no setting for menu links; this uses its header (page.html 18-56: the theme
+ * picker in .header) and phone menu (.mobile-navigation-actions, 70-90). If they aren't there, it adds nothing.
+ */
+export const EDIT_LINK_JS = `// Written by Glance Editor (ADR-0026): the Edit link in the dashboard's menu.
+(() => {
+  const me = document.currentScript || document.querySelector('script[src*="/glance-editor/edit-link.js"]');
+  const editor = me && me.dataset.editor;
+  if (!editor) return;
+  const current = document.querySelector(".nav-item-current");
+  const slug = current ? decodeURIComponent((current.getAttribute("href") || "").split("/").pop() || "") : "";
+  let href;
+  try { href = new URL(slug ? "?page=" + encodeURIComponent(slug) : "", editor.replace(/\\/*$/, "/")).href; } catch { return; }
+  const pencil = '<svg class="ui-icon" stroke="var(--color-text-subdue)" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0 1 15.75 21H5.25A2.25 2.25 0 0 1 3 18.75V8.25A2.25 2.25 0 0 1 5.25 6H10" /></svg>';
+  const header = document.querySelector(".header-container .header");
+  if (header) {
+    const a = document.createElement("a");
+    a.className = "glance-editor-edit block self-center";
+    a.href = href;
+    a.title = "Edit this dashboard";
+    a.setAttribute("aria-label", "Edit this dashboard");
+    a.style.cssText = "display:flex;align-items:center;justify-content:center;width:3.2rem;height:3.2rem;margin-left:1rem";
+    a.innerHTML = pencil;
+    header.append(a);
+  }
+  const actions = document.querySelector(".mobile-navigation-actions");
+  if (actions) {
+    const a = document.createElement("a");
+    a.className = "glance-editor-edit flex justify-between items-center";
+    a.href = href;
+    a.innerHTML = '<div class="size-h3">Edit dashboard</div>' + pencil;
+    actions.append(a);
+  }
 })();
 `;
 
@@ -250,11 +339,15 @@ export async function assetsWritable(assetsDir: string | undefined): Promise<Pro
   }
 }
 
-/** Write the CSS (and the Shuffle script) for a target: "background.css" (Save) or "preview.css" (Preview). */
-export async function writeBackground(bg: BackgroundT, env: BuildEnv, cssName: "background.css" | "preview.css"): Promise<Problemish[]> {
+/**
+ * Write the editor's files for a target: the CSS ("background.css" on Save, "preview.css" on Preview) when a background
+ * or a look setting needs it, the Shuffle script and the Edit link script (ADR-0021, ADR-0026).
+ */
+export async function writeEditorFiles(ed: EditorSectionT, env: BuildEnv, cssName: "background.css" | "preview.css"): Promise<Problemish[]> {
   const w = await assetsWritable(env.assetsDir);
   if (w) return [w];
-  const { files, problems } = await resolveImages(bg, env, true);
+  const bg = ed.background;
+  const { files, problems } = bg ? await resolveImages(bg, env, true) : { files: [], problems: [] };
   if (problems.length) return problems;
   const dir = join(env.assetsDir!, EDITOR_ASSETS);
   await mkdir(dir, { recursive: true });
@@ -262,8 +355,8 @@ export async function writeBackground(bg: BackgroundT, env: BuildEnv, cssName: "
     await writeFile(join(dir, `.${name}.tmp`), text);
     await rename(join(dir, `.${name}.tmp`), join(dir, name));
   };
-  await put(cssName, backgroundCss(bg, files));
-  if (bg.mode === "slideshow" && bg.order === "shuffle") await put("slideshow.js", SLIDESHOW_JS);
+  if (bg || ed["hide-lines"]) await put(cssName, editorCss(ed, files));
+  if (bg?.mode === "slideshow" && bg.order === "shuffle") await put("slideshow.js", SLIDESHOW_JS);
+  if (ed["edit-link"]) await put("edit-link.js", EDIT_LINK_JS);
   return [];
 }
-

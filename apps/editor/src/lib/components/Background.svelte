@@ -44,6 +44,9 @@
   const ORDERS: Opt<"order"> = [["in-order", "In order"], ["shuffle", "Shuffle"]];
   const TRANSITIONS: Opt<"transition"> = [["fade", "Fade"], ["cut", "Cut"]];
   const FITS: Opt<"fit"> = [["fill", "Fill (crop)"], ["whole", "Whole image"]];
+  // ADR-0026: what fills the space a whole image leaves, and where it sits.
+  const AROUND: Opt<"around"> = [["colour", "Background colour"], ["blurred", "Blurred copy"]];
+  const ALIGN: Opt<"align"> = [["center", "Centre"], ["top", "Top"]];
   const SURFACES: Opt<"surfaces"> = [["solid", "Solid"], ["see-through", "See-through"]];
 </script>
 
@@ -75,7 +78,8 @@
       {/if}
     </div>
   {/if}
-  {#if bg["import-css"]}<p class="help" style="margin: 0">Your own CSS file ({bg["import-css"]}) is still used: the editor's file imports it.</p>{/if}
+  {@const own = app.draft?.["glance-editor"]?.["import-css"] ?? bg["import-css"]}
+  {#if own}<p class="help" style="margin: 0">Your own CSS file ({own}) is still used: the editor's file imports it.</p>{/if}
   <span class="flabel" style="margin: 0">{show ? "Images in the slideshow (at least 2)" : "Image"}</span>
   <div class="stack" style="gap: 6px">
     {#each images as im, i (im._id)}
@@ -118,6 +122,10 @@
     {#if o.order === "shuffle"}<p class="help" style="margin: 0">Shuffle needs a small script added through Glance's document option, which inserts HTML into every page's head. In order with a cut or fade can be done in CSS alone.</p>{/if}
   {/if}
   {@render seg("Fit", "fit", FITS)}
+  {#if o.fit === "whole"}
+    {@render seg("Around the image", "around", AROUND)}
+    {@render seg("Position", "align", ALIGN)}
+  {/if}
   <label class="sl" style="grid-template-columns: 70px minmax(0, 1fr) 48px">Dim<input type="range" min="0" max="80" value={o.dim} aria-label="Dim image"
     oninput={(e) => { const v = Number(e.currentTarget.value); edit((b) => { b.dim = v; }); }} /><span>{o.dim}%</span></label>
   <label class="sl" style="grid-template-columns: 70px minmax(0, 1fr) 48px">Blur<input type="range" min="0" max="20" value={o.blur} aria-label="Blur image"
