@@ -3,6 +3,15 @@
 Things learned the hard way or by surprise. Newest first. Each entry: date, what happened, what to do.
 Auto memory is machine-local. This file is the record.
 
+### 2026-10-14: Things learned building the background (Phase 10a)
+- **Check what the browser paints, not only the CSS text.** The tests read pixels from screenshots of the real Glance
+  (a solid red image must show at the page's edge), and move the CSS animation's clock instead of waiting for it.
+- **Glance's custom CSS link changes on every reload** (`?v=<load time>`), but `/assets/` files are cached for 2 h.
+  **Do:** keep the CSS file's name fixed and name images by their content.
+- **adapter-node refuses bodies over 512 KB** unless `BODY_SIZE_LIMIT` is set (adapter-node 6.0.0 source).
+- **A test temp folder's name can contain the very word a test looks for** (`/tmp/glance-editor-e2e-…`). **Do:**
+  match keys by line (`/^glance-editor:/m`), not by substring.
+
 ### 2026-10-14: Things learned building the icon finder (Phase 9)
 - **About 500 selfh.st and 544 dashboard-icons icons have no SVG**, and Glance asks for `.svg` unless the value says
   `.png`/`.webp`. **Do:** build values from each library's format list, and test previews against the binary.

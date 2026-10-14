@@ -25,13 +25,22 @@
   const libProblems = (libs: Record<string, LibraryStatus>) =>
     Object.entries(libs).filter(([, s]) => !s.ok).map(([id, s]) => `Couldn't load the ${libraryName(id)} list: ${s.error ?? "unknown error"}.`);
 
+  // The editor knows where Glance's assets folder is (GLANCE_ASSETS_PATH): set it in the draft, visibly (Review lists it).
+  async function useGlanceAssets() {
+    const p = info?.glanceAssetsPath;
+    if (!p) return;
+    app.mutate((d) => { d.server = { ...d.server, "assets-path": p }; }, { toast: "Glance's assets folder is set in the draft (server: assets-path)" });
+    await app.settle();
+    info = await api.iconInfo().catch(() => info);
+  }
+
   function pick(v: string | undefined) {
     target.apply(v);
     app.sheet = null;
   }
 
   $effect(() => {
-    void api.iconInfo().then((i) => (info = i)).catch(() => (info = { cdn: "", assets: { ok: false, reason: "error", message: "The editor couldn't check Glance's assets folder." } }));
+    void api.iconInfo().then((i) => (info = i)).catch(() => (info = { cdn: "", glanceAssetsPath: null, serverFolders: false, assets: { ok: false, reason: "error", message: "The editor couldn't check Glance's assets folder." } }));
   });
 
   // ---- Suggested (D-54) ---------------------------------------------------------------------------------------------
@@ -186,7 +195,13 @@
       <input id="wq" class="input grow" placeholder="e.g. jellyfin logo" bind:value={webQ} />
       <button type="submit" class="btn pri" disabled={!webQ.trim() || webLoading}>Search</button>
     </form>
-    {#if !assetsOk && assetsMessage}<div class="notice" role="status">Picking a web result needs Glance's assets folder. {assetsMessage}</div>{/if}
+    {#if !assetsOk && assetsMessage}
+      <div class="notice" role="status"><span>Picking a web result needs Glance's assets folder. {assetsMessage}</span>
+        {#if info && !info.assets.ok && info.assets.reason === "no-assets-path" && info.glanceAssetsPath}
+          <button type="button" class="btn" onclick={useGlanceAssets}>Use Glance's assets folder ({info.glanceAssetsPath})</button>
+        {/if}
+      </div>
+    {/if}
     {#if downloadError}<p class="errtxt" role="alert" style="margin: 0">{downloadError}</p>{/if}
     {#if webLoading}
       <p class="note pulse" style="margin: 0">Searching the web…</p>

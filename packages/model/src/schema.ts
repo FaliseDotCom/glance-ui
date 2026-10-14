@@ -147,6 +147,42 @@ export const Auth = z.strictObject({
 
 export const Document = z.strictObject({ head: str.optional(), extra });
 
+// ---- the editor's own section (ADR-0021) ------------------------------------------------------------------------
+// `glance-editor:` in glance.yml holds settings Glance has no key for, so they travel with the file (versions,
+// restore, import). Glance v0.8.6 ignores the key (tested: config:validate passes, the server starts).
+
+/** One background image: a file in Glance's assets folder, or a server folder whose images are copied on save (D-60). */
+export const BackgroundImage = z.strictObject({
+  _id: id,
+  /** Path inside Glance's assets folder, e.g. "glance-editor/backgrounds/1a2b3c4d5e6f.jpg". */
+  file: str.optional(),
+  /** A folder mounted into the editor (SERVER_FOLDERS), e.g. "/photos/2024". */
+  folder: str.optional(),
+  /** What the user knows it as: the original file name. */
+  name: str.optional(),
+  extra,
+});
+
+/** D-52, D-53: background image or slideshow, drawn by the editor's CSS file. */
+export const Background = z.strictObject({
+  mode: z.enum(["image", "slideshow"]),
+  images: z.array(BackgroundImage).optional(),
+  /** Image mode: which image (index into images). */
+  use: z.number().int().min(0).optional(),
+  interval: z.enum(["1m", "5m", "15m", "1h"]).optional(),
+  order: z.enum(["in-order", "shuffle"]).optional(),
+  transition: z.enum(["fade", "cut"]).optional(),
+  fit: z.enum(["fill", "whole"]).optional(),
+  dim: z.number().int().min(0).max(80).optional(),
+  blur: z.number().int().min(0).max(20).optional(),
+  surfaces: z.enum(["solid", "see-through"]).optional(),
+  /** D-52: the user's own custom CSS file, which the editor's file imports. */
+  "import-css": str.optional(),
+  extra,
+});
+
+export const EditorSection = z.strictObject({ background: Background.optional(), extra });
+
 export const Dashboard = z.strictObject({
   schemaVersion: z.literal(SCHEMA_VERSION),
   server: Server.optional(),
@@ -154,6 +190,7 @@ export const Dashboard = z.strictObject({
   document: Document.optional(),
   theme: Theme.optional(),
   branding: Branding.optional(),
+  "glance-editor": EditorSection.optional(),
   pages: z.array(Page),
   extra,
 });
@@ -181,6 +218,8 @@ export type RawWidgetT = z.infer<typeof RawWidget>;
 export type WidgetT = ModelWidgetT | RawWidgetT;
 
 export type DashboardT = z.infer<typeof Dashboard>;
+export type BackgroundT = z.infer<typeof Background>;
+export type BackgroundImageT = z.infer<typeof BackgroundImage>;
 export type PageT = z.infer<typeof Page>;
 export type ColumnT = z.infer<typeof Column>;
 

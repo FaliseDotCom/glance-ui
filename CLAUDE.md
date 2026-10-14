@@ -4,7 +4,7 @@ A no-code web editor that owns the entire Glance (glanceapp/glance) config. Dash
 data model; `glance.yml` is generated on every explicit Save and is output only. Existing config is imported once.
 
 @docs/handoff.md
-@docs/phases/phase-9-icon-finder.md
+@docs/phases/phase-10-backgrounds.md
 
 ## Roles
 - **PM/QA (repo owner):** merges every PR, approves every release note, decides everything with UX impact.
@@ -82,6 +82,8 @@ data model; `glance.yml` is generated on every explicit Save and is output only.
 - Icons: `si:`/`mdi:` load from jsDelivr `@latest`, `sh:` from `selfhst/icons@main`, `di:` from dashboard-icons'
   default branch; `sh:`/`di:` take `.png`/`.webp` (no svg for ~500 icons each). `/assets/…` icons get no base-url.
   `server.assets-path` must exist or Glance won't start (ADR-0020).
+- Background (ADR-0021): Glance links `theme.custom-css-file` with `?v=<load time>` and inserts `document.head` as is;
+  it ignores the editor's own top-level `glance-editor:` key. `/assets/` is cached 2 h: name files by content.
 - `server.base-url` prefixes every link and script path Glance writes, but not its routes: a proxy that strips the
   prefix serves it under a path (the preview at `/preview`, ADR-0019). An unset env var in a placeholder fails the load.
 - Glance's theme defaults (v0.8.6 main.css): background 240 8 9, primary 43 50 70, positive = primary, negative 0 70 70.

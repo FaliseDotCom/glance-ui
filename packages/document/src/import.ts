@@ -11,7 +11,7 @@ import { readFile } from "node:fs/promises";
 import { dirname, isAbsolute, join } from "node:path";
 import type { z } from "zod";
 import {
-  Auth, AuthUser, Branding, Column, Dashboard, Document as DocumentSchema, Page, Server, Theme, ThemePreset, WIDGETS,
+  Auth, AuthUser, Background, BackgroundImage, Branding, Column, EditorSection, Dashboard, Document as DocumentSchema, Page, Server, Theme, ThemePreset, WIDGETS,
   SCHEMA_VERSION, checkDashboard, findPlaceholders, valueSchema, widgetFields, type DashboardT, type Field, type Issue,
 } from "@glance-editor/model";
 import { glanceParse, textStats } from "./text.ts";
@@ -160,6 +160,11 @@ class Ctx {
         case "server": out.server = this.obj(v, Server, p, {}, false); break;
         case "document": out.document = this.obj(v, DocumentSchema, p, {}, false); break;
         case "branding": out.branding = this.obj(v, Branding, p, {}, false); break;
+        case "glance-editor":
+          out[k] = this.obj(v, EditorSection, p, {
+            background: (b, bp) => this.obj(b, Background, bp, { images: (l, lp) => this.list(l, lp, (x, xp) => this.obj(x, BackgroundImage, xp)) }, false),
+          }, false);
+          break;
         case "auth":
           out.auth = this.obj(v, Auth, p, { users: (u, up) => this.keyedMap(u, up, "username", AuthUser) }, false);
           break;

@@ -1,4 +1,4 @@
-# Editor HTTP API (Phases 3, 5 to 9)
+# Editor HTTP API (Phases 3, 5 to 10)
 
 JSON in, JSON out. **Mutating requests** (anything but GET) need `Origin` naming the editor's own host and
 `Content-Type: application/json` (ADR-0004). Send `{}` when there is no body. Under `/preview` only the `Origin`
@@ -26,13 +26,17 @@ check applies (ADR-0019). Errors: `{ "error": "…" }` with 4xx/5xx.
 | POST | `/api/preview` | `{}` | `problems` · `built` · `failed` (`message`) · `not-configured`: checks again, writes the draft to the preview Glance's own config (never glance.yml) and waits for it to load (handoff §4b) |
 | any | `/preview/…` | | the preview Glance itself (pages, its API, static files), forwarded by the editor. Its links carry `/preview` (`server.base-url`). 404 when not set up |
 | GET | `/api/containers` | | `ok` (`containers`: `{ name, state, glance }`, where `glance` holds only the container's `glance.*` labels, without the prefix) · `unreachable` (`message`) · `not-configured`: what the read-only Docker socket proxy (`DOCKER_PROXY_URL`, ADR-0005) lists, for the Containers section (D-22 to D-24). The editor makes one request, `GET /containers/json?all=true`; other labels never leave the server |
-| GET | `/api/icons` | | `{ cdn, assets }`: where library previews load from, and whether a download can be used (`assets.ok`, or `reason` and `message`: no `ASSETS_DIR`, not writable, or no `server.assets-path` in the draft). ADR-0020 |
+| GET | `/api/icons` | | `{ cdn, glanceAssetsPath, serverFolders, assets }`: where library previews load from, Glance's assets path to offer when the draft sets none, whether server folders are mounted, and whether a download can be used (`assets.ok`, or `reason` and `message`: no `ASSETS_DIR`, not writable, or no `server.assets-path` in the draft). ADR-0020 |
 | GET | `/api/icons/search?q=&lib=` | | `{ results, total, libraries }`: library icons (`lib` = `all`, `si`, `sh`, `di`, `mdi`), at most 60, each `{ value, name, library, title, preview }`; `libraries` says which lists loaded (D-21) |
 | GET | `/api/icons/suggest?title=` | | `{ results, libraries }`: the title's matches in every library (D-54) |
 | GET | `/api/icons/site?url=` | | `found` (`id`, `domain`, `preview`) · `none` (`message`): the site's own icon, fetched and held, not written (D-54) |
 | GET | `/api/icons/offer/{id}` | | the bytes of an offered site icon (its preview) |
 | GET | `/api/icons/web?q=` | | `{ icons, images, imagesFrom, errors }`: Iconify icons and Openverse (or Wikimedia Commons) images, each with an `id`, title, provider, licence and preview (D-56) |
 | POST | `/api/icons/download` | `{ id }` | `{ ok: true, value, file }` or `{ ok: false, message }`: downloads an offered result into `<assets>/icons/` with `<file>.license.json`; `value` is the `/assets/icons/…` path to write (D-55) |
+| POST | `/api/backgrounds/upload` | the image's bytes, `Content-Type: application/octet-stream` (the one non-JSON request; same-origin only) | `{ ok, file }` or `{ ok: false, message }`: stored as `glance-editor/backgrounds/<hash>.<ext>` in Glance's assets folder (D-59, ADR-0021). Up to 30 MB |
+| POST | `/api/backgrounds/copy` | `{ paths }` | `{ ok, images: [{ file, name }] }` or `{ ok: false, message }`: copies images from mounted server folders into the assets folder |
+| GET | `/api/folders` / `/api/folders?path=` | | `{ roots }` (the `SERVER_FOLDERS`), or `{ path, entries }` (subfolders with their image count, images with their size), or `{ error }`. Paths outside the mounted folders are refused |
+| GET | `/api/folders/image?path=` | | an image from a mounted folder (the browser's thumbnails) |
 | GET | `/assets/…` | | Glance's assets folder (`ASSETS_DIR`), read only, for `/assets/` icons in the preview and the finder. 404 without it |
 | GET | `/healthz` | | liveness and glance binary presence |
 

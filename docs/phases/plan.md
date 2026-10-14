@@ -19,8 +19,8 @@ Glance v0.8.6, on desktop and at 390 px.
 | 6 | UI 2: widgets, inspector and forms, YAML override, bookmarks, theme | D-11–D-20, D-50, D-51, D-57, D-63 | ✅ merged (#9) |
 | 7 | Preview Glance | D-39, D-47–D-49 | ✅ merged (#10) |
 | 8 | Docker containers section (via the proxy) | D-22–D-24, ADR-0005 | ✅ merged (#11) |
-| 9 | Icon finder | D-21, D-54–D-56 | PR open (D-56: Iconify + Openverse) |
-| 10 | Backgrounds, server folders, Pixabay | D-52, D-53, D-59–D-62 | D-61/D-62 decided (1280 px; local pool) |
+| 9 | Icon finder | D-21, D-54–D-56 | ✅ merged (#12) |
+| 10 | Backgrounds, server folders, Pixabay | D-52, D-53, D-59–D-62 | 10a PR open; 10b (Pixabay) next |
 | 11 | Packaging, Unraid deployment, cutover, v1.0.0 | ADR-0006/0007/0008, deployment ADR | |
 
 ---

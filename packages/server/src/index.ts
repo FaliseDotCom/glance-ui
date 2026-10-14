@@ -6,3 +6,4 @@ export { openDb, backup, RETENTION, DB_VERSION } from "./db.ts";
 export { sha256, reloadStamp, waitForReload, writeLiveAtomically, type ReloadResult } from "./live.ts";
 export { listContainers, dockerBase, type ContainersResult, type DockerContainer } from "./docker.ts";
 export { Icons, ICON_SOURCES, normalizeIndex, matchScore, suggestScore, sniff, unsafeSvg, iconLinks, type IconHit, type IconSources, type LibraryStatus, type WebResult, type WebSearch, type SiteIcon, type DownloadResult } from "./icons.ts";
+export { backgroundCss, SLIDESHOW_JS, storeImage, listFolder, insideRoots, IMAGE_EXTS, type FolderEntry } from "./background.ts";

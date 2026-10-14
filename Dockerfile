@@ -30,7 +30,7 @@ WORKDIR /app
 COPY --from=build /src/apps/editor/build build
 RUN echo '{"type":"module"}' > package.json
 ENV NODE_ENV=production PORT=3000 GLANCE_BIN=/usr/local/bin/glance GLANCE_VERSION=${GLANCE_VERSION} \
-    GLANCE_CONFIG=/glance-config/glance.yml EDITOR_DATA_DIR=/data
+    GLANCE_CONFIG=/glance-config/glance.yml EDITOR_DATA_DIR=/data BODY_SIZE_LIMIT=32M
 USER node
 EXPOSE 3000
 HEALTHCHECK --interval=30s --timeout=3s CMD node -e "fetch('http://127.0.0.1:3000/healthz').then(r=>process.exit(r.ok?0:1),()=>process.exit(1))"

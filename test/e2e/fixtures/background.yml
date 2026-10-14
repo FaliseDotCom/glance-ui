@@ -1,0 +1,16 @@
+# Test dashboard for the background (flow 9 step 4, D-52, D-53, D-59, D-60).
+server:
+  host: 127.0.0.1
+  port: {{GLANCE_PORT}}
+  assets-path: {{ASSETS_DIR}}
+
+pages:
+  - name: Home
+    columns:
+      - size: small
+        widgets:
+          - type: to-do
+      - size: full
+        widgets:
+          - type: html
+            source: <p>Hello</p>

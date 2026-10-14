@@ -22,6 +22,7 @@ export type Sheet =
   | { kind: "discard" }
   | { kind: "deletePage"; pageId: string }
   | { kind: "add"; target: ListRef }
+  | { kind: "images" }
   | { kind: "icon"; label: string; title: string; url: string; current: string; apply: (value: string | undefined) => void };
 
 export interface Toast {

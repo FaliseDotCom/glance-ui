@@ -66,6 +66,7 @@ if docker image inspect "$EDITOR_IMAGE" >/dev/null 2>&1; then
     -v "$DEV_PREVIEW_DIR:/preview-config" \
     -v "$DEV_ASSETS_DIR:/glance-assets" \
     -e ASSETS_DIR=/glance-assets \
+    -e GLANCE_ASSETS_PATH=/app/assets \
     -e GLANCE_URL="http://$DEV_GLANCE:8080/" \
     -e PREVIEW_CONFIG=/preview-config/glance.yml \
     -e PREVIEW_GLANCE_URL="http://$DEV_PREVIEW:8080/" \

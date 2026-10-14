@@ -34,6 +34,9 @@ Overrides via env: `DEV_BIND`, `DEV_GLANCE_PORT`, `DEV_EDITOR_PORT`, `DEV_STATE`
 | `PREVIEW_CONFIG` | unset (no Preview button) | `/preview-config/glance.yml` (`~/.local/share/glance-editor-dev/preview-config`, shared with the preview Glance) |
 | `PREVIEW_GLANCE_URL` | unset | `http://glance-editor-dev-preview:8080/` (same Docker network) |
 | `ASSETS_DIR` | unset (no web or site icons) | `/glance-assets` (`~/.local/share/glance-editor-dev/assets`, also `/app/assets` in the dev and preview Glance) |
+| `GLANCE_ASSETS_PATH` | unset | `/app/assets` (lets the editor offer "Use Glance's assets folder" when glance.yml has no `assets-path`) |
+| `SERVER_FOLDERS` | unset (no server folders) | unset. To try it, mount a folder read-only into the editor and list it, e.g. `SERVER_FOLDERS=/photos` |
+| `BODY_SIZE_LIMIT` | `32M` (image uploads) | same |
 | `DOCKER_PROXY_URL` | unset (the Containers section says it can't reach Docker; names already in the map can still be toggled) | `tcp://glance-editor-dev-docker-proxy:2375` (same Docker network) |
 
 The API is described in `docs/api.md`. Until the UI exists, you can try it with curl (mutations need `-H "Origin: http://<host>:18190" -H "Content-Type: application/json"`).
@@ -43,6 +46,6 @@ The API is described in `docs/api.md`. Until the UI exists, you can try it with 
 - No authentication by design (ADR-0004). Keep these ports off the internet: no port-forwarding on the router.
 - The dev Glance shows **this host's** containers in the docker-containers widget, because it has the socket. The
   editor's Containers section lists the same host's containers through the proxy.
-- Web and site icons also need `server: assets-path: /app/assets` in the dev glance.yml (ADR-0020). The sample
-  config doesn't set it, so the finder says so; the libraries and URL tab work without it.
+- Web and site icons, and backgrounds, need `server: assets-path` in the dev glance.yml (ADR-0020, ADR-0021). The
+  sample config doesn't set it; the editor offers "Use Glance's assets folder", which sets `/app/assets` in the draft.
 - Resetting: `dev/down.sh && rm -rf ~/.local/share/glance-editor-dev && dev/up.sh`.
