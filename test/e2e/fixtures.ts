@@ -209,6 +209,7 @@ export const test = base.extend<{ opts: EditorOptions; editor: Editor }>({
       });
     } finally {
       for (const c of children) c.kill();
+      docker?.server.closeAllConnections();
       docker?.server.close();
       await icons?.close();
       await pixabay?.close();

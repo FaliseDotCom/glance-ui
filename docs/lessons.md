@@ -4,6 +4,10 @@ Things learned the hard way or by surprise. Newest first. Each entry: date, what
 Auto memory is machine-local. This file is the record.
 
 ### 2026-10-14: Things learned in Phase 10b
+- **A stand-in HTTP server's `close()` waits for open keep-alive connections.** The browser kept one open to the icon
+  stand-in (previews), so teardown hung past the test timeout: once in CI, once locally in Phase 9 ("5 passed" of 6,
+  not reproduced in 33 reruns). **Do:** `server.closeAllConnections()` before `close()` in every stand-in; treat any
+  unexplained slow run as a bug to find.
 - **A new section of the model must be added to the change list too.** The background's `glance-editor:` section was
   read and written, but `describeChanges` didn't compare it: changing only Dim gave "no changes". The dev Glance check
   found it, not the tests (every test also changed the theme). **Do:** when adding a model section, add it to

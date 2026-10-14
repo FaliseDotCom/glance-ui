@@ -107,6 +107,7 @@ export async function startIconSources(opts: { openverseDown?: boolean } = {}): 
     url: base,
     sources: { cdn: base, iconify: `${base}/iconify`, openverse: `${base}/openverse`, wikimedia: `${base}/wikimedia` },
     requests,
-    close: () => new Promise((ok) => server.close(() => ok())),
+    // A browser's keep-alive connections (previews) would keep close() waiting: end them.
+    close: () => new Promise((ok) => { server.closeAllConnections(); server.close(() => ok()); }),
   };
 }

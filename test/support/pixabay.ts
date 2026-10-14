@@ -41,5 +41,5 @@ export async function startPixabay(): Promise<PixabayStandIn> {
   });
   await new Promise<void>((ok) => server.listen(0, "127.0.0.1", ok));
   base = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
-  return { api: `${base}/api/`, requests, close: () => new Promise((ok) => server.close(() => ok())) };
+  return { api: `${base}/api/`, requests, close: () => new Promise((ok) => { server.closeAllConnections(); server.close(() => ok()); }) };
 }
