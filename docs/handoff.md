@@ -189,6 +189,7 @@ Nothing below may be built on until you decide. ★ = affects user experience.
    what CA needs).
 
 ## Session log
+- 2026-10-14: PR #18 merged by the PM. v1.0.0 release notes finalised in the release PR, for the PM's approval; then the `v1.0.0` tag.
 - 2026-10-14: ADR-0026 (five findings from the PM's install) proposed, accepted, built and tested on branch `phase-11/findings-2`; PR waits for the PM's go-ahead.
 - 2026-10-14: PR #16 merged by Claude at the PM's request. rc.2 (upload) and rc.3 (two fixes from the PM's install: a clearer message for a quoted value wrapped onto an unindented line; the page no longer scrolls behind an open sheet) published.
 - 2026-10-14: Test release v1.0.0-rc.1 published (image and template). ADR-0025 (upload a .zip on first run) proposed, accepted as option C, built.
