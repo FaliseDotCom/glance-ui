@@ -1,7 +1,7 @@
 # Handoff
 
 The single place to see where the project stands. Updated at the end of every work session and every PR.
-Last updated: 2026-10-14 (Phase 11: test release v1.0.0-rc.3 out; upload on first run, ADR-0025).
+Last updated: 2026-10-14 (v1.0.0 released).
 
 ## Current state
 - **Phase:** 11 (deployment). One container with an Unraid template (ADR-0024) and the first-run zip upload
@@ -184,11 +184,12 @@ Nothing below may be built on until you decide. ★ = affects user experience.
 - The real-binary tests caught a validator bug that my own model-based tests missed. Both kinds of test are kept.
 
 ## Next steps
-1. You: install `v1.0.0-rc.3` on Unraid beside your current Glance (`docs/runbooks/install.md`), compare, rehearse the fallback.
-2. You: approve the v1.0.0 notes, push `v1.0.0`, cut over. Then submit the template to Community Apps (Claude prepares
-   what CA needs).
+1. You: switch the Unraid container's Repository to `ghcr.io/gcarstoiu/glance-editor:latest`.
+2. You: when ready, cut over from your old Glance (`docs/runbooks/cutover.md`; rehearse the fallback first).
+3. Claude: prepare the Community Apps submission (template repository layout, `ca_profile.xml`); you submit it.
 
 ## Session log
+- 2026-10-14: **v1.0.0 released** (notes approved by the PM; tag pushed at the PM's request). `:1.0.0` and `:latest` published; the release page shows the notes; the template points at `:latest`; `test/all-in-one.sh` passed on the published image.
 - 2026-10-14: PR #18 merged by the PM. v1.0.0 release notes finalised in the release PR, for the PM's approval; then the `v1.0.0` tag.
 - 2026-10-14: ADR-0026 (five findings from the PM's install) proposed, accepted, built and tested on branch `phase-11/findings-2`; PR waits for the PM's go-ahead.
 - 2026-10-14: PR #16 merged by Claude at the PM's request. rc.2 (upload) and rc.3 (two fixes from the PM's install: a clearer message for a quoted value wrapped onto an unindented line; the page no longer scrolls behind an open sheet) published.
