@@ -26,6 +26,10 @@ LABEL org.opencontainers.image.title="Glance Editor" \
 # Unmodified glance binary (AGPL-3.0, source: github.com/glanceapp/glance at the commit above): the editor's
 # `config:validate` (ADR-0001, ADR-0013), and your Glance and the preview Glance in the all-in-one container (ADR-0024).
 COPY --from=glance /app/glance /usr/local/bin/glance
+# Glance (Go) verifies HTTPS sites against the system's CA certificates, and node:slim has none: weather, RSS and every
+# other widget that fetches from the web failed with "x509: certificate signed by unknown authority". The bundle from
+# Glance's own pinned image is the one Glance ships with. (The editor runs on Node, which has its own.)
+COPY --from=glance /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
 COPY third_party/glance/LICENSE third_party/glance/README.md /usr/share/doc/glance/
 COPY LICENSE /usr/share/doc/glance-editor/LICENSE
 WORKDIR /app
