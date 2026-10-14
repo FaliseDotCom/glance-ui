@@ -1,6 +1,6 @@
 // The change list (design D-26, handoff §2): a structural diff of the draft against its base, not a log of edits.
 
-import { isRawWidget, type DashboardT, type WidgetT } from "@glance-editor/model";
+import { isRawWidget, WIDGETS, type DashboardT, type Field, type WidgetT } from "@glance-editor/model";
 import { deepEqual, stripIds } from "@glance-editor/document";
 
 export interface Change {
@@ -36,10 +36,32 @@ const widgetLabel = (w: WidgetT) => {
   return title ? `${title} (${w.type})` : w.type;
 };
 
+/**
+ * Keyed lists are maps in the file (a docker-containers widget's `containers`, for example), and Glance reads them as
+ * Go maps, so their order means nothing: compare them sorted by key. Hiding a container and showing it again
+ * removes and re-adds its entry, and that is no change.
+ */
+function canonical(v: unknown, fields: readonly Field[]): unknown {
+  if (!v || typeof v !== "object" || Array.isArray(v)) return v;
+  const out: Record<string, unknown> = { ...(v as Record<string, unknown>) };
+  for (const f of fields) {
+    const x = out[f.key];
+    if (!Array.isArray(x) || !f.item) continue;
+    const items = x.map((i) => canonical(i, f.item!));
+    if (f.kind === "keyedList" && f.keyField) {
+      const k = f.keyField.key;
+      items.sort((a, b) => String((a as Record<string, unknown>)?.[k]).localeCompare(String((b as Record<string, unknown>)?.[k])));
+    }
+    out[f.key] = items;
+  }
+  return out;
+}
+
 /** The widget's own settings, without its children (children are compared separately). */
 const own = (w: WidgetT) => {
   const { widgets: _children, ...rest } = w as WidgetT & { widgets?: unknown };
-  return stripIds(rest);
+  const fields = !isRawWidget(w) && !w._yaml ? WIDGETS[w.type]?.fields : undefined;
+  return stripIds(fields ? canonical(rest, fields) : rest);
 };
 
 export function describeChanges(base: DashboardT, draft: DashboardT): Change[] {

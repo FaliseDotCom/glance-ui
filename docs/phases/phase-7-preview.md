@@ -1,9 +1,9 @@
-# Phase 7: Preview Glance (current phase)
+# Phase 7: Preview Glance
 
-**Status:** implemented on branch `phase-7/preview`. PR open, awaiting PM review.
+**Status:** merged (PR #10, 2026-10-14).
 **Design:** design pass 1 (ADR-0016): design 04 "Live preview", flow 8 "Preview before going live", handoff §4b,
 design 03 "Preview can't build" and "Preview out of date"; decisions D-39, D-47, D-48, D-49.
-**Architecture:** ADR-0019 (non-UX; accepted on merge).
+**Architecture:** ADR-0019 (non-UX; accepted by the merge).
 
 ## Acceptance criteria (plan v2)
 | Criterion | Status | Evidence |

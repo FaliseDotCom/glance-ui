@@ -4,3 +4,4 @@ export { locate, type Location, type Problem } from "./problems.ts";
 export { migrateModel, MODEL_MIGRATIONS, type ModelMigration } from "./migrations.ts";
 export { openDb, backup, RETENTION, DB_VERSION } from "./db.ts";
 export { sha256, reloadStamp, waitForReload, writeLiveAtomically, type ReloadResult } from "./live.ts";
+export { listContainers, dockerBase, type ContainersResult, type DockerContainer } from "./docker.ts";

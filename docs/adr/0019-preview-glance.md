@@ -1,6 +1,6 @@
 # 0019. The preview Glance: a second container, served by the editor under /preview
 
-- **Status:** proposed (non-UX; accepted when the Phase 7 PR is merged, per the ADR README)
+- **Status:** accepted (non-UX; accepted by merging the Phase 7 PR, #10, 2026-10-14)
 - **Date:** 2026-10-14
 - **Decider:** PM
 - **UX impact:** no. The screens are the design's (design 04, D-39, D-47 to D-49). This ADR is about how the preview
@@ -68,4 +68,4 @@ Option A:
   Glance with an assets folder or auth users.
 
 ## Decision record
-_Filled in by the PM._
+Accepted 2026-10-14 by the PM, by merging PR #10.

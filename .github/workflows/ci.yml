@@ -73,3 +73,5 @@ jobs:
           docker rm -f editor-ci
       - name: API end to end (editor image + a Glance watching the same config dir)
         run: GLANCE_EDITOR_IMAGE=glance-editor:ci test/editor-api.sh
+      - name: Docker socket proxy (a POST is refused; the editor image lists containers through it)
+        run: GLANCE_EDITOR_IMAGE=glance-editor:ci test/docker-proxy.sh

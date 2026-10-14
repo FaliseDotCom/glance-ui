@@ -2,6 +2,7 @@
 // built editor (apps/editor/build) pointed at both. Nothing outside the temp dirs is touched (docs/testing.md).
 import { spawn, type ChildProcess } from "node:child_process";
 import { chmodSync, mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { createServer as createHttpServer, type Server } from "node:http";
 import { createServer, type AddressInfo } from "node:net";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -21,6 +22,18 @@ export interface EditorOptions {
   preview?: boolean | { env: Record<string, string> };
   /** Give the editor a preview Glance URL nothing answers at (design 03 "Preview can't build"). */
   deadPreview?: boolean;
+  /**
+   * A stand-in for the read-only Docker socket proxy (ADR-0005) listing these containers, given to the editor as
+   * DOCKER_PROXY_URL and to the seed as `{{DOCKER_URL}}` (the widget's sock-path, so the real Glance lists the same).
+   * Like the proxy, it answers only GET. "dead": a Docker URL nothing answers at (design 03 "Docker socket unreachable").
+   */
+  docker?: FakeContainer[] | "dead";
+}
+
+export interface FakeContainer {
+  name: string;
+  state?: string;
+  labels?: Record<string, string>;
 }
 
 export interface Editor {
@@ -32,6 +45,24 @@ export interface Editor {
   glancePort: number | null;
   /** The preview Glance's config file (null without one). */
   previewPath: string | null;
+  /** Every request the stand-in Docker API received ("GET /containers/json?all=true"). */
+  dockerRequests: string[];
+}
+
+/** The stand-in Docker API: GET /containers/json like Docker's (all=false: running and paused only); 403 otherwise. */
+async function fakeDocker(list: FakeContainer[], seen: string[]): Promise<{ server: Server; url: string }> {
+  const server = createHttpServer((req, res) => {
+    seen.push(`${req.method} ${req.url}`);
+    const u = new URL(req.url ?? "/", "http://x");
+    if (req.method !== "GET" || !/^(\/v[\d.]+)?\/containers\/json$/.test(u.pathname)) return void res.writeHead(403).end("Forbidden");
+    const all = u.searchParams.get("all") === "true";
+    const body = list
+      .filter((c) => all || ["running", "paused"].includes(c.state ?? "running"))
+      .map((c) => ({ Names: [`/${c.name}`], Image: "example", State: c.state ?? "running", Status: c.state === "exited" ? "Exited (0) 2 days ago" : "Up 3 days", Labels: c.labels ?? {} }));
+    res.writeHead(200, { "content-type": "application/json" }).end(JSON.stringify(body));
+  });
+  await new Promise<void>((ok) => server.listen(0, "127.0.0.1", ok));
+  return { server, url: `http://127.0.0.1:${(server.address() as AddressInfo).port}` };
 }
 
 /** A port the OS says is free now (random picks collided once tests started three servers each). */
@@ -67,10 +98,15 @@ export const test = base.extend<{ opts: EditorOptions; editor: Editor }>({
     const children: ChildProcess[] = [];
     let glancePort: number | null = null;
     let previewPath: string | null = null;
+    const dockerRequests: string[] = [];
+    let docker: { server: Server; url: string } | null = null;
     try {
+      if (Array.isArray(opts.docker)) docker = await fakeDocker(opts.docker, dockerRequests);
+      // "dead": a port the OS just gave out, with nothing listening (fetch refuses some low ports outright).
+      const dockerUrl = opts.docker === "dead" ? `tcp://127.0.0.1:${await port()}` : docker?.url ?? "";
       if (opts.seed !== undefined) {
         glancePort = await port();
-        writeFileSync(configPath, opts.seed.replaceAll("{{GLANCE_PORT}}", String(glancePort)));
+        writeFileSync(configPath, opts.seed.replaceAll("{{GLANCE_PORT}}", String(glancePort)).replaceAll("{{DOCKER_URL}}", dockerUrl));
       }
       const env: Record<string, string> = {
         PATH: process.env.PATH ?? "",
@@ -80,6 +116,7 @@ export const test = base.extend<{ opts: EditorOptions; editor: Editor }>({
         GLANCE_VERSION: "v0.8.6",
         HOST: "127.0.0.1",
       };
+      if (dockerUrl) env.DOCKER_PROXY_URL = dockerUrl;
       if (opts.glance && glancePort !== null) {
         let log = "";
         const g = spawn(process.env.GLANCE_BIN!, ["--config", configPath], { stdio: "pipe", env: { PATH: env.PATH! } });
@@ -119,13 +156,14 @@ export const test = base.extend<{ opts: EditorOptions; editor: Editor }>({
       const url = `http://127.0.0.1:${editorPort}`;
       await waitFor(`${url}/healthz`, e, () => log);
       await use({
-        url, configPath, glancePort, previewPath,
+        url, configPath, glancePort, previewPath, dockerRequests,
         live: () => readFileSync(configPath, "utf8"),
         write: (text) => writeFileSync(configPath, text),
         readOnly: (on) => chmodSync(configDir, on ? 0o555 : 0o755),
       });
     } finally {
       for (const c of children) c.kill();
+      docker?.server.close();
       try { chmodSync(configDir, 0o755); } catch { /* already gone */ }
       rmSync(dir, { recursive: true, force: true });
     }

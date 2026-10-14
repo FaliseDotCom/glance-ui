@@ -1,6 +1,6 @@
 <!-- Widget inspector (design D-04, D-05, D-11 to D-14): a panel on the right on desktop, full screen on a phone.
      Settings: the form generated from the widget's schema, the Children section for groups and split columns (one level
-     at a time, with a Back link), the Bookmarks section. YAML: what will be written for this widget; applying a change
+     at a time, with a Back link), the Bookmarks and Containers sections. YAML: what will be written for this widget; applying a change
      makes it a YAML override and the form goes read-only until the override is discarded (D-12). -->
 <script lang="ts">
   import { tick, untrack } from "svelte";
@@ -11,6 +11,7 @@
   import { api } from "../client/api.ts";
   import type { App } from "../client/app.svelte.ts";
   import Bookmarks from "./Bookmarks.svelte";
+  import Containers from "./Containers.svelte";
   import Field from "./Field.svelte";
   import Icon from "./Icon.svelte";
 
@@ -168,9 +169,7 @@
           {#if schema?.section === "bookmarks"}
             <Bookmarks {app} {wref} w={w as ModelWidgetT} disabled={override} />
           {:else if schema?.section === "containers"}
-            <div class="rule"><span class="lbl">Containers</span></div>
-            <div class="notice">The containers list (show or hide each container, D-22) isn't built yet. Until then, edit the containers map in the YAML tab.
-              <button type="button" class="btn" onclick={() => (app.insTab = "yaml")}>Open YAML</button></div>
+            <Containers {app} {wref} w={w as ModelWidgetT} disabled={override} />
           {/if}
         {/if}
       </div>

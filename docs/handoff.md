@@ -1,14 +1,15 @@
 # Handoff
 
 The single place to see where the project stands. Updated at the end of every work session and every PR.
-Last updated: 2026-10-14 (Phase 7 PR opened).
+Last updated: 2026-10-14 (Phase 8 PR opened).
 
 ## Current state
-- **Phase:** 7 (Preview Glance) **PR open**, waiting for your review. Phase 6 merged (PR #9).
+- **Phase:** 8 (Docker containers section) **PR open**, waiting for your review. Phase 7 merged (PR #10).
 - **Phase plan:** approved 2026-10-13.
 - **Pinned Glance:** v0.8.6, by digest (`/glance.version`).
-- **Dev environment:** dev Glance on :18180, the editor container on :18190, and a preview Glance reached only through the
-  editor, on the dev machine (`docs/dev-environment.md`).
+- **Dev environment:** dev Glance on :18180, the editor container on :18190, a preview Glance reached only through the
+  editor, and the read-only Docker socket proxy the editor lists containers through, on the dev machine
+  (`docs/dev-environment.md`).
 - **Feature code:**
   - Phase 1: model, rules, generator, validation.
   - Phase 2: import and edit-in-place writer.
@@ -20,7 +21,10 @@ Last updated: 2026-10-14 (Phase 7 PR opened).
     inspector (generated form for every type, Children, YAML tab with overrides), Bookmarks, the Theme screen, My colours.
   - Phase 7: Preview. The draft, checked like Save, built on a separate preview Glance and shown full screen in the
     editor at desktop or phone width; "Out of date" until Refresh; Save and go live. glance.yml is never touched.
-  - The dev editor on :18190 runs this branch (Phase 7) against the dev Glance and its preview Glance.
+  - Phase 8: the Containers section of a Docker containers widget. The editor lists this host's containers through a
+    read-only socket proxy; the eye shows or hides each one by writing the widget's containers map; containers hidden
+    by a glance.hide label are read-only ("Label"); Hide by default flips what the eye writes.
+  - The dev editor on :18190 runs this branch (Phase 8) against the dev Glance, its preview Glance and the proxy.
 
 ## Needs user decision
 Nothing below may be built on until you decide. ★ = affects user experience.
@@ -53,6 +57,18 @@ _No decisions open._
 - The docker label-vs-map precedence is still **untested** (the source suggests the map wins).
 - Dev Glance confirmed reachable from another LAN device (by you, 2026-10-13).
 - Correction: the Phase 0 docs called the dev machine's Docker "rootless". It is rootful. Fixed in lessons and ADR-0009.
+
+## Phase 8 findings
+- The editor never gets the Docker socket. A pinned proxy (v0.5.0, by digest) lets it list containers and refuses
+  every change: tested, a POST to create, stop, kill or exec, and a DELETE, all get 403 and the container keeps running.
+- Glance hides a container only for `true` or `yes` (a label `glance.hide=1` shows it), and Running only also shows
+  paused containers. The section follows Glance exactly, and the real Glance in the tests agrees with it.
+- Hiding a container and showing it again now leaves nothing to save (before, the editor counted the map's new order
+  as a change).
+- Not built: typing a container name when Docker can't be reached (ADR-0005 mentioned it; the design has no control
+  for it; the YAML tab can do it). Say if you want it.
+- Some short texts are mine, not the design's (listed in the phase file), for example "Docker has no container with
+  this name, so Glance ignores it".
 
 ## Phase 7 findings
 - Preview works inside the editor: the editor serves the preview Glance under its own address (`/preview`), using
@@ -116,11 +132,12 @@ _No decisions open._
 - The real-binary tests caught a validator bug that my own model-based tests missed. Both kinds of test are kept.
 
 ## Next steps
-1. You: review and merge the Phase 7 PR. Try Preview on the dev editor (:18190): make a change, Preview, switch
-   pages and width, go back, change something, see "Out of date", Refresh, Save and go live. It runs this branch now.
-2. Claude: Phase 8, Docker containers section: socket proxy (ADR-0005), container list, eye toggles.
+1. You: review and merge the Phase 8 PR. Try it on the dev editor (:18190): open the Home page's Docker containers
+   card, press an eye, switch Hide by default, Preview or Save. It runs this branch now.
+2. Claude: Phase 9, the icon finder (D-21, D-54 to D-56: Iconify + Openverse).
 
 ## Session log
+- 2026-10-14: PR #10 (Phase 7) merged; ADR-0019 accepted. Phase 8 implemented (socket proxy, Containers section); PR opened.
 - 2026-10-14: PR #9 (Phase 6) merged. Phase 7 implemented (preview Glance, proxy, preview screen); PR opened. ADR-0019 (non-UX).
 - 2026-10-14: PR #8 (Phase 5) merged. Phase 6 implemented (widgets, inspector, YAML overrides, bookmarks, theme); PR opened.
 - 2026-10-13: Phase 5 implemented (first screens, UI tests at two widths); PR opened. ADR-0018 accepted (option B).

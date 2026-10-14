@@ -5,13 +5,16 @@
 #   - Every container this harness creates is named "glance-editor-test-*" and labelled
 #     "glance-editor-test=1". Cleanup only ever touches containers carrying that label.
 #   - Ports are bound to 127.0.0.1 only, in the 18xxx range.
-#   - No Docker socket is mounted, and nothing reads or writes the live dashboard's config.
+#   - No Docker socket is mounted, except read-only by test/glance-docker.sh and test/docker-proxy.sh, and nothing
+#     reads or writes the live dashboard's config.
 
 set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 # shellcheck source=../glance.version
 source "$REPO_ROOT/glance.version"
+# shellcheck source=../docker-proxy.version
+source "$REPO_ROOT/docker-proxy.version"
 
 TEST_LABEL="glance-editor-test=1"
 TEST_PREFIX="glance-editor-test"
@@ -79,4 +82,10 @@ placeholder_run_args() {
     -e "GLANCE_EDITOR_TEST_TOKEN_FILE=/run/test/token" \
     -v "$support/secret-test_secret:/run/secrets/test_secret:ro" \
     -v "$support/token:/run/test/token:ro"
+}
+
+# The docker run arguments that set the proxy's environment (docker-proxy.version).
+docker_proxy_env_args() {
+  local kv
+  for kv in $DOCKER_PROXY_ENV; do printf '%s\n' -e "$kv"; done
 }

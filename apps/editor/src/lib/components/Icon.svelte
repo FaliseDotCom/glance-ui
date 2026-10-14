@@ -1,6 +1,6 @@
 <!-- Icons from the design prototype (stroke icons, 24 px grid). Decorative: always aria-hidden. -->
 <script lang="ts">
-  type Name = "alert" | "info" | "check" | "plus" | "close" | "up" | "down" | "left" | "right" | "grip" | "trash" | "back";
+  type Name = "alert" | "info" | "check" | "plus" | "close" | "up" | "down" | "left" | "right" | "grip" | "trash" | "back" | "eye" | "eyeoff";
   let { name, size = 18 }: { name: Name; size?: number } = $props();
 </script>
 
@@ -19,6 +19,8 @@
     {:else if name === "right"}<path d="M9 6l6 6-6 6" />
     {:else if name === "trash"}<path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13" />
     {:else if name === "back"}<path d="M15 6l-6 6 6 6" />
+    {:else if name === "eye"}<path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z" /><circle cx="12" cy="12" r="3" />
+    {:else if name === "eyeoff"}<path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z" /><path d="M3 3l18 18" />
     {/if}
   </svg>
 {/if}

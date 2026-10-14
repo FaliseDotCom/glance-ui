@@ -1,8 +1,8 @@
 // The editor's JSON API (docs/api.md). Mutations send JSON from this origin, as ADR-0004 requires.
 import type { DashboardT, WidgetT } from "@glance-editor/model";
-import type { Change, DraftState, GlanceStatus, ImportCheck, PreviewCheck, PreviewResult, Problem, SaveResult, VersionSummary } from "@glance-editor/server";
+import type { Change, ContainersResult, DraftState, GlanceStatus, ImportCheck, PreviewCheck, PreviewResult, Problem, SaveResult, VersionSummary } from "@glance-editor/server";
 
-export type { Change, DraftState, GlanceStatus, ImportCheck, PreviewCheck, PreviewResult, Problem, SaveResult, VersionSummary };
+export type { Change, ContainersResult, DraftState, GlanceStatus, ImportCheck, PreviewCheck, PreviewResult, Problem, SaveResult, VersionSummary };
 export type VersionDetail = VersionSummary & { text: string; pages: number | null; widgets: number | null };
 
 async function call<T>(method: string, path: string, body?: unknown): Promise<T> {
@@ -37,4 +37,5 @@ export const api = {
   previewInfo: () => call<{ configured: boolean }>("GET", "/api/preview"),
   previewCheck: () => call<PreviewCheck>("POST", "/api/preview/check"),
   preview: () => call<PreviewResult>("POST", "/api/preview"),
+  containers: () => call<ContainersResult>("GET", "/api/containers"),
 };

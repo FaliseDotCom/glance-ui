@@ -1,4 +1,4 @@
-# Editor HTTP API (Phases 3, 5, 6 and 7)
+# Editor HTTP API (Phases 3, 5, 6, 7 and 8)
 
 JSON in, JSON out. **Mutating requests** (anything but GET) need `Origin` naming the editor's own host and
 `Content-Type: application/json` (ADR-0004). Send `{}` when there is no body. Under `/preview` only the `Origin`
@@ -25,6 +25,7 @@ check applies (ADR-0019). Errors: `{ "error": "…" }` with 4xx/5xx.
 | POST | `/api/preview/check` | `{}` | `{ ok, problems }`: Save's checks 1-3 on the stored draft (D-47). Nothing is written |
 | POST | `/api/preview` | `{}` | `problems` · `built` · `failed` (`message`) · `not-configured`: checks again, writes the draft to the preview Glance's own config (never glance.yml) and waits for it to load (handoff §4b) |
 | any | `/preview/…` | | the preview Glance itself (pages, its API, static files), forwarded by the editor. Its links carry `/preview` (`server.base-url`). 404 when not set up |
+| GET | `/api/containers` | | `ok` (`containers`: `{ name, state, glance }`, where `glance` holds only the container's `glance.*` labels, without the prefix) · `unreachable` (`message`) · `not-configured`: what the read-only Docker socket proxy (`DOCKER_PROXY_URL`, ADR-0005) lists, for the Containers section (D-22 to D-24). The editor makes one request, `GET /containers/json?all=true`; other labels never leave the server |
 | GET | `/healthz` | | liveness and glance binary presence |
 
 `reload` is `reloaded` (Glance loaded the new file; D-29), `not-confirmed` (it didn't within 10 s), or `not-checked`

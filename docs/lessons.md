@@ -3,6 +3,18 @@
 Things learned the hard way or by surprise. Newest first. Each entry: date, what happened, what to do.
 Auto memory is machine-local. This file is the record.
 
+### 2026-10-14: Things that bit while building the Containers section (Phase 8)
+- **A map's order is not a change.** Hiding a container and showing it again removed and re-added its entry, so the
+  model's list order differed and the editor counted "1 unsaved change". The writer produced the same bytes, Glance
+  didn't reload, and Save said "not confirmed". **Do:** compare keyed lists (maps in the file) by key, not by
+  position (`changes.ts`); test "undo by hand" sequences, not only one-way edits.
+- **Glance's booleans in labels and the map are strings: only `true` and `yes` count** (`stringToBool`, v0.8.6
+  `utils.go`). `glance.hide=1` or `True` shows the container. **Do:** mirror the source's comparison, not YAML's.
+- **Docker's `all=false` returns paused containers too** (tested, Docker 29.8). Glance's Running only shows them.
+- **Container labels can hold secrets** (proxy credentials, for example). **Do:** pass on only `glance.*` labels.
+- **The proxy's `CONTAINERS=1` allows inspect**, which returns every container's environment. Keep the proxy on an
+  internal network that only the editor joins.
+
 ### 2026-10-14: Things that bit while building Preview (Phase 7)
 - **Glance reloads only when the file's bytes change** (v0.8.6 `config.go` 367). Refresh of an unchanged draft wrote
   the same text, Glance didn't reload, and the editor reported a failed build. Every test changed the draft between
