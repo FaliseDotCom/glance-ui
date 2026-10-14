@@ -1,8 +1,8 @@
 // The editor's JSON API (docs/api.md). Mutations send JSON from this origin, as ADR-0004 requires.
 import type { DashboardT, WidgetT } from "@glance-editor/model";
-import type { Change, ContainersResult, DraftState, GlanceStatus, ImportCheck, PreviewCheck, PreviewResult, Problem, SaveResult, VersionSummary } from "@glance-editor/server";
+import type { Change, ContainersResult, DownloadResult, DraftState, IconHit, LibraryStatus, SiteIcon, WebResult, WebSearch, GlanceStatus, ImportCheck, PreviewCheck, PreviewResult, Problem, SaveResult, VersionSummary } from "@glance-editor/server";
 
-export type { Change, ContainersResult, DraftState, GlanceStatus, ImportCheck, PreviewCheck, PreviewResult, Problem, SaveResult, VersionSummary };
+export type { Change, ContainersResult, DownloadResult, DraftState, IconHit, LibraryStatus, SiteIcon, WebResult, WebSearch, GlanceStatus, ImportCheck, PreviewCheck, PreviewResult, Problem, SaveResult, VersionSummary };
 export type VersionDetail = VersionSummary & { text: string; pages: number | null; widgets: number | null };
 
 async function call<T>(method: string, path: string, body?: unknown): Promise<T> {
@@ -38,4 +38,16 @@ export const api = {
   previewCheck: () => call<PreviewCheck>("POST", "/api/preview/check"),
   preview: () => call<PreviewResult>("POST", "/api/preview"),
   containers: () => call<ContainersResult>("GET", "/api/containers"),
+  iconInfo: () => call<IconInfo>("GET", "/api/icons"),
+  iconSearch: (q: string, lib: string) =>
+    call<{ results: IconHit[]; total: number; libraries: Record<string, LibraryStatus> }>("GET", `/api/icons/search?q=${encodeURIComponent(q)}&lib=${lib}`),
+  iconSuggest: (title: string) => call<{ results: IconHit[]; libraries: Record<string, LibraryStatus> }>("GET", `/api/icons/suggest?title=${encodeURIComponent(title)}`),
+  iconSite: (url: string) => call<SiteIcon>("GET", `/api/icons/site?url=${encodeURIComponent(url)}`),
+  iconWeb: (q: string) => call<WebSearch>("GET", `/api/icons/web?q=${encodeURIComponent(q)}`),
+  iconDownload: (id: string) => call<DownloadResult>("POST", "/api/icons/download", { id }),
 };
+
+export interface IconInfo {
+  cdn: string;
+  assets: { ok: true } | { ok: false; reason: string; message: string };
+}

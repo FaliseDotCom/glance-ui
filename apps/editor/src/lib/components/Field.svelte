@@ -6,7 +6,7 @@
   import { tick } from "svelte";
   import type { Field as FieldT } from "@glance-editor/model";
   import {
-    UNITS, isPlaceholder, itemFields, itemNoun, listToText, mapToText, newId, parseDuration, parseNumber, splitDuration,
+    UNITS, isPlaceholder, itemFields, widgetAt, itemNoun, listToText, mapToText, newId, parseDuration, parseNumber, splitDuration,
     textToList, textToMap, type Parsed, type Unit, type WidgetRef,
   } from "@glance-editor/editing";
   import type { App } from "../client/app.svelte.ts";
@@ -39,6 +39,16 @@
   const bad = $derived(messages.length > 0);
   const hl = $derived(!!app.highlight?.widgetIds && app.highlight.widgetIds.join("/") === wref.ids.join("/") &&
     (app.highlight.path ?? [app.highlight.field]).join(".") === path.join("."));
+  // D-21: the icon finder opens from every icon field, with the item's title and URL for suggestions (D-54).
+  function findIcon() {
+    let item: unknown = app.draft ? widgetAt(app.draft, wref) : undefined;
+    for (const k of path.slice(0, -1)) item = (item as Record<string | number, unknown> | undefined)?.[k];
+    const it = (item ?? {}) as Record<string, unknown>;
+    app.sheet = {
+      kind: "icon", label: f.label, title: typeof it.title === "string" ? it.title : "", url: typeof it.url === "string" ? it.url : "",
+      current: typeof value === "string" ? value : "", apply: (v) => set(path, v),
+    };
+  }
   const placeholderText = $derived(f.default !== undefined && f.kind !== "bool" && f.kind !== "enum" ? String(f.default) : "");
 
   /** Parse typed text; store the value, or keep the text and report why it can't be stored. */
@@ -190,10 +200,13 @@
       <textarea {id} class="input mono" spellcheck="false" {disabled} value={typeof value === "string" ? value : ""} aria-invalid={bad}
         aria-describedby={bad ? `${id}-e` : undefined} oninput={(e) => set(path, e.currentTarget.value === "" ? undefined : e.currentTarget.value)}></textarea>
     {:else}
-      <input {id} class="input" class:mono={f.kind !== "text"} {disabled} value={typed?.text ?? (typeof value === "string" ? value : "")} aria-invalid={bad}
-        aria-describedby={bad ? `${id}-e` : undefined}
-        placeholder={f.kind === "icon" ? "di:name, si:name, sh:name, mdi:name or a URL" : placeholderText}
-        oninput={(e) => (siblingKeys ? keyText(e.currentTarget.value) : set(path, e.currentTarget.value === "" ? undefined : e.currentTarget.value))} />
+      <div class="row">
+        <input {id} class="input grow" class:mono={f.kind !== "text"} {disabled} value={typed?.text ?? (typeof value === "string" ? value : "")} aria-invalid={bad}
+          aria-describedby={bad ? `${id}-e` : undefined}
+          placeholder={f.kind === "icon" ? "di:name, si:name, sh:name, mdi:name or a URL" : placeholderText}
+          oninput={(e) => (siblingKeys ? keyText(e.currentTarget.value) : set(path, e.currentTarget.value === "" ? undefined : e.currentTarget.value))} />
+        {#if f.kind === "icon"}<button type="button" class="btn" {disabled} aria-label={`Find ${f.label.toLowerCase()}`} onclick={findIcon}>Find</button>{/if}
+      </div>
     {/if}
     {#if f.kind === "url"}<p class="help">Environment variables such as {"${NAME}"} are kept as written.</p>{/if}
   {/if}

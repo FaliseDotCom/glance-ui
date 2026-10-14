@@ -15,6 +15,14 @@ export function getEditor(): Promise<Editor> {
     previewConfigPath: env.PREVIEW_CONFIG || undefined,
     previewGlanceUrl: env.PREVIEW_GLANCE_URL || undefined,
     dockerUrl: env.DOCKER_PROXY_URL || undefined,
+    assetsDir: env.ASSETS_DIR || undefined,
+    // The icon finder's sources (ADR-0020); only tests change them.
+    iconSources: {
+      ...(env.ICON_CDN ? { cdn: env.ICON_CDN } : {}),
+      ...(env.ICONIFY_API ? { iconify: env.ICONIFY_API } : {}),
+      ...(env.OPENVERSE_API ? { openverse: env.OPENVERSE_API } : {}),
+      ...(env.WIKIMEDIA_API ? { wikimedia: env.WIKIMEDIA_API } : {}),
+    },
   }).then((e) => {
     // ADR-0008: a daily snapshot of the editor's data (retention handled in the store).
     timer ??= setInterval(() => e.dailyBackup(), 24 * 60 * 60 * 1000);

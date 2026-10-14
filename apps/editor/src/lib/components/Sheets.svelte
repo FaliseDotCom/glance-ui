@@ -7,12 +7,13 @@
   import type { Problem } from "../client/api.ts";
   import type { App } from "../client/app.svelte.ts";
   import Icon from "./Icon.svelte";
+  import IconFinder from "./IconFinder.svelte";
   let { app }: { app: App } = $props();
 
   const sheet = $derived(app.sheet);
   const titles: Record<string, string> = {
     review: "Review and save", checking: "Checking", problems: "Problems", saved: "Saved", conflict: "Changed outside the editor",
-    loadFile: "Load the file", error: "Not saved", discard: "Discard changes", deletePage: "Delete page", add: "Add widget",
+    loadFile: "Load the file", error: "Not saved", discard: "Discard changes", deletePage: "Delete page", add: "Add widget", icon: "Choose an icon",
   };
   const close = () => (app.sheet = null);
 
@@ -127,6 +128,8 @@
           {/each}
           {#if !addList.length}<div class="empty">No widget type matches.</div>{/if}
         </div>
+      {:else if sheet.kind === "icon"}
+        {#key sheet}<IconFinder {app} target={sheet} />{/key}
       {:else if sheet.kind === "review"}
         <span class="lbl">Save</span>
         <h2 class="h2">Save {plural(Math.max(changeLines.length, 1), "change")} to Glance</h2>

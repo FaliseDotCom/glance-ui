@@ -4,7 +4,7 @@ A no-code web editor that owns the entire Glance (glanceapp/glance) config. Dash
 data model; `glance.yml` is generated on every explicit Save and is output only. Existing config is imported once.
 
 @docs/handoff.md
-@docs/phases/phase-8-docker-containers.md
+@docs/phases/phase-9-icon-finder.md
 
 ## Roles
 - **PM/QA (repo owner):** merges every PR, approves every release note, decides everything with UX impact.
@@ -13,7 +13,9 @@ data model; `glance.yml` is generated on every explicit Save and is output only.
 - **Claude (you):** implementation and all project documentation.
 
 ## Hard rules
-1. **Never merge. Never push to `main`.** Work on a branch, open a PR, and stop.
+1. **Never push to `main`.** Work on a branch and open a PR. **Merging:** the PM allowed Claude (2026-10-14, via chat)
+   to merge the remaining phases' PRs itself once CI is green, unless something in them is critical for the PM to
+   decide or agree to. Then stop and ask. Anything that touches the live host, cutover, or release notes stays with the PM.
 2. **Never change repo settings** (branch protection, secrets, Actions permissions). Write the request into `docs/todo-user.md`.
 3. **UX-impacting decisions:** write an ADR with status `proposed`, add it to "Needs user decision" in
    `docs/handoff.md`, and do not build on it until the PM accepts it. When unsure whether something is UX-impacting, treat it as if it is.
@@ -77,6 +79,9 @@ data model; `glance.yml` is generated on every explicit Save and is output only.
 - docker-containers: the map's entry replaces a container's `glance.*` labels; `hide` hides only for `true`/`yes`.
   Docker's `all=false` (Running only) includes paused containers. The editor lists containers only through the
   read-only socket proxy (`/docker-proxy.version`, ADR-0005), never the socket.
+- Icons: `si:`/`mdi:` load from jsDelivr `@latest`, `sh:` from `selfhst/icons@main`, `di:` from dashboard-icons'
+  default branch; `sh:`/`di:` take `.png`/`.webp` (no svg for ~500 icons each). `/assets/…` icons get no base-url.
+  `server.assets-path` must exist or Glance won't start (ADR-0020).
 - `server.base-url` prefixes every link and script path Glance writes, but not its routes: a proxy that strips the
   prefix serves it under a path (the preview at `/preview`, ADR-0019). An unset env var in a placeholder fails the load.
 - Glance's theme defaults (v0.8.6 main.css): background 240 8 9, primary 43 50 70, positive = primary, negative 0 70 70.

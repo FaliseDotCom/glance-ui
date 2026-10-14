@@ -28,5 +28,6 @@ DEV_STATE="${DEV_STATE:-${XDG_DATA_HOME:-$HOME/.local/share}/glance-editor-dev}"
 DEV_CONFIG_DIR="$DEV_STATE/glance-config"   # mounted as a DIRECTORY (ADR-0009: required for atomic saves)
 DEV_EDITOR_DATA="$DEV_STATE/editor-data"
 DEV_PREVIEW_DIR="$DEV_STATE/preview-config" # the preview Glance's own config dir; the editor writes it, never glance.yml
+DEV_ASSETS_DIR="$DEV_STATE/assets"          # Glance's assets folder: /app/assets in both Glances, ASSETS_DIR for the editor
 
 log() { printf '[dev] %s\n' "$*" >&2; }

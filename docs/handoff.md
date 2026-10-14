@@ -1,10 +1,12 @@
 # Handoff
 
 The single place to see where the project stands. Updated at the end of every work session and every PR.
-Last updated: 2026-10-14 (Phase 8 PR opened).
+Last updated: 2026-10-14 (Phase 9 PR opened).
 
 ## Current state
-- **Phase:** 8 (Docker containers section) **PR open**, waiting for your review. Phase 7 merged (PR #10).
+- **Phase:** 9 (Icon finder) **PR open**; Claude merges it when CI is green (your go-ahead, 2026-10-14). Phase 8 merged (PR #11).
+- **Merging:** you allowed Claude to merge the remaining phases' PRs, unless something needs your decision or
+  agreement (CLAUDE.md rule 1). Live host, cutover and release notes stay with you.
 - **Phase plan:** approved 2026-10-13.
 - **Pinned Glance:** v0.8.6, by digest (`/glance.version`).
 - **Dev environment:** dev Glance on :18180, the editor container on :18190, a preview Glance reached only through the
@@ -24,7 +26,10 @@ Last updated: 2026-10-14 (Phase 8 PR opened).
   - Phase 8: the Containers section of a Docker containers widget. The editor lists this host's containers through a
     read-only socket proxy; the eye shows or hides each one by writing the widget's containers map; containers hidden
     by a glance.hide label are read-only ("Label"); Hide by default flips what the eye writes.
-  - The dev editor on :18190 runs this branch (Phase 8) against the dev Glance, its preview Glance and the proxy.
+  - Phase 9: the icon finder. Find next to every icon field: suggestions from the four libraries and the site's own
+    icon, library search, web search (Iconify, Openverse, Wikimedia Commons), URL. Web and site icons are
+    downloaded into Glance's assets folder with their licence.
+  - The dev editor on :18190 runs this branch (Phase 9) against the dev Glance, its preview Glance and the proxy.
 
 ## Needs user decision
 Nothing below may be built on until you decide. ★ = affects user experience.
@@ -57,6 +62,14 @@ _No decisions open._
 - The docker label-vs-map precedence is still **untested** (the source suggests the map wins).
 - Dev Glance confirmed reachable from another LAN device (by you, 2026-10-13).
 - Correction: the Phase 0 docs called the dev machine's Docker "rootless". It is rootful. Fixed in lessons and ADR-0009.
+
+## Phase 9 findings
+- Web and site icons need Glance's assets folder, and glance.yml must set `server: assets-path`, or Glance won't
+  serve the file. The editor has no screen for that setting yet; Phase 10 (backgrounds) needs the folder too and will
+  propose how it gets set.
+- About 500 icons in each of selfh.st and Dashboard Icons have no SVG. The finder writes `.png` for those, as Glance
+  needs; previews use exactly the address Glance uses (tested against Glance).
+- Every downloaded file gets a `.license.json` next to it with the licence, creator and source.
 
 ## Phase 8 findings
 - The editor never gets the Docker socket. A pinned proxy (v0.5.0, by digest) lets it list containers and refuses
@@ -132,11 +145,11 @@ _No decisions open._
 - The real-binary tests caught a validator bug that my own model-based tests missed. Both kinds of test are kept.
 
 ## Next steps
-1. You: review and merge the Phase 8 PR. Try it on the dev editor (:18190): open the Home page's Docker containers
-   card, press an eye, switch Hide by default, Preview or Save. It runs this branch now.
-2. Claude: Phase 9, the icon finder (D-21, D-54 to D-56: Iconify + Openverse).
+1. Claude: merge Phase 9 when CI is green, then Phase 10 (backgrounds, server folders, Pixabay).
+2. You, any time: try the icon finder on the dev editor (:18190): a bookmark link's icon → Find.
 
 ## Session log
+- 2026-10-14: PR #11 (Phase 8) merged. PM allowed Claude to merge the remaining phases. Phase 9 implemented (icon finder); PR opened. ADR-0020 (non-UX).
 - 2026-10-14: PR #10 (Phase 7) merged; ADR-0019 accepted. Phase 8 implemented (socket proxy, Containers section); PR opened.
 - 2026-10-14: PR #9 (Phase 6) merged. Phase 7 implemented (preview Glance, proxy, preview screen); PR opened. ADR-0019 (non-UX).
 - 2026-10-14: PR #8 (Phase 5) merged. Phase 6 implemented (widgets, inspector, YAML overrides, bookmarks, theme); PR opened.

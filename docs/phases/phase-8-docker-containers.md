@@ -1,6 +1,6 @@
-# Phase 8: Docker containers section (current phase)
+# Phase 8: Docker containers section
 
-**Status:** implemented on branch `phase-8/docker-containers`. PR open, awaiting PM review.
+**Status:** merged (PR #11, 2026-10-14).
 **Design:** design pass 1 (ADR-0016): flow 5 "Hide a container", information architecture "Containers section",
 design 03 "Docker socket unreachable"; decisions D-13, D-22, D-23, D-24 (D-25 overridden by ADR-0005).
 **Architecture:** ADR-0005 (accepted 2026-10-13: a read-only socket proxy for the editor only), with an

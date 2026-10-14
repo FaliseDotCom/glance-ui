@@ -148,6 +148,7 @@ textarea.input { min-height: 96px; resize: vertical; }
 .navmeta { font-family: var(--mono); font-size: 11px; letter-spacing: 0.06em; color: var(--ink-quiet); font-weight: 400; }
 .ib.sm { width: var(--touch); height: var(--touch); } /* prototype: 36 px wide; D-44 wins */
 .ib.off { color: var(--ink-quiet); }
+.icell:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 /* Containers section (D-22 to D-24) */
 .cdot { width: 8px; height: 8px; border-radius: 50%; flex: none; margin-right: 6px; }
 .cdot.run { background: var(--accent); }
@@ -177,6 +178,14 @@ fieldset.subcard { padding: 10px 12px; }
 .blinkmain { display: flex; align-items: center; gap: 10px; width: 100%; min-height: 52px; padding: 6px 10px; border: 0; background: transparent; text-align: left; cursor: pointer; border-radius: 12px; color: inherit; }
 .blinkbody { padding: 4px 12px 12px; display: flex; flex-direction: column; gap: 2px; }
 .ichip { width: 34px; height: 34px; border-radius: 8px; background: var(--fill-press); display: inline-flex; align-items: center; justify-content: center; font-family: var(--mono); font-size: 11px; font-weight: 600; color: var(--ink); flex: none; text-transform: uppercase; }
+/* Icon finder (D-21, D-54, D-55) */
+.ichip img { width: 24px; height: 24px; object-fit: contain; }
+.icongrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; }
+.icell { display: flex; align-items: center; gap: 8px; min-height: 48px; padding: 6px 10px; border: 0; border-radius: 12px; background: var(--fill-card); box-shadow: inset 0 0 0 1px var(--line); cursor: pointer; text-align: left; font-family: var(--mono); font-size: 12px; color: var(--ink); }
+.icell.on { box-shadow: inset 0 0 0 2px var(--accent); }
+.icell:disabled { opacity: 0.55; cursor: not-allowed; }
+.icell .ichip { text-transform: none; }
+.icell .iname { display: block; color: var(--ink); overflow: hidden; text-overflow: ellipsis; overflow-wrap: anywhere; }
 .tlist { display: flex; flex-direction: column; gap: 6px; max-height: 420px; overflow: auto; padding: 2px; }
 .trow { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; align-items: center; width: 100%; min-height: 48px; padding: 6px 12px; border: 0; border-radius: 12px; background: var(--fill-card); box-shadow: inset 0 0 0 1px var(--line); text-align: left; cursor: pointer; color: inherit; }
 .trow:disabled { cursor: not-allowed; opacity: 0.55; }

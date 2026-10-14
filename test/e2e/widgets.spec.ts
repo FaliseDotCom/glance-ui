@@ -1,7 +1,7 @@
 // Plan v2 Phase 6 acceptance: flows "Add and configure a widget" (3) and "Edit bookmarks" (4) at desktop width and at
 // 390 px, the widget steps of flows 1 and 6, a YAML override that round-trips unknown keys, and this phase's error and
-// empty states. Each test runs the built editor against a real Glance (fixtures.ts). The icon field is free text until
-// the icon finder (Phase 9).
+// empty states. Each test runs the built editor against a real Glance (fixtures.ts). The icon finder has its own
+// tests (icons.spec.ts); here the icon is typed.
 import type { Locator, Page } from "@playwright/test";
 import { expect, expectAccessible, expectTargets, fixture, isPhone, test } from "./fixtures.ts";
 import { shot } from "./shots.ts";

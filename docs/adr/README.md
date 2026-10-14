@@ -38,3 +38,4 @@ One file per decision: `NNNN-short-title.md`, copied from [0000-template.md](000
 | [0017](0017-widget-schema-registry.md) | Widget schemas drive the model (schema v2) | accepted on merge | no |
 | [0018](0018-fields-glance-does-not-require.md) | Fields the docs call required but Glance accepts empty | accepted (warn, don't block) | **yes** |
 | [0019](0019-preview-glance.md) | The preview Glance: a second container, served by the editor under /preview | accepted (PR #10) | no |
+| [0020](0020-icon-finder.md) | The icon finder: name lists, web sources, downloads into Glance's assets folder | proposed (accepted on merge) | no |
