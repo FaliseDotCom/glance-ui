@@ -75,14 +75,13 @@ On a phone:
 
 ## Install
 ### On Unraid
-1. Open the Unraid terminal and fetch the template (once). `<OWNER>` is the GitHub account this repository lives
-   under (it's in this page's address):
+1. Open the Unraid terminal and fetch the template (once):
    ```sh
    curl -fsSL -o /boot/config/plugins/dockerMan/templates-user/my-glance-editor.xml \
-     https://github.com/<OWNER>/glance-ui/releases/latest/download/glance-editor.xml
+     https://github.com/gcarstoiu/glance-ui/releases/latest/download/glance-editor.xml
    ```
-   The template is also attached to every [release](../../releases). For a test release, use its own address:
-   `https://github.com/<OWNER>/glance-ui/releases/download/v<VERSION>/glance-editor.xml`.
+   The template is also attached to every [release](https://github.com/gcarstoiu/glance-ui/releases). For a test
+   release, use its own address: `https://github.com/gcarstoiu/glance-ui/releases/download/v<VERSION>/glance-editor.xml`.
 2. **Docker** tab → **Add Container** → Template: **glance-editor**.
    - **Editor** port: `8090` (the WebUI).
    - **Dashboard** port: `8080`. Pick another if something already uses it, such as a Glance you already run.
@@ -101,7 +100,7 @@ docker run -d --name glance-editor \
   -v /var/run/docker.sock:/var/run/docker.sock:ro \
   -e PUID=1000 -e PGID=1000 \
   --restart unless-stopped \
-  ghcr.io/<OWNER>/glance-editor:latest
+  ghcr.io/gcarstoiu/glance-editor:latest
 ```
 Open `http://<server>:8090/` for the editor; the dashboard is on `http://<server>:8080/`.
 
@@ -151,7 +150,7 @@ over. The runbooks walk through it: [install](docs/runbooks/install.md), [compar
 - [CHANGELOG.md](CHANGELOG.md): release notes.
 
 Stack: TypeScript, SvelteKit, SQLite, Node 24, Playwright and Vitest. Issues and ideas are welcome:
-[open an issue](../../issues).
+[open an issue](https://github.com/gcarstoiu/glance-ui/issues).
 
 ## Credits
 - **[Glance](https://github.com/glanceapp/glance)** (AGPL-3.0): the dashboard this whole project is built around.

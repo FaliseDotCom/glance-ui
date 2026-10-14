@@ -24,6 +24,7 @@ data model; `glance.yml` is generated on every explicit Save and is output only.
 5. **Never touch the live Glance** or its config. Use only the test harness (`docs/testing.md`) and the dev environment (`docs/dev-environment.md`). Phases before 7 never write to the live host.
 6. The repo is **public**: no identifying info in files, commits, PRs or issues. That means no names, usernames, emails,
    hostnames, IPs, paths under a home directory, session/chat links, real config or tokens. Commit trailers: `Co-Authored-By` only.
+   Exception (PM, 2026-10-14): the repository owner's GitHub username in the README's install addresses and links.
 7. **Placeholders** (`${VAR}`, `${secret:…}`, `${readFileFromEnv:…}`, `\${…}`) are stored and written literally. Never resolve them.
 8. **Explicit Save only.** Never write `glance.yml` on every edit.
 9. Status reports have three separate parts: **Tested** (with scope), **Concluded**, **Not checked**.
