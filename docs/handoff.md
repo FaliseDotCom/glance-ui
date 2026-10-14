@@ -1,11 +1,11 @@
 # Handoff
 
 The single place to see where the project stands. Updated at the end of every work session and every PR.
-Last updated: 2026-10-14 (Phase 11: one container decided, ADR-0024; ready for a test release).
+Last updated: 2026-10-14 (Phase 11: test release v1.0.0-rc.3 out; upload on first run, ADR-0025).
 
 ## Current state
-- **Phase:** 11 (deployment). One container with an Unraid template (ADR-0024, accepted). The PR waits for your merge
-  (it carries the release notes draft); then a test release `v1.0.0-rc.1` to install side by side. Phases 0 to 10 are merged.
+- **Phase:** 11 (deployment). One container with an Unraid template (ADR-0024) and the first-run zip upload
+  (ADR-0025), both merged. Test release `v1.0.0-rc.3` is out for you to install side by side. Phases 0 to 10 are merged.
 - **Merging:** you allowed Claude to merge the remaining phases' PRs, unless something needs your decision or
   agreement (CLAUDE.md rule 1). Live host, cutover and release notes stay with you.
 - **Phase plan:** approved 2026-10-13.
@@ -181,12 +181,12 @@ Nothing below may be built on until you decide. ★ = affects user experience.
 - The real-binary tests caught a validator bug that my own model-based tests missed. Both kinds of test are kept.
 
 ## Next steps
-1. You: merge the Phase 11 PR; push the tag `v1.0.0-rc.1`; make the GHCR package public (todo-user).
-2. You: install it on Unraid beside your current Glance (`docs/runbooks/install.md`), compare, rehearse the fallback.
-3. You: approve the v1.0.0 notes, push `v1.0.0`, cut over. Then submit the template to Community Apps (Claude prepares
+1. You: install `v1.0.0-rc.3` on Unraid beside your current Glance (`docs/runbooks/install.md`), compare, rehearse the fallback.
+2. You: approve the v1.0.0 notes, push `v1.0.0`, cut over. Then submit the template to Community Apps (Claude prepares
    what CA needs).
 
 ## Session log
+- 2026-10-14: PR #16 merged by Claude at the PM's request. rc.2 (upload) and rc.3 (two fixes from the PM's install: a clearer message for a quoted value wrapped onto an unindented line; the page no longer scrolls behind an open sheet) published.
 - 2026-10-14: Test release v1.0.0-rc.1 published (image and template). ADR-0025 (upload a .zip on first run) proposed, accepted as option C, built.
 - 2026-10-14: One container (ADR-0024) built and accepted: image/start.ts, the Docker gate, the Unraid template and icon, test releases; tested end to end on the dev machine.
 - 2026-10-14: PR #14 (Phase 10b) merged by Claude, after fixing a test teardown hang CI found.
