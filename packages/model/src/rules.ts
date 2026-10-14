@@ -55,9 +55,12 @@ function checkBackground(d: DashboardT, add: Add) {
   if (!bg) return;
   const images = bg.images ?? [];
   images.forEach((im, i) => {
-    if (!im.file === !im.folder) add("error", "background.image-shape", ["theme", "background"], `Background image ${i + 1} needs either a file or a folder.`);
+    if ([im.file, im.folder, im.pixabay].filter((x) => x !== undefined).length !== 1) {
+      add("error", "background.image-shape", ["theme", "background"], `Background image ${i + 1} needs exactly one of a file, a folder or a Pixabay set.`);
+    }
   });
-  const count = images.reduce((n, im) => n + (im.folder ? 2 : 1), 0);
+  // A folder or a Pixabay set holds several images; the server checks what is really there.
+  const count = images.reduce((n, im) => n + (im.folder || im.pixabay ? 2 : 1), 0);
   if (bg.mode === "image" && !images.length) add("error", "background.no-image", ["theme", "background"], "Upload an image, or set the background back to Colour only.");
   if (bg.mode === "image" && images.length && (bg.use ?? 0) >= images.length) add("error", "background.no-image", ["theme", "background"], "The chosen background image is gone. Pick one of the images.");
   if (bg.mode === "slideshow" && count < 2) add("error", "background.slideshow-short", ["theme", "background"], "A slideshow needs at least 2 images.");

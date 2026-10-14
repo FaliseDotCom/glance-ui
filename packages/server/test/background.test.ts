@@ -11,10 +11,9 @@ const tmp = () => mkdtempSync(join(tmpdir(), "glance-editor-bg-"));
 
 describe("backgroundCss", () => {
   it("image: the chosen image, cover, dim; relative URLs; the user's CSS imported first", () => {
-    const css = backgroundCss({ mode: "image", use: 1, "import-css": "/assets/mine.css", dim: 40 } as BackgroundT, ["glance-editor/backgrounds/a.png", "glance-editor/backgrounds/b.png"]);
+    const css = backgroundCss({ mode: "image", use: 1, "import-css": "/assets/mine.css", dim: 40 } as BackgroundT, ["glance-editor/backgrounds/b.png"]);
     expect(css.split("\n")[1]).toBe('@import url("/assets/mine.css");');
     expect(css).toContain('background: url("backgrounds/b.png") center / cover no-repeat, var(--color-background);');
-    expect(css).not.toContain("a.png");
     expect(css).toContain("background: rgba(0, 0, 0, 0.40);");
     expect(css).not.toContain("@keyframes");
   });
@@ -83,5 +82,8 @@ describe("files", () => {
       .toMatchObject({ problems: [{ code: "background.folder-empty" }] });
     expect(await writeBackground(bg, { assetsDir: undefined, roots: [root] }, "background.css")).toMatchObject([{ code: "background.assets" }]);
     expect(existsSync(join(assets, "glance-editor", "slideshow.js"))).toBe(false);
+    // Image mode resolves only the chosen entry: a folder gives one image.
+    const one = await resolveImages({ mode: "image", use: 1, images: [{ _id: "a", file: "glance-editor/backgrounds/gone.png" }, { _id: "f", folder: root }] }, { assetsDir: assets, roots: [root] }, false);
+    expect(one).toEqual({ files: [`folder:${join(root, "a.png")}`], problems: [] });
   });
 });

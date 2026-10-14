@@ -17,6 +17,7 @@ import { listContainers, type ContainersResult } from "./docker.ts";
 import { Icons, type IconSources } from "./icons.ts";
 import { assetsWritable, copyImages, listFolder, resolveImages, storeImage, writeBackground, type BuildEnv, type FolderEntry, type Problemish } from "./background.ts";
 import { PREVIEW_CSS } from "@glance-editor/editing";
+import { Pixabay } from "./pixabay.ts";
 import { backup, openDb, type Db } from "./db.ts";
 import { pastStamp, readLive, reloadStamp, sha256, waitForReload, writeLiveAtomically, type ReloadResult } from "./live.ts";
 import { migrateModel } from "./migrations.ts";
@@ -49,6 +50,8 @@ export interface EditorConfig {
   glanceAssetsPath?: string | undefined;
   /** Folders mounted into the editor for background images (D-59), as the editor sees them. */
   serverFolders?: readonly string[] | undefined;
+  /** Pixabay's API URL (tests use a stand-in). */
+  pixabayApi?: string | undefined;
 }
 
 export type VersionSource = "import" | "editor" | "outside";
@@ -193,12 +196,24 @@ export class Editor {
   private now: () => Date;
   /** The icon finder's name lists, web search and downloads (D-21, D-54 to D-56; ADR-0020). */
   readonly icons: Icons;
+  /** Pixabay search, picks and rotating sets (D-61, D-62; ADR-0022). The key stays on the server. */
+  readonly pixabay: Pixabay;
 
   private constructor(db: Db, cfg: EditorConfig) {
     this.db = db;
     this.cfg = cfg;
     this.now = cfg.now ?? (() => new Date());
     this.icons = new Icons({ cacheDir: cfg.dataDir, assetsDir: cfg.assetsDir, sources: cfg.iconSources, fetch: cfg.iconFetch, now: this.now });
+    this.pixabay = new Pixabay({
+      store: {
+        get: (k) => (this.db.prepare("SELECT value FROM settings WHERE key = ?").get(k) as { value: string } | undefined)?.value ?? null,
+        set: (k, v) => {
+          if (v === null) this.db.prepare("DELETE FROM settings WHERE key = ?").run(k);
+          else this.db.prepare("INSERT INTO settings (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value").run(k, v);
+        },
+      },
+      cacheDir: cfg.dataDir, assetsDir: cfg.assetsDir, api: cfg.pixabayApi, fetch: cfg.iconFetch, now: this.now,
+    });
   }
 
   /** Open the store and record any change made to glance.yml while the editor was not running (handoff §5). */
@@ -505,7 +520,18 @@ export class Editor {
   // ---- background images (D-52, D-59, D-60) ------------------------------------------------------------------------
 
   private buildEnv(): BuildEnv {
-    return { assetsDir: this.cfg.assetsDir, roots: this.cfg.serverFolders ?? [] };
+    return { assetsDir: this.cfg.assetsDir, roots: this.cfg.serverFolders ?? [], poolFiles: (set) => this.pixabay.poolFiles(set) };
+  }
+
+  /**
+   * D-62: swap the current image of every rotating Pixabay set in the live glance.yml whose period has passed. Files
+   * only: glance.yml doesn't change. Called hourly.
+   */
+  async rotatePixabay(): Promise<string[]> {
+    const live = await readLive(this.cfg.configPath);
+    const bg = live ? importText(live).dashboard?.["glance-editor"]?.background : undefined;
+    const sets = (bg?.images ?? []).filter((i): i is typeof i & { pixabay: string } => typeof i.pixabay === "string");
+    return sets.length ? this.pixabay.rotate(sets) : [];
   }
 
   /** "This device" (D-59): store uploaded image bytes in Glance's assets folder. */

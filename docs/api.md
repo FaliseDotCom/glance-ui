@@ -37,6 +37,11 @@ check applies (ADR-0019). Errors: `{ "error": "…" }` with 4xx/5xx.
 | POST | `/api/backgrounds/copy` | `{ paths }` | `{ ok, images: [{ file, name }] }` or `{ ok: false, message }`: copies images from mounted server folders into the assets folder |
 | GET | `/api/folders` / `/api/folders?path=` | | `{ roots }` (the `SERVER_FOLDERS`), or `{ path, entries }` (subfolders with their image count, images with their size), or `{ error }`. Paths outside the mounted folders are refused |
 | GET | `/api/folders/image?path=` | | an image from a mounted folder (the browser's thumbnails) |
+| GET | `/api/pixabay` | | `{ hasKey, masked, chips }`: whether a Pixabay key is stored (only its last 4 characters), and the category chips (D-61) |
+| PUT / DELETE | `/api/pixabay/key` | `{ key }` / `{}` | checks the key with Pixabay and stores it (`{ ok, masked }` or `{ ok: false, reason, message }`: `rejected`, `limit`, `unreachable`); DELETE forgets it. The key is never returned |
+| GET | `/api/pixabay/search?cats=&q=` | | `{ ok, hits: [{ id, preview, width, height, user, pageURL, tags }] }`: one Pixabay request per chip, cached 24 h |
+| POST | `/api/pixabay/add` | `{ ids }` | `{ ok, images: [{ file, name }] }`: downloads picked results into the assets folder with credits |
+| POST | `/api/pixabay/pool` | `{ set, chips, count }` | `{ ok, files }`: downloads a rotating set's pool (D-62), only when called |
 | GET | `/assets/…` | | Glance's assets folder (`ASSETS_DIR`), read only, for `/assets/` icons in the preview and the finder. 404 without it |
 | GET | `/healthz` | | liveness and glance binary presence |
 

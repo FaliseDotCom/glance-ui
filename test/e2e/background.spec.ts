@@ -76,10 +76,20 @@ test.describe("Background", () => {
     expect(css).toMatch(/url\("backgrounds\/[0-9a-f]{16}\.png"\)/);
     expect(near(await glancePixel(browser, `http://127.0.0.1:${editor.glancePort}/`), RED)).toBe(true);
 
+    // A change to the background alone is a change to save (Review lists it).
+    await page.getByRole("slider", { name: "Dim image" }).fill("20");
+    await expect(page.getByRole("button", { name: "Save", exact: true })).toBeEnabled();
+    await page.getByRole("button", { name: "Save", exact: true }).click();
+    await expect(page.getByRole("dialog", { name: "Review and save" }).getByText("Background", { exact: false })).toBeVisible();
+    await page.getByRole("dialog", { name: "Review and save" }).getByRole("button", { name: "Check and save" }).click();
+    await expect(page.getByRole("heading", { name: "Version 2 is live" })).toBeVisible();
+    await page.getByRole("button", { name: "Done" }).click();
+    expect(editor.live()).toContain("dim: 20");
+
     // Colour only puts everything back: no custom CSS file, no section.
     await bgType(page, "Colour only").click();
     await save(page);
-    await expect(page.getByRole("heading", { name: "Version 2 is live" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Version 3 is live" })).toBeVisible();
     expect(editor.live()).not.toMatch(/^glance-editor:/m);
     expect(editor.live()).not.toContain("custom-css-file");
   });

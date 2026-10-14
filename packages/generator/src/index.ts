@@ -303,7 +303,7 @@ class Converter {
       const section: Obj = {};
       if (ed.background) {
         const bg: Obj = this.pick(ed.background, ["mode", "use", "interval", "order", "transition", "fit", "dim", "blur", "surfaces", "import-css"]);
-        if (ed.background.images) bg.images = ed.background.images.map((i) => this.pick(i, ["file", "folder", "name"]));
+        if (ed.background.images) bg.images = ed.background.images.map((i) => this.pick(i, ["file", "folder", "pixabay", "name", "categories", "count", "swap"]));
         section.background = bg;
       }
       if (ed.extra) for (const [k, v] of Object.entries(ed.extra)) if (!(k in section)) section[k] = v;

@@ -26,7 +26,8 @@ const q = (s: string) => `"${s.replace(/["\\\n]/g, (c) => (c === "\n" ? "" : `\\
 /** The editor's CSS for a background with these image files (paths inside the assets folder). Pure. */
 export function backgroundCss(bg: BackgroundT, files: readonly string[]): string {
   const o = { ...BACKGROUND_DEFAULTS, ...bg };
-  const slides = bg.mode === "slideshow" ? files : files.slice(o.use ?? 0, (o.use ?? 0) + 1);
+  // Image mode: `files` holds the one chosen image (resolveImages); a slideshow, every slide.
+  const slides = bg.mode === "slideshow" ? files : files.slice(0, 1);
   const urls = slides.map((f) => `url(${q(cssUrl(f))})`);
   const lines = [
     "/* Written by Glance Editor (design D-52). It is rewritten on every save: change the background on the Theme screen. */",
@@ -196,13 +197,23 @@ export async function copyImages(roots: readonly string[], assetsDir: string, pa
 export interface BuildEnv {
   assetsDir: string | undefined;
   roots: readonly string[];
+  /** A Pixabay set's pool files (D-62), in order. */
+  poolFiles?: (set: string) => Promise<string[]>;
 }
 
 /** D-60: the images a background uses now: its files, and every image in its folders (copied into assets). */
 export async function resolveImages(bg: BackgroundT, env: BuildEnv, copy: boolean): Promise<{ files: string[]; problems: Problemish[] }> {
   const files: string[] = [];
   const problems: Problemish[] = [];
-  for (const im of bg.images ?? []) {
+  // Image mode shows one image: the chosen entry (a folder gives its first image, a Pixabay set its current one).
+  const entries = bg.mode === "image" ? (bg.images ?? []).slice(bg.use ?? 0, (bg.use ?? 0) + 1) : (bg.images ?? []);
+  for (const im of entries) {
+    if (im.pixabay) {
+      const pool = (await env.poolFiles?.(im.pixabay)) ?? [];
+      if (!pool.length) problems.push({ code: "background.pixabay-empty", message: "The Pixabay set has no images yet. Open Add images → Pixabay and press Get new images." });
+      else files.push(...(bg.mode === "image" ? [`glance-editor/pixabay/${im.pixabay}/current.jpg`] : pool));
+      continue;
+    }
     if (im.file) {
       if (!env.assetsDir) continue;
       const ok = await stat(join(env.assetsDir, im.file)).then((s) => s.isFile(), () => false);
@@ -214,7 +225,7 @@ export async function resolveImages(bg: BackgroundT, env: BuildEnv, copy: boolea
         problems.push({ code: "background.folder-missing", message: `The folder ${im.folder} isn't mounted into the editor.` });
         continue;
       }
-      const images = list.filter((e) => !e.dir).slice(0, MAX_FOLDER_IMAGES);
+      const images = list.filter((e) => !e.dir).slice(0, bg.mode === "image" ? 1 : MAX_FOLDER_IMAGES);
       if (!images.length) problems.push({ code: "background.folder-empty", message: `The folder ${im.folder} has no images.` });
       if (copy && env.assetsDir) {
         const r = await copyImages(env.roots, env.assetsDir, images.map((e) => e.path));
