@@ -1,6 +1,6 @@
 // Problems (design D-28): where, field, why, and enough location for "Go to" to open the inspector on the field.
 
-import type { DashboardT, Issue } from "@glance-editor/model";
+import type { DashboardT, Issue, WidgetT } from "@glance-editor/model";
 
 export interface Location {
   pageId?: string;
@@ -68,7 +68,7 @@ export function locate(path: (string | number)[], d: DashboardT | undefined): Lo
 }
 
 /** Glance's own message, verbatim (D-27). "page N" in it points at that page. */
-export function fromGlance(output: string, d: DashboardT | undefined): Problem {
+export function fromGlance(output: string, d: DashboardT | undefined, widget?: Location): Problem {
   const m = /page (\d+)/.exec(output);
   const page = m && d ? d.pages[Number(m[1]) - 1] : undefined;
   return {
@@ -76,6 +76,38 @@ export function fromGlance(output: string, d: DashboardT | undefined): Problem {
     severity: "error",
     code: "glance.config-validate",
     message: output.trim() || "Glance rejected the configuration without a message.",
-    location: page ? { pageId: page._id } : {},
+    location: widget ?? (page ? { pageId: page._id } : {}),
   };
+}
+
+/**
+ * The widget type chain in a widget error, outermost first: "Config file is invalid: group widget: rss widget: …" →
+ * ["group", "rss"]. Glance v0.8.6 config.go formatWidgetInitError wraps each level as "<type> widget: ".
+ */
+export function widgetErrorChain(output: string): string[] {
+  const m = /invalid: ((?:[a-z0-9-]+ widget: )+)/.exec(output);
+  return m ? [...m[1]!.matchAll(/([a-z0-9-]+) widget: /g)].map((x) => x[1]!) : [];
+}
+
+/**
+ * Widgets whose type path matches the chain, in the order Glance initializes them (config.go newConfigFromYAML:
+ * per page, head widgets, then each column; containers initialize their children in order). Glance stops at the
+ * first failure, so the culprit is the first candidate that fails on its own.
+ */
+export function widgetCandidates(d: DashboardT, chain: string[]): { location: Location; path: WidgetT[] }[] {
+  const out: { location: Location; path: WidgetT[] }[] = [];
+  const visit = (list: WidgetT[], depth: number, at: Location, path: WidgetT[]) => {
+    for (const w of list) {
+      if (w.type !== chain[depth]) continue;
+      const here = [...path, w];
+      if (depth === chain.length - 1) out.push({ location: { ...at, widgetIds: here.map((x) => x._id) }, path: here });
+      else if (Array.isArray((w as { widgets?: unknown }).widgets)) visit((w as { widgets: WidgetT[] }).widgets, depth + 1, at, here);
+    }
+  };
+  if (!chain.length) return out;
+  for (const p of d.pages) {
+    visit(p["head-widgets"] ?? [], 0, { pageId: p._id, column: "head" }, []);
+    p.columns.forEach((c, ci) => visit(c.widgets, 0, { pageId: p._id, column: ci }, []));
+  }
+  return out;
 }

@@ -4,16 +4,16 @@
 import { rm, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import {
-  checkDashboard, hasErrors, parseDashboard, SCHEMA_VERSION, type ColumnT, type DashboardT,
+  checkDashboard, hasErrors, parseDashboard, SCHEMA_VERSION, type ColumnT, type DashboardT, type WidgetT,
 } from "@glance-editor/model";
 import { generate, toGlanceJson } from "@glance-editor/generator";
 import { validateConfig } from "@glance-editor/glance";
-import { importFile, importText, writeDraft, type ImportResult } from "@glance-editor/document";
+import { glanceParse, importFile, importText, writeDraft, type ImportReport, type ImportResult } from "@glance-editor/document";
 import { describeChanges, type Change } from "./changes.ts";
 import { backup, openDb, type Db } from "./db.ts";
 import { readLive, reloadStamp, sha256, waitForReload, writeLiveAtomically, type ReloadResult } from "./live.ts";
 import { migrateModel } from "./migrations.ts";
-import { fromGlance, fromIssue, type Problem } from "./problems.ts";
+import { fromGlance, fromIssue, widgetCandidates, widgetErrorChain, type Location, type Problem } from "./problems.ts";
 
 export interface EditorConfig {
   /** The live glance.yml. Its directory must be the one mounted into Glance (ADR-0009). */
@@ -43,12 +43,33 @@ export interface DraftState {
   firstRun: boolean;
   liveExists: boolean;
   draft: DashboardT | null;
+  /** The version the draft started from (the live one, or a restored one). */
   baseVersion: number | null;
+  /** The version Glance is running, as far as the editor knows. */
+  liveVersion: number | null;
   changes: Change[];
   problems: Problem[];
   /** The live file differs from the one this draft started from (D-32 will ask at Save). */
   changedOutside: boolean;
 }
+
+/** The import screen's checks (design 03, "Invalid config"), run before anything is stored. Nothing is written. */
+export interface ImportCheck {
+  fileFound: boolean;
+  /** The text that was checked (the live file, or the corrected text), so it can be corrected in the editor. */
+  text: string | null;
+  /** YAML parse result. On failure: the first error, its line (1-based) and the lines around it. */
+  parse: { ok: true } | { ok: false; line: number | null; message: string; snippet: string };
+  /** Glance's own config:validate, run only when the YAML parses. `ran: false` when it couldn't run. */
+  glance: { ran: boolean; ok: boolean; output: string };
+  report: ImportReport | null;
+  /** Editor rule problems and import notes (kept-as-is values, unknown keys, …). */
+  problems: Problem[];
+  /** All checks passed: Import may proceed. */
+  ok: boolean;
+}
+
+export type GlanceStatus = "reachable" | "unreachable" | "not-configured";
 
 export type SaveResult =
   | { status: "nothing" }
@@ -152,10 +173,15 @@ export class Editor {
       .map((v) => ({ number: v.number, createdAt: v.created_at, source: v.source, changes: JSON.parse(v.changes), applied: v.applied_at !== null, live: v.number === live }));
   }
 
-  version(n: number): (VersionSummary & { text: string }) | undefined {
+  async version(n: number): Promise<(VersionSummary & { text: string; pages: number | null; widgets: number | null }) | undefined> {
     const v = this.db.prepare("SELECT * FROM versions WHERE number = ?").get(n) as VersionRow | undefined;
     if (!v) return undefined;
-    return { number: v.number, createdAt: v.created_at, source: v.source, changes: JSON.parse(v.changes), applied: v.applied_at !== null, live: v.number === this.latestApplied()?.number, text: v.text };
+    const r = await this.importVersionText(v.text).catch(() => undefined);
+    return {
+      number: v.number, createdAt: v.created_at, source: v.source, changes: JSON.parse(v.changes), applied: v.applied_at !== null,
+      live: v.number === this.latestApplied()?.number, text: v.text,
+      pages: r?.dashboard ? r.report.pages : null, widgets: r?.dashboard ? r.report.widgets : null,
+    };
   }
 
   // ---- draft ------------------------------------------------------------------------------------------------------
@@ -185,10 +211,12 @@ export class Editor {
   }
 
   async state(): Promise<DraftState> {
+    // Design 03 "File changed outside the editor": on open, a changed file is stored as an "Outside editor" version.
+    await this.recordOutsideChange();
     const row = this.draftRow();
     const live = await readLive(this.cfg.configPath);
     if (!row) {
-      return { firstRun: this.versionCount() === 0, liveExists: live !== null, draft: null, baseVersion: null, changes: [], problems: [], changedOutside: false };
+      return { firstRun: this.versionCount() === 0, liveExists: live !== null, draft: null, baseVersion: null, liveVersion: this.latestApplied()?.number ?? null, changes: [], problems: [], changedOutside: false };
     }
     const draft = this.loadDraftModel(row);
     return {
@@ -196,6 +224,7 @@ export class Editor {
       liveExists: live !== null,
       draft,
       baseVersion: row.base_version,
+      liveVersion: this.latestApplied()?.number ?? null,
       changes: describeChanges(this.refModel(row), draft),
       problems: checkDashboard(draft).map((i) => fromIssue(i, draft)),
       changedOutside: live !== null && sha256(live) !== row.base_sha256,
@@ -220,21 +249,74 @@ export class Editor {
 
   // ---- first run (D-34, D-35) ---------------------------------------------------------------------------------------
 
-  async importLive(): Promise<{ ok: boolean; result: ImportResult }> {
+  /**
+   * The import screen's checks (design flow "Import glance.yml"): parse, then Glance's config:validate, then the report.
+   * `fixedText` is YAML the user corrected in the editor; the file on disk is never touched (design 03).
+   */
+  async checkImport(fixedText?: string): Promise<ImportCheck> {
     const live = await readLive(this.cfg.configPath);
-    const result = live === null
-      ? importText("", [])
-      : await importFile(this.cfg.configPath, { glanceBin: this.cfg.glanceBin });
-    if (live === null || !result.dashboard) return { ok: false, result };
+    const text = fixedText ?? live;
+    const none: ImportCheck = {
+      fileFound: live !== null, text, parse: { ok: true }, glance: { ran: false, ok: false, output: "" }, report: null, problems: [], ok: false,
+    };
+    if (text === null) return none;
+    const parse = parseError(text);
+    if (parse) return { ...none, parse };
+    let result: ImportResult;
+    try {
+      result = await this.importText(text, fixedText !== undefined);
+    } catch (e) {
+      return { ...none, glance: { ran: false, ok: false, output: (e as Error).message } };
+    }
+    const problems = result.issues.map((i) => fromIssue(i, result.dashboard));
+    // Glance's verdict whenever the YAML parses, even if the editor can't load it: its message is the useful one.
+    let glance: ImportCheck["glance"] = { ran: false, ok: false, output: "" };
+    if (result.base) {
+      try {
+        const hints = result.dashboard ? toGlanceJson(result.dashboard).placeholderHints : undefined;
+        const v = await validateConfig(result.base, { hints, glanceBin: this.cfg.glanceBin });
+        glance = { ran: true, ok: v.ok, output: v.output.trim() };
+      } catch (e) {
+        glance = { ran: false, ok: false, output: (e as Error).message };
+      }
+    }
+    if (!result.dashboard) return { ...none, report: result.report, problems, glance };
+    const blocking = problems.some((p) => p.severity === "error");
+    return { fileFound: live !== null, text, parse: { ok: true }, glance, report: result.report, problems, ok: glance.ok && !blocking };
+  }
+
+  /**
+   * Import the live glance.yml (or the user's corrected text) as the draft. The checks must pass (design 03: "Import
+   * stays disabled until it passes"). The file on disk becomes version 0 (D-35) and is never modified here.
+   */
+  async importLive(fixedText?: string): Promise<{ ok: boolean; result: ImportResult; check: ImportCheck }> {
+    const check = await this.checkImport(fixedText);
+    const live = await readLive(this.cfg.configPath);
+    const text = fixedText ?? live;
+    if (!check.ok || text === null) return { ok: false, result: importText("", []), check };
+    const result = await this.importText(text, fixedText !== undefined);
+    if (!result.dashboard) return { ok: false, result, check };
     let v = this.latestApplied();
-    if (!v) {
+    if (live !== null && !v) {
       this.addVersion("import", live, [], true); // D-35: the hand-written file is never lost
       v = this.latestApplied();
-    } else if (v.sha256 !== sha256(live)) {
+    } else if (live !== null && v && v.sha256 !== sha256(live)) {
       v = await this.recordOutsideChange();
     }
-    this.putDraft(result.dashboard, result.base, v?.number ?? null, sha256(live));
-    return { ok: true, result };
+    // Corrected text: the live file can't be read as a dashboard, so changes are measured against nothing.
+    this.putDraft(result.dashboard, result.base, v?.number ?? null, live === null ? null : sha256(live), fixedText === undefined ? result.base : "");
+    return { ok: true, result, check };
+  }
+
+  /** Import text as Glance sees it: the live file through config:print (includes merged), or given text. */
+  private async importText(text: string, given: boolean): Promise<ImportResult> {
+    return given ? this.importVersionText(text) : importFile(this.cfg.configPath, { glanceBin: this.cfg.glanceBin });
+  }
+
+  /** Does Glance answer at GLANCE_URL? (The design's status dot and "not responding" banner.) */
+  async glanceStatus(timeoutMs = 2000): Promise<GlanceStatus> {
+    if (!this.cfg.glanceUrl) return "not-configured";
+    return (await reloadStamp(this.cfg.glanceUrl, timeoutMs)) === null ? "unreachable" : "reachable";
   }
 
   async startEmpty(pageName: string, layout: keyof typeof START_LAYOUTS): Promise<DraftState> {
@@ -277,7 +359,7 @@ export class Editor {
           : (assetsDir: string) => render({ ...draft, server: { ...draft.server, "assets-path": assetsDir } }).text,
         { hints, glanceBin: this.cfg.glanceBin },
       );
-      if (!v.ok) return { status: "problems", problems: [fromGlance(v.output, draft)] };
+      if (!v.ok) return { status: "problems", problems: [fromGlance(v.output, draft, await this.locateGlanceError(v.output, draft))] };
     } catch (e) {
       return { status: "problems", problems: [{ source: "glance", severity: "error", code: "glance.unavailable", message: `Glance's validator couldn't run, so nothing was written: ${(e as Error).message}`, location: {} }] };
     }
@@ -296,8 +378,10 @@ export class Editor {
     try {
       await writeLiveAtomically(this.cfg.configPath, out.text);
     } catch (e) {
-      this.db.prepare("UPDATE versions SET note = ? WHERE number = ?").run(`write failed: ${(e as Error).message}`, number);
-      return { status: "error", message: `Version ${number} was stored, but glance.yml couldn't be written: ${(e as Error).message}` };
+      // Design 03 "Can't write the file": nothing changed, so the version that was about to go live is removed again.
+      // (It is stored first so a crash mid-write still leaves a record; a clean failure leaves none.)
+      this.db.prepare("DELETE FROM versions WHERE number = ?").run(number);
+      return { status: "error", message: `Couldn't write glance.yml: ${(e as Error).message}. Nothing changed.` };
     }
     this.db.prepare("UPDATE versions SET applied_at = ? WHERE number = ?").run(this.stamp(), number);
 
@@ -308,6 +392,29 @@ export class Editor {
     const fresh = importText(out.text).dashboard ?? draft;
     this.putDraft(fresh, out.text, number, sha256(out.text));
     return { status: "saved", version: number, reload, warnings: out.warnings, draft: fresh };
+  }
+
+  /**
+   * Which widget Glance's message is about, for Go to (D-28). One candidate: that one. Several: the first that Glance
+   * rejects on its own (a minimal config with just that widget, its containers kept), as Glance stops at the first.
+   */
+  private async locateGlanceError(output: string, draft: DashboardT): Promise<Location | undefined> {
+    const candidates = widgetCandidates(draft, widgetErrorChain(output));
+    if (candidates.length <= 1) return candidates[0]?.location;
+    for (const c of candidates.slice(0, 20)) {
+      const outer = structuredClone(c.path[0]!) as WidgetT & { widgets?: WidgetT[] };
+      // Keep only the path down to the candidate inside containers.
+      let cur = outer;
+      for (const next of c.path.slice(1)) {
+        cur.widgets = [structuredClone(next)];
+        cur = cur.widgets[0] as typeof cur;
+      }
+      const alone: DashboardT = { schemaVersion: SCHEMA_VERSION, pages: [{ _id: "p", name: "p", columns: [{ _id: "c", size: "full", widgets: [outer] }] }] };
+      const g = generate(alone, { glanceVersion: this.cfg.glanceVersion });
+      const r = await validateConfig(g.yaml, { hints: g.placeholderHints, glanceBin: this.cfg.glanceBin }).catch(() => undefined);
+      if (r && !r.ok) return c.location;
+    }
+    return undefined;
   }
 
   // ---- discard and restore (D-31, D-33) -------------------------------------------------------------------------------
@@ -328,7 +435,7 @@ export class Editor {
 
   /** Load a version into the draft. It goes live only through Save (D-31). */
   async restore(n: number): Promise<DraftState> {
-    const v = this.version(n);
+    const v = await this.version(n);
     if (!v) throw new Error(`There is no version ${n}.`);
     const r = await this.importVersionText(v.text);
     if (!r.dashboard) throw new Error(`Version ${n} can't be loaded: ${r.issues.map((i) => i.message).join("; ")}`);
@@ -351,6 +458,27 @@ export class Editor {
       await rm(file, { force: true });
     }
   }
+}
+
+/**
+ * The first YAML error with its line and the lines around it, or null if the text parses as Glance parses it
+ * (glanceParse: escapes like `\${X}` are valid there, though a plain YAML parser rejects them inside double quotes).
+ */
+function parseError(text: string): ImportCheck["parse"] & { ok: false } | null {
+  const parsed = glanceParse(text);
+  if (!parsed.errors.length) return null;
+  // glanceParse marks escapes with same-length characters, so error offsets match the original text.
+  const e = parsed.doc.errors[0];
+  if (!e) return { ok: false, line: null, message: parsed.errors[0]!, snippet: "" };
+  const offset = e.pos?.[0];
+  const line = offset === undefined ? null : text.slice(0, offset).split("\n").length;
+  const lines = text.split("\n");
+  const snippet = line === null ? "" : lines
+    .map((l, i) => ({ n: i + 1, l }))
+    .filter(({ n }) => n >= line - 2 && n <= line + 1)
+    .map(({ n, l }) => `${n === line ? ">" : " "} ${String(n).padStart(String(line + 1).length)} | ${l.replaceAll("\t", "→   ")}`)
+    .join("\n");
+  return { ok: false, line, message: e.message.split("\n")[0]!, snippet };
 }
 
 function emptyDashboard(): DashboardT {

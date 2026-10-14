@@ -1,0 +1,7 @@
+pages:
+  - name: Four
+    columns:
+      - size: small
+      - size: full
+      - size: small
+      - size: small

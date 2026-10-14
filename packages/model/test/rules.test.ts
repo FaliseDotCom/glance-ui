@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { checkDashboard, parseDashboard, type Issue } from "../src/index.ts";
+import { checkDashboard, hasErrors, parseDashboard, type Issue } from "../src/index.ts";
 import { clock, col, dash, page, uid } from "./helpers.ts";
 
 const codes = (issues: Issue[]) => issues.filter((i) => i.severity === "error").map((i) => i.code);
@@ -73,5 +73,22 @@ describe("schema", () => {
     expect(theme("240 8 9").dashboard).toBeDefined();
     expect(theme("hsl(240, 8%, 9%)").dashboard).toBeDefined();
     expect(theme("361 8 9").dashboard).toBeUndefined();
+  });
+});
+
+describe("fields Glance's docs call required (ADR-0018: warn, don't block)", () => {
+  const withWidget = (w: Record<string, unknown>) =>
+    parseDashboard({ schemaVersion: 2, pages: [{ _id: "p", name: "P", columns: [{ _id: "c", size: "full", widgets: [{ _id: "w", ...w }] }] }] });
+  it("warns about an RSS widget without feeds, and doesn't block", () => {
+    const r = withWidget({ type: "rss" });
+    expect(r.issues.filter((i) => i.code === "field.recommended").map((i) => [i.severity, i.path.join(".")]))
+      .toEqual([["warning", "pages.0.columns.0.widgets.0.feeds"]]);
+    expect(hasErrors(r.issues)).toBe(false);
+  });
+  it("checks items too, and accepts markets given as the legacy stocks list", () => {
+    const r = withWidget({ type: "monitor", sites: [{ _id: "s", title: "Router" }] });
+    expect(r.issues.filter((i) => i.code === "field.recommended").map((i) => i.path.join("."))).toEqual(["pages.0.columns.0.widgets.0.sites.0.url"]);
+    const m = withWidget({ type: "markets", stocks: [{ _id: "s", symbol: "X" }] });
+    expect(m.issues.filter((i) => i.code === "field.recommended")).toEqual([]);
   });
 });

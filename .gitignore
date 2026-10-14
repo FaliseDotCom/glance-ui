@@ -12,3 +12,5 @@ data/
 .svelte-kit/
 build/
 .spike/
+test-results/
+playwright-report/

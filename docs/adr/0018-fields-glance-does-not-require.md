@@ -1,6 +1,6 @@
 # 0018. Fields the docs call required but Glance accepts empty
 
-- **Status:** proposed
+- **Status:** accepted (option B)
 - **Date:** 2026-10-13
 - **Decider:** PM
 - **UX impact:** yes. It decides whether Save is blocked, and what the form shows, for 17 fields across 10 widget types.
@@ -54,4 +54,5 @@ handled: a warning, never a block.
 - Not verified: what each widget looks like at runtime with the field missing (not rendered in a test).
 
 ## Decision record
-_Filled in by the PM: accepted/rejected, date, notes._
+Accepted by the PM on 2026-10-13 (via chat): **option B**, warn on Review without blocking Save. Implemented as the
+`field.recommended` warning in `rules.ts` (Phase 5 PR); the form markers follow in Phase 6.

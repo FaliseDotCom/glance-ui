@@ -36,4 +36,4 @@ One file per decision: `NNNN-short-title.md`, copied from [0000-template.md](000
 | [0015](0015-document-preserving-writer.md) | Document-preserving YAML writer (design D-38) | accepted | no |
 | [0016](0016-design-pass-1-adopted.md) | Design pass 1 is the UX source of truth | accepted | **yes** |
 | [0017](0017-widget-schema-registry.md) | Widget schemas drive the model (schema v2) | accepted on merge | no |
-| [0018](0018-fields-glance-does-not-require.md) | Fields the docs call required but Glance accepts empty | **proposed** | **yes** |
+| [0018](0018-fields-glance-does-not-require.md) | Fields the docs call required but Glance accepts empty | accepted (warn, don't block) | **yes** |

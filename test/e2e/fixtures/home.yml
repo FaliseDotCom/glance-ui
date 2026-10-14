@@ -1,0 +1,32 @@
+# Test dashboard for the editor's end-to-end tests.
+server:
+  host: 127.0.0.1
+  port: {{GLANCE_PORT}}
+
+pages:
+  # The main page: three columns.
+  - name: Home
+    columns:
+      - size: small
+        widgets:
+          - type: clock
+            hour-format: 24h
+          - type: calendar
+      - size: full
+        widgets:
+          - type: bookmarks
+            title: Services # kept next to its value
+            groups:
+              - title: Media
+                links:
+                  - title: Example
+                    url: https://example.com/
+      - size: small
+        widgets:
+          - type: to-do
+  - name: Ops
+    columns:
+      - size: full
+        widgets:
+          - type: html
+            source: <p>Ops notes</p>

@@ -1,8 +1,8 @@
-# Phase 4: Widget schema for every type (current phase)
+# Phase 4: Widget schema for every type
 
-**Status:** implemented on branch `phase-4/widget-schema`. PR open, awaiting PM review. **No UI.**
+**Status:** merged (PR #7). **No UI.**
 **Design:** handoff §3 (widget schema), D-58 (refresh), D-18 (types and categories), reconciliation §2 items 2 and 7.
-ADRs 0017 (accepted on merge, non-UX) and **0018 (proposed, UX)**.
+ADRs 0017 (accepted on merge, non-UX) and 0018 (accepted: warn, don't block).
 
 ## Acceptance criteria (plan v2)
 | Criterion | Status | Evidence |
@@ -34,6 +34,5 @@ ADRs 0017 (accepted on merge, non-UX) and **0018 (proposed, UX)**.
 - **On the hour** (`cache` ignored): weather, calendar-legacy.
 - **None** (`cache` ignored): clock, calendar, to-do, bookmarks, search, iframe, html, group, split-column.
 
-## Open
-- ADR-0018 (proposed): what the editor does with the 17 fields the docs call required but Glance doesn't check.
-  Nothing acts on `docsRequired` until it is decided.
+## Follow-up
+- ADR-0018 was accepted (option B) and implemented in Phase 5 as the `field.recommended` warning.

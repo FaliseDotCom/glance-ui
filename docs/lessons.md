@@ -3,6 +3,24 @@
 Things learned the hard way or by surprise. Newest first. Each entry: date, what happened, what to do.
 Auto memory is machine-local. This file is the record.
 
+### 2026-10-13: `config:validate` is not the whole of "Glance will load it"
+validate runs the YAML parse, the page/column rules and every widget's `initialize()`, but not `newApplication`. A page
+whose slug is `login` or `logout` (also when derived from the name "Login") passes validate, then Glance refuses to start
+or reload with it. Found reading glance.go for the slug placeholder; confirmed against a real server. **Do:** when a
+Glance check lives outside `newConfigFromYAML`, add an editor rule and a test that starts the real server.
+
+### 2026-10-13: Things that bit while building the first UI (Phase 5)
+- The app's tsconfig extends `$app/tsconfig`, which Vite's TS transform can't resolve, so vitest can't load app files.
+  **Do:** keep logic in a workspace package (`packages/editing`) and test it there; the app stays thin.
+- A utility class (`.phone-only { display: none }`) loses to a component class declared later (`.btn { display: inline-flex }`).
+  **Do:** scope utilities under `.app` (higher specificity); the screenshots caught it, the tests didn't.
+- `:focus-visible` only applies after keyboard use, not after a scripted `focus()`. **Do:** reach elements with Tab in tests.
+- A plain YAML parser rejects `"\${X}"` (an invalid escape in double quotes) that Glance accepts. Any parse check must use
+  `glanceParse`. The import screen's first version used the plain parser and refused a valid fixture.
+- Glance's reload stamp has 1 s resolution: a save in the same second as a hand edit's reload can't be confirmed. Tests wait 1.1 s.
+- Glance's widget errors name only the type ("custom-api widget: …"). Glance stops at the first failing widget in page
+  order, so the culprit is the first candidate of that type that fails on its own. That's how Go to finds it.
+
 ### 2026-10-13: Glance's docs and its v0.8.6 behaviour disagree; the binary decides
 Found while checking every widget schema against the binary (Phase 4):
 - 17 fields the docs call "required" are not checked at all (ADR-0018). Glance runs the widget without them.

@@ -1,6 +1,6 @@
 import { readFile } from "node:fs/promises";
 import { describe, expect, it } from "vitest";
-import { parseDashboard, type ColumnT, type DashboardT, type PageT } from "@glance-editor/model";
+import { checkDashboard, parseDashboard, type ColumnT, type DashboardT, type PageT } from "@glance-editor/model";
 import { generate } from "@glance-editor/generator";
 import { substituteForValidation, validateConfig } from "../src/index.ts";
 
@@ -45,8 +45,10 @@ describe("Glance rejects what the model rules reject", () => {
     ["split-column in group", dash([col("full", [{ _id: "g3", type: "group", widgets: [{ _id: "s1", type: "split-column", widgets: [] }] }])]), "split columns inside of groups"],
     ["unknown widget type", dash([col("full", [{ _id: "x1", type: "nope", _raw: {} }])]), "unknown widget type"],
     ["no pages", { schemaVersion: 2, pages: [] }, "no pages configured"],
+    ["page with no name", dash([col("full")], { name: "" }), "has no name"],
   ];
   it.each(cases)("%s", async (_name, d, message) => {
+    expect(checkDashboard(d).some((i) => i.severity === "error"), "our rules reject it too").toBe(true);
     const r = await validate(d);
     expect(r.ok).toBe(false);
     expect(r.output).toContain(message);

@@ -15,11 +15,12 @@
 ## Commands (run from the repo root; the scripts are bash, so they work from fish/zsh too)
 | Command | What it checks | Time |
 | ------- | -------------- | ---- |
-| `scripts/test.sh` | Everything below except the smoke test, plus typecheck, license gate, shellcheck | ~45 s |
+| `scripts/test.sh` | Everything below except the smoke test, plus typecheck, license gate, shellcheck | ~80 s |
 | `npx vitest run packages/document` | Import, round trip (byte-identical), targeted edits, random edit sequences (property, 1,500 per run), spliced output rendered by real Glance. On a property failure, set `GLANCE_EDITOR_PROPERTY_DUMP=<file>` to record the failing op sequences | ~25 s |
 | `npx vitest run packages/document/test/widget-schema.test.ts` | Every widget schema against the real binary: required and docs-required fields, enum options (strict vs soft), every key's existence (wrong-typed value must fail), cross-field rules, import → generate of each sample, built-in themes | ~3 s |
 | `node scripts/glance-source-data.ts --check` | The checked-in widget type list and themes match Glance's source at the pinned commit (needs network; part of `scripts/test.sh`) | ~1 s |
 | `npx vitest run` | Model rules, placeholder parser, generator (incl. a 2,000-run property test), validation and render tests against the **real pinned binary** (`GLANCE_BIN`, extracted from the image by `scripts/fetch-glance-binary.sh`) | ~5 s |
+| `npx playwright test` | The editor UI end to end (`test/e2e`): builds the app, then per test a temp config dir, a real Glance on it and the built editor. Flows 1, 2, 6, 7 and every Phase 5 error/empty state, at 1280 px and 390 px, with axe (WCAG 2.1 A/AA) and a 44 px target check on each screen. `E2E_SKIP_BUILD=1` reuses the last build; `E2E_SCREENSHOTS=<dir>` saves screenshots. Part of `scripts/test.sh` | ~25 s |
 | `test/validate-fixtures.sh` | `glance config:validate` passes every `fixtures/valid/*` and fails every `fixtures/invalid/*` | ~3 s |
 | `test/upstream-example.sh` | Glance's own example config at the pinned commit: download, checksum, `config:validate` | ~2 s |
 | `test/glance-cli.sh` | `config:print` keeps placeholders and comments literal and inlines includes; a comment header validates | ~2 s |
@@ -37,6 +38,7 @@ The Glance image comes from `/glance.version` (tag plus digest). Requirements: D
 - `test/fixtures/support/`: dummy env/secret files for `placeholders.yml`. They are not secrets.
 - `test/fixtures/import/`: import fixtures. `commented.yml` has comments everywhere, an anchor and merge key, a flow list, a
   block scalar, an escape in double quotes, a typo key and an unrepresentable value. `includes/` covers `$include`, `!include`, nesting.
+- `test/e2e/fixtures/`: configs for the UI tests. `{{GLANCE_PORT}}` in `home.yml` becomes the test Glance's port.
 - `test/fixtures/model/v1/`, `v2/`: editor-model fixtures, one folder per schema version, kept forever for migration
   tests (ADR-0003). `v2/sample.json` (current) covers a range of widget types, typed and untyped placeholders and an escape.
 

@@ -10,6 +10,7 @@ echo "== typecheck";                npm run --silent typecheck
 echo "== dependency licenses";      npm run --silent licenses > /dev/null
 echo "== Glance source data";       node scripts/glance-source-data.ts --check
 echo "== unit + Glance tests";      npx vitest run
+echo "== UI end to end";            npx playwright test # builds the editor; desktop and 390 px phone (test/e2e)
 echo "== shellcheck"
 docker run --rm --network none -v "$PWD:/mnt:ro" -w /mnt "$SHELLCHECK_IMAGE" -x scripts/*.sh test/*.sh dev/*.sh
 
