@@ -11,6 +11,10 @@ All notable changes are recorded here. The format follows Keep a Changelog; vers
   with their defaults. The YAML is under **Show YAML**.
 - **A community widget's settings** show its title, cache and values, all changeable without YAML.
 - **A second copy of a widget** can share the first copy's values or have its own, to show another server.
+- **Drag and drop for more things.** Bookmark links move between groups and onto another Bookmarks widget, and whole
+  groups too. Widgets go into and out of groups and split columns. Pages in the side bar and slideshow images drag into
+  order. On a phone, a finger on a grip drags as well. A tap on a grip offers **Move to…**, a list of every place the
+  link, group or widget can go, other pages included. Moves to another widget or page can be undone.
 
 ### Changed
 - **Values are checked before they're stored, and Save checks with them.** A value that would stop the dashboard

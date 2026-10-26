@@ -1,10 +1,11 @@
 <!-- Background (design D-52, D-53; flow 9 step 4): Colour only, Image or Slideshow, drawn by the editor's own CSS file in
      Glance's assets folder, written on Save (Preview writes its own copy). Images come from "Add images" (D-59). -->
 <script lang="ts">
-  import { BACKGROUND_DEFAULTS, editBackground, setBackgroundMode } from "@glance-editor/editing";
+  import { BACKGROUND_DEFAULTS, editBackground, moveItem, setBackgroundMode } from "@glance-editor/editing";
   import type { BackgroundT, DashboardT } from "@glance-editor/model";
   import { api, type IconInfo } from "../client/api.ts";
   import type { App } from "../client/app.svelte.ts";
+  import { gripDrag } from "../client/drag.ts";
   import Icon from "./Icon.svelte";
 
   let { app }: { app: App } = $props();
@@ -85,7 +86,14 @@
     {#each images as im, i (im._id)}
       {@const name = im.name ?? im.file ?? im.folder ?? "image"}
       {@const inUse = show || (o.use ?? 0) === i}
-      <div class="crow" class:dimmed={!inUse}>
+      <div class="crow" class:dimmed={!inUse} class:dragging={app.drag?.kind === "image" && app.drag.id === im._id}
+        class:dropbefore={app.drag?.kind === "image" && app.drag.target?.list === "i" && app.drag.target.index === i && app.drag.id !== im._id}
+        style:padding-left={show ? "4px" : undefined} data-drop-for={show ? "image" : undefined} data-drop-list="i" data-drop-index={i}>
+        {#if show}
+          <!-- ADR-0031: slides drag into order by their grip; the arrows stay. -->
+          <button type="button" class="grip" aria-label={`Move ${name}`} title="Drag to move"
+            use:gripDrag={{ app, kind: "image", id: im._id, accept: (k) => k === "i", onDrop: (t) => edit((b) => moveItem(b.images!, i, t.index)) }}><Icon name="grip" size={16} /></button>
+        {/if}
         {#if im.pixabay}
           <span class="thumb" aria-hidden="true"><img src={`/assets/glance-editor/pixabay/${im.pixabay}/current.jpg`} alt="" loading="lazy" /></span>
         {:else if im.folder}
@@ -110,6 +118,10 @@
         </div>
       {/if}
     {/each}
+    {#if app.drag?.kind === "image"}
+      <div class="dropzone show" class:on={app.drag.target?.list === "i" && app.drag.target.index === images.length}
+        data-drop-for="image" data-drop-list="i" data-drop-end={images.length} aria-hidden="true"></div>
+    {/if}
     {#if !images.length}<div class="empty">No images yet.</div>{/if}
     {#if refreshError}<p class="errtxt" role="alert" style="margin: 0">{refreshError}</p>{/if}
     <button type="button" class="btn add" onclick={() => (app.sheet = { kind: "images" })}><Icon name="plus" />Add images</button>

@@ -49,3 +49,4 @@ One file per decision: `NNNN-short-title.md`, copied from [0000-template.md](000
 | [0028](0028-community-widgets.md) | Community widgets, ready to pick | accepted (PM, 2026-10-14); in part superseded (0030) | **yes** |
 | [0029](0029-values-in-the-editor.md) | Values for ${VARIABLES}, set in the editor | accepted (PM, 2026-10-15) | **yes** |
 | [0030](0030-community-widgets-without-code.md) | Every community widget set up with fields, without YAML | accepted (PM, 2026-10-26) | **yes** |
+| [0031](0031-drag-and-drop-everywhere.md) | Drag and drop for bookmarks, and simpler moving everywhere | accepted (PM, 2026-10-26) | **yes** |

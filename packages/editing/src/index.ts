@@ -7,3 +7,4 @@ export * from "./containers.ts";
 export * from "./icons.ts";
 export * from "./background.ts";
 export * from "./values.ts";
+export * from "./moves.ts";

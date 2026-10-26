@@ -34,7 +34,8 @@ Install it once, and it's all there.
   full. The editor keeps you within Glance's rules: at most three columns, one or two full, slim pages with two.
 - **Every widget Glance v0.8.6 has**, each with a form built from its settings. Glance's defaults show greyed, so
   `glance.yml` only gets what you change. Anything the form doesn't cover can be written in the widget's YAML tab.
-- **Drag and drop** on desktop, or move buttons on a phone. The editor works on both.
+- **Drag and drop** by a grip, with a mouse or a finger: widgets between columns and into groups, pages, slides, and
+  bookmark links and groups, even into another Bookmarks widget. Or tap the grip for move buttons and **Move to…**.
 - **Bookmarks** with groups, colours and icons.
 - **Docker containers.** Show or hide each container with one tap, and give it an icon, a name, a link and a
   description. On Unraid, the icon Unraid already uses for the container is offered too. Containers on other servers

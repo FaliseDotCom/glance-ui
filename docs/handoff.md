@@ -1,7 +1,7 @@
 # Handoff
 
 The single place to see where the project stands. Updated at the end of every work session and every PR.
-Last updated: 2026-10-26 (ADR-0030 built on `feat/community-codeless`: every community widget set up with fields).
+Last updated: 2026-10-26 (ADR-0030 merged as PR #27; ADR-0031 drag and drop built on `feat/drag-and-drop`).
 
 ## Current state
 - **Released:** **v1.2.0** is `:latest` (`ghcr.io/gcarstoiu/glance-editor`, public). Earlier: v1.0.0, v1.0.1, v1.1.0
@@ -41,6 +41,8 @@ Last updated: 2026-10-26 (ADR-0030 built on `feat/community-codeless`: every com
   help and kind and repairs README YAML; More options, Show YAML; a community widget's settings show its title, cache
   and values; a second copy can have its own values (`NAME_2`); values and Save are checked with the real values;
   159 of 165 can be added (6 refused with the reason). Live check: `test/community-live.sh`.
+- ADR-0031 drag and drop: links and groups between groups and Bookmarks widgets, widgets into and out of groups and
+  split columns, pages, slides; a finger on the grip drags too; Move to… for touch and keyboard.
 - Favicon in the editor's tab; CA certificates in the image (v1.0.1).
 
 ## Resuming (for the next session)
@@ -73,6 +75,7 @@ Nothing below may be built on until you decide. ★ = affects user experience.
 ## Decided on 2026-10-26 (via chat)
 | ADR | Outcome |
 | --- | ------- |
+| [0031](adr/0031-drag-and-drop-everywhere.md) | **Drag and drop:** drop on another Bookmarks card plus Move to…; drag by the grip on a phone too; widgets in and out of groups, pages and slides as well |
 | [0030](adr/0030-community-widgets-without-code.md) | **Community widgets without code:** hard-coded values become values in `.env`; optional settings under More options; values, title and cache in the widget's settings; a second copy asks for the same or its own values |
 
 ## Decided on 2026-10-15 (via chat)
@@ -223,8 +226,6 @@ Nothing below may be built on until you decide. ★ = affects user experience.
 - The real-binary tests caught a validator bug that my own model-based tests missed. Both kinds of test are kept.
 
 ## Next steps
-0. Claude: drag and drop for bookmarks between groups and between Bookmarks widgets, and simpler re-arrangement
-   elsewhere (asked by the PM, 2026-10-26): propose first (UX), then build.
 1. You: submit `gcarstoiu/unraid-templates` at https://ca.unraid.net/submit/new; paste any Validate/Scan findings to
    Claude.
 2. You: on Unraid, switch to `ghcr.io/gcarstoiu/glance-editor:latest` (v1.2.0) and update; try a community widget with
@@ -236,6 +237,8 @@ Nothing below may be built on until you decide. ★ = affects user experience.
    `test/community-live.sh` on the image, review, PR); a newer Glance pin (ADR-0006) when one is released.
 
 ## Session log
+- 2026-10-26: PR #27 (ADR-0030) merged by the PM; PR #28 (a teardown race in the UI tests) merged by Claude.
+  ADR-0031 (drag and drop) proposed, accepted as recommended, and built on `feat/drag-and-drop`.
 - 2026-10-26: community widgets checked one by one (README audit; each set up through the UI in a throwaway
   container); ADR-0030 proposed, accepted (all four as recommended) and built on `feat/community-codeless`.
 - 2026-10-23: end of session. Everything pushed and merged; handoff, todos and phase file brought up to date.

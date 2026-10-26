@@ -187,7 +187,7 @@ export function moveWidgetTo(d: DashboardT, r: WidgetRef, column: Column, index:
 }
 
 /** An emptied head strip drops its key, so the file doesn't gain a `head-widgets: []` nobody wrote. */
-function tidyHead(p: PageT) {
+export function tidyHead(p: PageT) {
   if (p["head-widgets"]?.length === 0) delete p["head-widgets"];
 }
 

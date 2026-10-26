@@ -9,7 +9,7 @@
     setSize, setWidth, sizeOptions, widthOptions, type Width,
   } from "@glance-editor/editing";
   import type { App } from "../client/app.svelte.ts";
-  import { gripDrag } from "../client/drag.ts";
+  import { gripDrag, listKey } from "../client/drag.ts";
   import Icon from "./Icon.svelte";
   import WidgetCard from "./WidgetCard.svelte";
   import Seg from "./Seg.svelte";
@@ -39,6 +39,8 @@
   const edit = (fn: (p: PageT) => void) => app.mutate((d) => fn(d.pages.find((p) => p._id === page._id)!));
   const wdrag = $derived(app.drag?.kind === "widget" ? app.drag : null);
   const cdrag = $derived(app.drag?.kind === "column" ? app.drag : null);
+  const headKey = $derived(listKey({ pageId: page._id, column: "head", parentIds: [] }));
+  const colKey = (ci: number) => listKey({ pageId: page._id, column: ci, parentIds: [] });
   const addTo = (column: number | "head") => (app.sheet = { kind: "add", target: { pageId: page._id, column, parentIds: [] } });
 
   let nameInput = $state<HTMLInputElement>();
@@ -106,7 +108,7 @@
   {#if delPage.disabled}<p class="help" id="delwhy" style="margin: 0; text-align: right">{delPage.why}</p>{/if}
 </section>
 
-<div class="rules" aria-label="Layout rules"><span>Up to 3 columns</span><span>1–2 full</span><span>Small = 300 px</span><span>Slim width: max 2 columns</span><span style="color: var(--ink-muted)">Move things with their grip: drag it, or tap it for move buttons</span></div>
+<div class="rules" aria-label="Layout rules"><span>Up to 3 columns</span><span>1–2 full</span><span>Small = 300 px</span><span>Slim width: max 2 columns</span><span style="color: var(--ink-muted)">Move things with their grip: drag it, or tap it for move buttons and Move to…</span></div>
 
 <div class="frame" style:max-width={frameMax}>
   <span class="frametag">{widths.find((o) => o.value === width)!.label} width · {plural(n, "column")} · schematic, not to scale</span>
@@ -121,8 +123,8 @@
         <WidgetCard {app} {w} index={i} ref={{ pageId: page._id, column: "head", ids: [w._id] }} bad={badIds.has(w._id)} bindEl={(el) => (cardEls[w._id] = el)} />
       {/each}
       {#if wdrag}
-        <div class="dropzone show" class:on={wdrag.target?.column === "head" && wdrag.target.index === (page["head-widgets"] ?? []).length}
-          data-drop="end" data-col="head" data-count={(page["head-widgets"] ?? []).length} aria-hidden="true"></div>
+        <div class="dropzone show" class:on={wdrag.target?.list === headKey && wdrag.target.index === (page["head-widgets"] ?? []).length}
+          data-drop-for="widget" data-drop-list={headKey} data-drop-end={(page["head-widgets"] ?? []).length} aria-hidden="true"></div>
       {/if}
     </div>
   </section>
@@ -131,11 +133,12 @@
     {#each page.columns as c, ci (c._id)}
       {@const sizes = sizeOptions(page, ci)}
       {@const rm = removeColumnState(page, ci)}
-      <section class="col" class:hl={hl?.column === ci && !hl.widgetIds} class:dropcol={cdrag?.target === ci && cdrag.index !== ci}
-        aria-label={`Column ${ci + 1}`} bind:this={colEls[ci]} data-coldrop data-index={ci}>
+      <section class="col" class:hl={hl?.column === ci && !hl.widgetIds} class:dropcol={cdrag?.target?.index === ci && cdrag.id !== String(ci)}
+        aria-label={`Column ${ci + 1}`} bind:this={colEls[ci]} data-drop-for="column" data-drop-list={`c|${page._id}`} data-drop-at={ci}>
         <div class="colhead">
           <button type="button" class="grip" aria-label={`Move column ${ci + 1}`} aria-expanded={moveOpen === ci} title="Drag to move, or tap for move buttons"
-            use:gripDrag={{ app, kind: "column", id: String(ci), column: ci, onDrop: (t) => typeof t === "number" && t !== ci && app.mutate((d) => { const p = d.pages.find((x) => x._id === page._id)!; const [c] = p.columns.splice(ci, 1); p.columns.splice(t, 0, c!); }) }}
+            use:gripDrag={{ app, kind: "column", id: String(ci), accept: (k) => k === `c|${page._id}`,
+              onDrop: (t) => t.index !== ci && app.mutate((d) => { const p = d.pages.find((x) => x._id === page._id)!; const [c] = p.columns.splice(ci, 1); p.columns.splice(t.index, 0, c!); }) }}
             onclick={() => (moveOpen = moveOpen === ci ? null : ci)}><Icon name="grip" size={16} /></button>
           <span class="lbl">Column {ci + 1}</span>
           <span class="spacer"></span>
@@ -158,8 +161,8 @@
             <WidgetCard {app} {w} index={i} ref={{ pageId: page._id, column: ci, ids: [w._id] }} bad={badIds.has(w._id)} bindEl={(el) => (cardEls[w._id] = el)} />
           {/each}
           {#if wdrag}
-            <div class="dropzone show" class:on={wdrag.target?.column === ci && wdrag.target.index === c.widgets.length}
-              data-drop="end" data-col={String(ci)} data-count={c.widgets.length} aria-hidden="true"></div>
+            <div class="dropzone show" class:on={wdrag.target?.list === colKey(ci) && wdrag.target.index === c.widgets.length}
+              data-drop-for="widget" data-drop-list={colKey(ci)} data-drop-end={c.widgets.length} aria-hidden="true"></div>
           {/if}
           {#if !c.widgets.length}<div class="empty">No widgets in this column yet.</div>{/if}
           <button type="button" class="btn add" onclick={() => addTo(ci)}><Icon name="plus" />Add widget</button>
