@@ -4,6 +4,8 @@ All notable changes are recorded here. The format follows Keep a Changelog; vers
 (process: docs/adr/0007-versioning-and-release-notes.md, accepted).
 
 ## [Unreleased]
+
+## [1.3.0] - 2026-10-26
 ### Added
 - **Every community widget can be set up with fields.** Each value a community widget needs has a labelled field with
   a line of help: an address, a key, a user name, a location, an ID. Values the widgets' instructions said to change
