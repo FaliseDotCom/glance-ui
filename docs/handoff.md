@@ -1,53 +1,92 @@
 # Handoff
 
 The single place to see where the project stands. Updated at the end of every work session and every PR.
-Last updated: 2026-10-14 (v1.0.0 released).
+Last updated: 2026-10-26 (ADR-0030 built on `feat/community-codeless`: every community widget set up with fields).
 
 ## Current state
-- **Phase:** 11 (deployment). One container with an Unraid template (ADR-0024) and the first-run zip upload
-  (ADR-0025), both merged. Test release `v1.0.0-rc.3` is out for you to install side by side. Phases 0 to 10 are merged.
-- **Merging:** you allowed Claude to merge the remaining phases' PRs, unless something needs your decision or
-  agreement (CLAUDE.md rule 1). Live host, cutover and release notes stay with you.
-- **Phase plan:** approved 2026-10-13.
-- **Pinned Glance:** v0.8.6, by digest (`/glance.version`).
-- **Dev environment:** dev Glance on :18180, the editor container on :18190, a preview Glance reached only through the
-  editor, and the read-only Docker socket proxy the editor lists containers through, on the dev machine
-  (`docs/dev-environment.md`).
-- **Feature code:**
-  - Phase 1: model, rules, generator, validation.
-  - Phase 2: import and edit-in-place writer.
-  - Phase 3: server core and JSON API.
-  - Phase 4: schemas for every widget type, checked against Glance; built-in themes.
-  - Phase 5: the first screens. First run (import with checks, Start empty), pages and column layout, Save with
-    Review/Problems/Go to, History with Restore, Discard, undo toasts; desktop and phone.
-  - Phase 6: widgets and theme. Widget cards with grips (drag on desktop, move buttons everywhere), Add widget, the
-    inspector (generated form for every type, Children, YAML tab with overrides), Bookmarks, the Theme screen, My colours.
-  - Phase 7: Preview. The draft, checked like Save, built on a separate preview Glance and shown full screen in the
-    editor at desktop or phone width; "Out of date" until Refresh; Save and go live. glance.yml is never touched.
-  - Phase 8: the Containers section of a Docker containers widget. The editor lists this host's containers through a
-    read-only socket proxy; the eye shows or hides each one by writing the widget's containers map; containers hidden
-    by a glance.hide label are read-only ("Label"); Hide by default flips what the eye writes.
-  - Phase 9: the icon finder. Find next to every icon field: suggestions from the four libraries and the site's own
-    icon, library search, web search (Iconify, Openverse, Wikimedia Commons), URL. Web and site icons are
-    downloaded into Glance's assets folder with their licence.
-  - Phase 10a: the background. Colour only, Image or Slideshow (in order, or shuffled by a small script), from this
-    device or a server folder; fit, dim, blur, see-through widgets. The editor writes its own CSS file into Glance's
-    assets folder on Save; Preview uses its own copy.
-  - Phase 10b: Pixabay as the third image source: your key (checked, kept on the server), pick images, or keep a
-    rotating set that downloads only when you press Get new images and switches image on a schedule.
-  - The dev editor on :18190 runs this branch (Phase 10b) against the dev Glance, its preview Glance and the proxy.
+- **Released:** **v1.2.0** is `:latest` (`ghcr.io/gcarstoiu/glance-editor`, public). Earlier: v1.0.0, v1.0.1, v1.1.0
+  (and test releases v1.0.0-rc.1 to rc.6, kept as pre-releases). Every release page shows its CHANGELOG section;
+  every published image passed `test/all-in-one.sh` (including a real HTTPS weather fetch inside the container).
+- **v1.0.0 caveat:** PR #18 was merged before its last two commits were pushed, so v1.0.0 lacked "another server's
+  containers" and "Fill in icons and links" although its notes describe them. v1.0.1 added them (its notes say so).
+  Lesson in `docs/lessons.md`: check a PR is still open before pushing; check every described commit is an ancestor
+  of a tag before tagging.
+- **The PM's Unraid:** installed and tested up to rc.6 (other servers' containers via a read-only proxy worked). Told to
+  switch Repository to `:latest` and update; not confirmed yet which version runs there now.
+- **Community Apps:** the public repository **`gcarstoiu/unraid-templates`** (created by Claude at the PM's request,
+  2026-10-15) holds `ca_profile.xml`, `templates/glance-editor.xml` (follows `:latest`), `icon.png`, `README.md`,
+  `LICENSE` (GPL-3.0), rendered by `scripts/render-community-apps.sh` from v1.1.0. **The PM submits it** at
+  https://ca.unraid.net/submit/new (Validate, Scan, Submit); not done yet as far as Claude knows. Possible Scan finding:
+  the category value `Productivity: Tools:` is unverified. Re-render and push only when the template itself changes.
+- **Merging:** the PM allows Claude to merge PRs once CI is green unless something needs the PM's decision. Release
+  notes, live host and cutover stay with the PM. Claude pushes release tags only when the PM has approved the notes
+  and asked for the release (done for every release so far).
+- **Pinned:** Glance v0.8.6 by digest (`/glance.version`); community widgets at commit 0c643aa
+  (`/community-widgets.version`); docker-socket-proxy v0.5.0 (`/docker-proxy.version`).
+- **Dev environment:** dev Glance :18180, dev editor :18190 (`docs/dev-environment.md`). It runs an older branch
+  (Phase 10b); rebuild with `dev/up.sh` if you need it current.
+
+## What the editor does now (by ADR)
+- Phases 1 to 10 (model, import/writer, server, schemas, screens, widgets/theme, preview, containers, icon finder,
+  backgrounds, Pixabay): see the phase findings below.
+- ADR-0024 one container (editor, Glance, preview Glance, Docker gate) with an Unraid template.
+- ADR-0025 first-run upload of a Glance folder as .zip (includes, assets, `.env`).
+- ADR-0026 lines switch, background fixes (lvh, blurred fill, top), Edit link in Glance's menu, docs themes in the
+  menu, container icon/name/URL/description; another server's containers (follow-up).
+- ADR-0027 Fill in icons and links (Unraid icons downloaded, Unraid WebUI resolved, names tidied).
+- ADR-0028 community widgets in Add widget (148 of 165 addable, each re-checked against the pinned Glance in tests).
+- ADR-0029 values for `${VARIABLES}`: asked for when adding a community widget, a Values screen with an eye, kept in
+  `.env` (mode 600), never in glance.yml; Review's warning links to it.
+- ADR-0030 every community widget set up with fields: `community-widgets.settings.yml` gives each `${NAME}` a label,
+  help and kind and repairs README YAML; More options, Show YAML; a community widget's settings show its title, cache
+  and values; a second copy can have its own values (`NAME_2`); values and Save are checked with the real values;
+  159 of 165 can be added (6 refused with the reason). Live check: `test/community-live.sh`.
+- Favicon in the editor's tab; CA certificates in the image (v1.0.1).
+
+## Resuming (for the next session)
+- Read this file, `CLAUDE.md`, `docs/lessons.md` (several traps recorded), and the open items below.
+- Git: push with `git -c credential.helper='!gh auth git-credential' push`. Branch per change, PR, CI green, merge
+  (`gh pr merge --merge`). Before pushing to a PR branch, check the PR is still open.
+- Releases: the PM approves the CHANGELOG section; date it `## [X.Y.Z] - YYYY-MM-DD` on the PR branch; merge; wait
+  for main CI; check the PR's head is an ancestor of main; `git tag -a vX.Y.Z` on main and push the tag; the release
+  workflow publishes `:X.Y.Z` + `:latest`, the notes and the template; then pull `:latest` and run
+  `GLANCE_EDITOR_IMAGE=ghcr.io/gcarstoiu/glance-editor:latest bash test/all-in-one.sh`.
+- Privacy (CLAUDE.md rule 6): no names, hostnames, IPs, home paths, session links or real config in the repo, commits
+  or PRs; commit trailer `Co-Authored-By` only, no session links in PR bodies (the PM's rule). Exception: the owner's
+  GitHub username in the README's install addresses. The PM once pasted a real account ID and domain in chat; they
+  must never be written anywhere.
+- Stale branches (harmless): `fix/ca-certificates` (PR #21 closed; its commit is in main via #22) and
+  `phase-11/findings-2` (its last two commits are in main as cherry-picks via #22). Many merged branches remain on
+  the remote; the repo setting "automatically delete head branches" is the PM's (todo-user).
+- Screenshots for the README come from `README_SHOTS=docs/screenshots/readme npx playwright test test/e2e/readme.spec.ts`.
 
 ## Needs user decision
 Nothing below may be built on until you decide. ★ = affects user experience.
 
-- ★ **v1.0.0 release notes:** draft in `CHANGELOG.md` (Unreleased). Approve or edit; then you push the `v1.0.0` tag.
-- ★ **ADR-0026 (built, on a branch):** waiting for your go-ahead for the PR. One open point: Glance's two default
-  themes stay in the menu (not answered; recommended).
-- ★ **ADR-0025 leftovers (say if you want otherwise):** `.env` from the zip is stored and given to Glance; no assets
-  file list in the editor yet; the screen was built from the ADR's text, without a design pass.
 - ★ **D-62 reading (confirm, or say otherwise):** in a slideshow, every image of a Pixabay set is a slide, so the
   set's daily/weekly/monthly switch only matters when the background is a single image (ADR-0022). Built this way;
   the alternative (a slideshow showing part of the set and swapping) is a small change.
+- ★ **ADR-0025 leftover:** no assets file list in the editor yet (say if wanted).
+- ★ **ADR-0026 leftover:** Glance's two default themes stay in the dashboard's theme picker (not answered;
+  recommended; hiding them needs CSS).
+
+## Decided on 2026-10-26 (via chat)
+| ADR | Outcome |
+| --- | ------- |
+| [0030](adr/0030-community-widgets-without-code.md) | **Community widgets without code:** hard-coded values become values in `.env`; optional settings under More options; values, title and cache in the widget's settings; a second copy asks for the same or its own values |
+
+## Decided on 2026-10-15 (via chat)
+| ADR | Outcome |
+| --- | ------- |
+| [0029](adr/0029-values-in-the-editor.md) | **Values in the editor:** asked for when adding a widget, a Values screen, an eye that shows stored values, container variables not covered; kept in `.env` |
+| Community Apps repository | Claude creates `gcarstoiu/unraid-templates`; the PM submits it |
+
+## Decided on 2026-10-14 (via chat, after v1.0.0)
+| ADR | Outcome |
+| --- | ------- |
+| [0028](adr/0028-community-widgets.md) | **Community widgets** in Add widget: snapshot bundled per release, previews from GitHub, server-only ones listed without Add |
+| [0027](adr/0027-fill-in-container-icons-and-links.md) | **Fill in icons and links** button: Unraid icons downloaded, Unraid WebUI links, names tidied |
+| Releases | v1.0.0, v1.0.1, v1.1.0 notes approved and released; v1.2.0 notes approved 2026-10-15 and released |
 
 ## Decided on 2026-10-14 (via chat)
 | ADR | Outcome |
@@ -184,11 +223,22 @@ Nothing below may be built on until you decide. ★ = affects user experience.
 - The real-binary tests caught a validator bug that my own model-based tests missed. Both kinds of test are kept.
 
 ## Next steps
-1. You: switch the Unraid container's Repository to `ghcr.io/gcarstoiu/glance-editor:latest`.
-2. You: when ready, cut over from your old Glance (`docs/runbooks/cutover.md`; rehearse the fallback first).
-3. Community Apps: the files are in the public repository `gcarstoiu/unraid-templates` (created by Claude at the PM's request, 2026-10-15); you submit it at ca.unraid.net (`docs/runbooks/community-apps.md`).
+0. Claude: drag and drop for bookmarks between groups and between Bookmarks widgets, and simpler re-arrangement
+   elsewhere (asked by the PM, 2026-10-26): propose first (UX), then build.
+1. You: submit `gcarstoiu/unraid-templates` at https://ca.unraid.net/submit/new; paste any Validate/Scan findings to
+   Claude.
+2. You: on Unraid, switch to `ghcr.io/gcarstoiu/glance-editor:latest` (v1.2.0) and update; try a community widget with
+   values (e.g. Beszel Stats) and the Values screen; report what you see.
+3. You: when ready, cut over from your old Glance (`docs/runbooks/cutover.md`; rehearse the fallback first).
+4. Open decisions above (D-62, assets list, default themes) whenever convenient.
+5. Claude, when asked: record the PM's Unraid observations in ADR-0024; move the community widgets pin to a newer
+   commit (run `scripts/community-widgets.ts`, fix what it reports in `community-widgets.settings.yml`, run
+   `test/community-live.sh` on the image, review, PR); a newer Glance pin (ADR-0006) when one is released.
 
 ## Session log
+- 2026-10-26: community widgets checked one by one (README audit; each set up through the UI in a throwaway
+  container); ADR-0030 proposed, accepted (all four as recommended) and built on `feat/community-codeless`.
+- 2026-10-23: end of session. Everything pushed and merged; handoff, todos and phase file brought up to date.
 - 2026-10-15: v1.2.0 notes approved by the PM (values set in the editor).
 - 2026-10-15: ADR-0029 (values set in the editor) decided and built on `feat/values`.
 - 2026-10-15: `gcarstoiu/unraid-templates` created and filled (v1.1.0 template, GPL-3.0); waiting for the PM's Community Apps submission.

@@ -97,7 +97,8 @@ test.describe("Glance or the validator unreachable", () => {
       await shot(page, "glance-unreachable");
       await page.getByLabel("Page name").fill("Renamed");
       await save(page);
-      await expect(page.getByRole("heading", { name: "Version 1 is written" })).toBeVisible();
+      // Save waits for Glance to come back (it may be restarting with new values, ADR-0030) before saying it didn't.
+      await expect(page.getByRole("heading", { name: "Version 1 is written" })).toBeVisible({ timeout: 20_000 });
       await expect(page.getByText("glance.yml is written, but Glance did not respond, so the reload is not confirmed.")).toBeVisible();
       expect(editor.live()).toContain("name: Renamed");
     });

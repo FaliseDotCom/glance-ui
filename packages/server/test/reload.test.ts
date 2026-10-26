@@ -1,5 +1,6 @@
 // D-29 against a real Glance server: "reloaded" only when Glance actually loaded the new config.
-import { mkdtempSync } from "node:fs";
+import { spawn } from "node:child_process";
+import { mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
@@ -65,4 +66,26 @@ describe("reload confirmation (D-29)", () => {
     const { result } = await editAndSave("http://127.0.0.1:9/", 500);
     expect(result).toMatchObject({ status: "saved", reload: "not-checked" });
   });
+
+  it("reports 'reloaded' when Glance was restarting at Save and came back with the saved file (ADR-0030)", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "glance-editor-restart-"));
+    const port = 30000 + Math.floor(Math.random() * 10000);
+    writeFileSync(join(dir, "glance.yml"), yaml(port));
+    const e = await Editor.open({ configPath: join(dir, "glance.yml"), dataDir: join(dir, "data"), glanceVersion: "v0.8.6", glanceUrl: `http://127.0.0.1:${port}/`, reloadTimeoutMs: 10_000 });
+    let glance: ReturnType<typeof spawn> | undefined;
+    try {
+      await e.importLive();
+      const d = structuredClone((await e.state()).draft!);
+      d.pages[0]!.name = "After the restart";
+      e.setDraft(d);
+      // Glance isn't answering when Save starts; it starts (as after a restart) once the file is written.
+      setTimeout(() => (glance = spawn(process.env.GLANCE_BIN!, ["--config", join(dir, "glance.yml")], { stdio: "ignore" })), 1_500);
+      const result = await e.save();
+      expect(result).toMatchObject({ status: "saved", reload: "reloaded" });
+      expect(await fetch(`http://127.0.0.1:${port}/`).then((r) => r.text())).toContain("After the restart");
+    } finally {
+      glance?.kill();
+      e.close();
+    }
+  }, 20_000);
 });

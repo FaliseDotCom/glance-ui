@@ -10,7 +10,7 @@ import {
   checkDashboard, findPlaceholders, hasErrors, parseDashboard, SCHEMA_VERSION, type ColumnT, type DashboardT, type WidgetT,
 } from "@glance-editor/model";
 import { generate, toGlanceJson } from "@glance-editor/generator";
-import { printConfig, validateConfig } from "@glance-editor/glance";
+import { fieldHints, printConfig, validateConfig } from "@glance-editor/glance";
 import {
   glanceParse, importFile, importText, widgetFromYaml, widgetTextIn, widgetYaml, writeDraft, type ImportReport, type ImportResult,
   type WidgetYamlResult,
@@ -19,11 +19,12 @@ import { describeChanges, type Change } from "./changes.ts";
 import { listContainers, type ContainersResult } from "./docker.ts";
 import { Icons, type IconSources } from "./icons.ts";
 import { assetsWritable, copyImages, listFolder, resolveImages, storeImage, writeEditorFiles, type BuildEnv, type FolderEntry, type Problemish } from "./background.ts";
-import { iconTerm, needsEditorCss, PREVIEW_CSS, typeLabel, widgetName } from "@glance-editor/editing";
-import { envNames, envValue, setEnvValues, VALUE_NAME } from "./values.ts";
+import { iconTerm, needsEditorCss, PREVIEW_CSS, tidyValue, typeLabel, valueNames, widgetName } from "@glance-editor/editing";
+import { envMap, envNames, envValue, setEnvValues, VALUE_NAME } from "./values.ts";
+import { valueSpec, type ValueSpec } from "./community.ts";
 import { Pixabay } from "./pixabay.ts";
 import { backup, openDb, type Db } from "./db.ts";
-import { pastStamp, readLive, reloadStamp, sha256, waitForReload, writeLiveAtomically, type ReloadResult } from "./live.ts";
+import { nextSecond, pastStamp, readLive, reloadStamp, sha256, waitForLoadSince, waitForReload, writeLiveAtomically, type ReloadResult } from "./live.ts";
 import { migrateModel } from "./migrations.ts";
 import { assetLinks, findAssets, findConfig } from "./upload.ts";
 import { readZip, type ZipFile } from "./zip.ts";
@@ -404,7 +405,10 @@ export class Editor {
     const names = [...new Set([...used.keys(), ...inFile, ...asked])].filter((n) => inFile.has(n) || asked.has(n) || !container.has(n)).sort();
     return {
       applies: this.cfg.glanceEnvNames !== undefined,
-      values: names.map((name) => ({ name, set: inFile.has(name), container: container.has(name), hidden: SECRET.test(name), usedBy: used.get(name) ?? [] })),
+      values: names.map((name) => {
+        const field = valueSpec(name);
+        return { name, set: inFile.has(name), container: container.has(name), hidden: field ? field.kind === "secret" : SECRET.test(name), usedBy: used.get(name) ?? [], ...(field ? { field } : {}) };
+      }),
     };
   }
 
@@ -418,10 +422,14 @@ export class Editor {
    * ADR-0029: set (a string) or remove (null) values in `.env`. Written atomically, readable by its owner only; the
    * container restarts Glance and the preview Glance with them within seconds. glance.yml isn't touched.
    */
-  async setValues(changes: Readonly<Record<string, string | null>>): Promise<{ applies: boolean; values: ValueInfo[] }> {
+  async setValues(changes: Readonly<Record<string, string | null>>, opts: { widget?: string } = {}): Promise<{ applies: boolean; values: ValueInfo[] }> {
     const path = this.envPath();
     const before = await readFile(path, "utf8").catch(() => "");
-    const after = setEnvValues(before, changes);
+    // ADR-0030: stored as tidied for its field (an address gets http://, say), and only if Glance can still load the
+    // dashboard with it, and the widget being added.
+    const tidy = Object.fromEntries(Object.entries(changes).map(([n, v]) => [n, v === null ? null : tidyValue(valueSpec(n)?.kind, v)]));
+    await this.checkValues(before, tidy, opts.widget);
+    const after = setEnvValues(before, tidy);
     if (after !== before) {
       const tmp = `${path}.editor-${randomBytes(6).toString("hex")}.tmp`;
       await writeFile(tmp, after, { mode: 0o600 });
@@ -433,6 +441,43 @@ export class Editor {
       }
     }
     return this.values();
+  }
+
+  /**
+   * ADR-0030: Glance must still load the live dashboard (and `widget`, a widget being added) with the changed values.
+   * The values reach Glance's check in its environment only. Removing a value the live dashboard uses is refused:
+   * Glance wouldn't start without it. Outside the all-in-one container Glance doesn't read `.env`: nothing to check.
+   */
+  private async checkValues(env: string, changes: Readonly<Record<string, string | null>>, widget?: string): Promise<void> {
+    if (this.cfg.glanceEnvNames === undefined) return;
+    const values = { ...envMap(env) };
+    for (const [n, v] of Object.entries(changes)) if (v === null) delete values[n]; else values[n] = v;
+    const live = await readLive(this.cfg.configPath);
+    // A file with includes is checked when it's saved (the editor writes one file); the include paths don't resolve here.
+    const liveModel = live && !/^\s*(\$include:|.*!include\b)/m.test(live) ? importText(live).dashboard : null;
+    if (live && liveModel) {
+      const used = new Set(valueNames(live));
+      const gone = Object.keys(changes).filter((n) => changes[n] === null && used.has(n) && !this.cfg.glanceEnvNames!.includes(n));
+      if (gone.length) throw new Error(`Your dashboard uses ${gone.map((n) => `\${${n}}`).join(", ")}, and Glance won't load it without ${gone.length === 1 ? "a value" : "them"}. Remove ${gone.length === 1 ? "it" : "them"} from your widgets first.`);
+      if (Object.values(changes).some((v) => v !== null)) {
+        // Glance checks that server.assets-path exists: as for Save, a temporary folder stands in for it.
+        const text = liveModel.server?.["assets-path"] === undefined ? live : (dir: string) => writeDraft(live, { ...liveModel, server: { ...liveModel.server, "assets-path": dir } }).text;
+        const v = await validateConfig(text, { hints: fieldHints(live, valueSpec, toGlanceJson(liveModel).placeholderHints), glanceBin: this.cfg.glanceBin, env: pick(values, used) });
+        if (!v.ok) throw new Error(`With this value Glance can't load your dashboard: ${glanceReason(v.output)}`);
+      }
+    }
+    if (widget !== undefined) {
+      const config = `pages:\n  - name: Check\n    columns:\n      - size: full\n        widgets:\n${widget.split("\n").map((l, i) => (l ? `          ${i === 0 ? "- " : "  "}${l}` : l)).join("\n")}`;
+      const d = importText(config).dashboard;
+      const v = await validateConfig(config, { hints: fieldHints(config, valueSpec, d ? toGlanceJson(d).placeholderHints : undefined), glanceBin: this.cfg.glanceBin, env: pick(values, new Set(valueNames(widget))) });
+      if (!v.ok) throw new Error(`With these values Glance can't load this widget: ${glanceReason(v.output)}`);
+    }
+  }
+
+  /** The `.env` values the dashboard uses, for checking a draft as Glance will run it (ADR-0030); none outside the container. */
+  private async envFor(text: string): Promise<Record<string, string>> {
+    if (this.cfg.glanceEnvNames === undefined) return {};
+    return pick(envMap(await readFile(this.envPath(), "utf8").catch(() => "")), new Set(valueNames(text)));
   }
 
   /**
@@ -483,7 +528,7 @@ export class Editor {
     if (result.base) {
       try {
         const d = result.dashboard;
-        const hints = d ? toGlanceJson(d).placeholderHints : undefined;
+        const hints = fieldHints(result.base, valueSpec, d ? toGlanceJson(d).placeholderHints : undefined);
         // Glance checks that server.assets-path exists. A moved config names the old Glance's folder (/app/assets in
         // Glance's Docker example), which the import replaces with this container's (ADR-0025), so check with a real one.
         const v = await validateConfig(
@@ -702,6 +747,9 @@ export class Editor {
     if (this.versionCount() === 0 && live !== null) this.addVersion("import", live, [], true);
     const number = this.addVersion("editor", out.text, changes, false);
     const before = this.cfg.glanceUrl ? await reloadStamp(this.cfg.glanceUrl) : null;
+    // Glance not answering now (restarting with new values, say): a load after this write has a later stamp.
+    if (this.cfg.glanceUrl && before === null) await nextSecond();
+    const writtenAt = Math.floor(Date.now() / 1000);
     try {
       await writeLiveAtomically(this.cfg.configPath, out.text);
     } catch (e) {
@@ -713,7 +761,9 @@ export class Editor {
     this.db.prepare("UPDATE versions SET applied_at = ? WHERE number = ?").run(this.stamp(), number);
 
     // 6. Did Glance reload? (D-29: the ?v= stamp changes only on a successful reload.)
-    const reload: ReloadResult = this.cfg.glanceUrl ? await waitForReload(this.cfg.glanceUrl, before, this.cfg.reloadTimeoutMs) : "not-checked";
+    const reload: ReloadResult = !this.cfg.glanceUrl ? "not-checked"
+      : before === null ? await waitForLoadSince(this.cfg.glanceUrl, writtenAt, this.cfg.reloadTimeoutMs)
+      : await waitForReload(this.cfg.glanceUrl, before, this.cfg.reloadTimeoutMs);
 
     // The draft continues from what was written. Ids are re-derived from the new text (the writer matches by them).
     const fresh = importText(out.text).dashboard ?? draft;
@@ -749,7 +799,7 @@ export class Editor {
 
     // If validation fails, or can't run, nothing is written (D-27).
     try {
-      const hints = toGlanceJson(draft).placeholderHints;
+      const hints = fieldHints(out.text, valueSpec, toGlanceJson(draft).placeholderHints);
       const v = await validateConfig(
         draft.server?.["assets-path"] === undefined
           ? out.text
@@ -757,6 +807,19 @@ export class Editor {
         { hints, glanceBin: this.cfg.glanceBin },
       );
       if (!v.ok) return { ok: false, problems: [fromGlance(v.output, draft, await this.locateGlanceError(v.output, draft))] };
+      // ADR-0030: and with the values in .env, as Glance will run it. A value that breaks the YAML or a URL stops the
+      // whole dashboard, so it's found here, not after the file is written.
+      const env = await this.envFor(out.text);
+      if (Object.keys(env).length) {
+        const real = await validateConfig(
+          draft.server?.["assets-path"] === undefined ? out.text : (assetsDir: string) => render({ ...draft, server: { ...draft.server, "assets-path": assetsDir } }).text,
+          { hints, glanceBin: this.cfg.glanceBin, env },
+        );
+        if (!real.ok) {
+          const p = fromGlance(real.output, draft, await this.locateGlanceError(real.output, draft));
+          return { ok: false, problems: [{ ...p, code: "placeholder.value", message: `With the values on the Values screen, Glance can't load the dashboard: ${glanceReason(real.output)} Change the value there.` }] };
+        }
+      }
     } catch (e) {
       return { ok: false, problems: [{ source: "glance", severity: "error", code: "glance.unavailable", message: `Glance's validator couldn't run, so nothing was written: ${(e as Error).message}`, location: {} }] };
     }
@@ -945,7 +1008,7 @@ export class Editor {
       }
       const alone: DashboardT = { schemaVersion: SCHEMA_VERSION, pages: [{ _id: "p", name: "p", columns: [{ _id: "c", size: "full", widgets: [outer] }] }] };
       const g = generate(alone, { glanceVersion: this.cfg.glanceVersion });
-      const r = await validateConfig(g.yaml, { hints: g.placeholderHints, glanceBin: this.cfg.glanceBin }).catch(() => undefined);
+      const r = await validateConfig(g.yaml, { hints: fieldHints(g.yaml, valueSpec, g.placeholderHints), glanceBin: this.cfg.glanceBin }).catch(() => undefined);
       if (r && !r.ok) return c.location;
     }
     return undefined;
@@ -1110,6 +1173,8 @@ export interface ValueInfo {
   hidden: boolean;
   /** Where the draft uses it: "Page › Widget", or "Settings" outside the pages. */
   usedBy: string[];
+  /** ADR-0030: what to type, for a name a community widget uses. A secret's field is hidden; others aren't. */
+  field?: ValueSpec;
 }
 
 const SECRET = /TOKEN|KEY|PASS|SECRET|AUTH|CRED/i;
@@ -1196,4 +1261,13 @@ function emptyDashboard(): DashboardT {
 let counter = 0;
 function newId(): string {
   return `n-${Date.now().toString(36)}-${(counter++).toString(36)}`;
+}
+
+/** Only the names asked for. */
+const pick = (values: Readonly<Record<string, string>>, names: ReadonlySet<string>) => Object.fromEntries(Object.entries(values).filter(([n]) => names.has(n)));
+
+/** Glance's last line, without its "Config file is invalid:" prefix, ending with a full stop. */
+function glanceReason(output: string): string {
+  const line = output.trim().split("\n").pop()!.replace(/^Config file is invalid:\s*/i, "").trim();
+  return /[.!?]$/.test(line) ? line : `${line}.`;
 }

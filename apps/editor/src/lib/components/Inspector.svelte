@@ -1,7 +1,8 @@
 <!-- Widget inspector (design D-04, D-05, D-11 to D-14): a panel on the right on desktop, full screen on a phone.
      Settings: the form generated from the widget's schema, the Children section for groups and split columns (one level
      at a time, with a Back link), the Bookmarks and Containers sections. YAML: what will be written for this widget; applying a change
-     makes it a YAML override and the form goes read-only until the override is discarded (D-12). -->
+     makes it a YAML override and the form goes read-only until the override is discarded (D-12). One with no form behind
+     it (a community widget) shows its title, cache and values instead (ADR-0030). -->
 <script lang="ts">
   import { tick, untrack } from "svelte";
   import { WIDGETS, isRawWidget, type ModelWidgetT, type WidgetT } from "@glance-editor/model";
@@ -14,6 +15,7 @@
   import Containers from "./Containers.svelte";
   import Field from "./Field.svelte";
   import Icon from "./Icon.svelte";
+  import YamlWidgetSettings from "./YamlWidgetSettings.svelte";
 
   let { app, wref }: { app: App; wref: WidgetRef } = $props();
 
@@ -21,6 +23,12 @@
   const schema = $derived(WIDGETS[w.type]);
   const raw = $derived(isRawWidget(w));
   const override = $derived(!!w._yaml);
+  // ADR-0030: kept as YAML with no form behind it (added from the community widgets): discarding the override would
+  // leave an empty widget, so its settings are its title, cache and values instead.
+  const yamlOnly = $derived.by(() => {
+    if (!w._yaml) return false;
+    try { return Object.keys(JSON.parse(w._yaml.form) as object).every((k) => k === "_id" || k === "type"); } catch { return false; }
+  });
   const name = $derived(widgetName(w, typeLabel(w.type)));
   const crumb = $derived(listLabel(app.draft!, parentOf(wref)));
   const parentRef = $derived(wref.ids.length > 1 ? { ...wref, ids: wref.ids.slice(0, -1) } : null);
@@ -128,10 +136,14 @@
           <div class="notice">Glance v0.8.6 has no widget type “{w.type}”. The widget is kept exactly as written; edit it in the YAML tab.
             <button type="button" class="btn" onclick={() => (app.insTab = "yaml")}>Open YAML</button></div>
         {:else}
-          {#if override}
+          {#if yamlOnly}
+            <div class="notice">This widget is kept as YAML. Its title, cache and values are here; everything else is in the YAML tab.</div>
+            <YamlWidgetSettings {app} {wref} {w} />
+          {:else if override}
             <div class="notice">This widget is edited as YAML, so the form is read-only. Discarding the override returns it to the form values.
               <button type="button" class="btn" onclick={discardOverride}>Discard YAML override</button></div>
           {/if}
+          {#if !yamlOnly}
           <fieldset disabled={override}>
             <legend class="sr">Widget properties</legend>
             {#each formEntries(w.type) as e (e.kind === "field" ? e.field.key : e.label)}
@@ -142,6 +154,7 @@
               {/if}
             {/each}
           </fieldset>
+          {/if}
 
           {#if schema?.container}
             {@const isGroup = w.type === "group"}

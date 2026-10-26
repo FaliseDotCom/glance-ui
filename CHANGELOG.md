@@ -4,6 +4,28 @@ All notable changes are recorded here. The format follows Keep a Changelog; vers
 (process: docs/adr/0007-versioning-and-release-notes.md, accepted).
 
 ## [Unreleased]
+### Added
+- **Every community widget can be set up with fields.** Each value a community widget needs has a labelled field with
+  a line of help: an address, a key, a user name, a location, an ID. Values the widgets' instructions said to change
+  in the YAML are fields too, and optional settings (how many items, units, what to show) sit under **More options**
+  with their defaults. The YAML is under **Show YAML**.
+- **A community widget's settings** show its title, cache and values, all changeable without YAML.
+- **A second copy of a widget** can share the first copy's values or have its own, to show another server.
+
+### Changed
+- **Values are checked before they're stored, and Save checks with them.** A value that would stop the dashboard
+  (a quote or `: ` in a password, a port that isn't a number) is refused, with Glance's reason. A value the dashboard
+  uses can't be removed. Addresses are tidied as they're typed: `http://` added when missing, no slash at the end.
+
+### Fixed
+- 11 community widgets were shown as "Needs its own server" although they can be added: their instructions' code
+  wasn't marked as YAML, or was in a file of its own. More can be added now that mistakes in their instructions' YAML
+  are repaired.
+- The Komodo widget's Stacks variant sent the Komodo API key and secret to its author's server. It now uses the
+  Komodo address entered for it.
+- Widgets that can't be set up with fields are listed with the reason and can't be added: they need a sign-in done by
+  hand (Spotify, Google Calendar, Beszel Metrics), a helper program (Docker Swarm), or their template is broken
+  (Countdown).
 
 ## [1.2.0] - 2026-10-15
 ### Added
