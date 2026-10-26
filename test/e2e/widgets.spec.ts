@@ -550,7 +550,7 @@ test.describe("Community widgets without YAML (ADR-0030)", () => {
     expect(readFileSync(envPath, "utf8")).toContain("JELLYFIN_LATEST_ITEM_COUNT=12\n");
     await expectAccessible(page, "community widget settings");
     await expectTargets(page, "community widget settings");
-    await shot(page, "community-settings");
+    await shot(page, "community-settings", { fullPage: false });
     if (isPhone(page)) await ins.getByRole("button", { name: "Back to layout" }).click();
 
     // A second Jellyfin widget: it can share the first one's values or have its own.
