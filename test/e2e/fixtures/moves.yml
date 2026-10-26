@@ -1,0 +1,55 @@
+# Test dashboard for moving things (ADR-0031): two Bookmarks widgets, a group, two pages and three slides.
+server:
+  host: 127.0.0.1
+  port: {{GLANCE_PORT}}
+  assets-path: {{ASSETS_DIR}}
+
+glance-editor:
+  background:
+    mode: slideshow
+    images:
+      - file: glance-editor/backgrounds/one.png
+        name: one.png
+      - file: glance-editor/backgrounds/two.png
+        name: two.png
+      - file: glance-editor/backgrounds/three.png
+        name: three.png
+
+pages:
+  - name: Home
+    columns:
+      - size: small
+        widgets:
+          - type: clock
+          - type: bookmarks
+            title: Work
+            groups:
+              - title: Tools
+                links:
+                  - title: Alpha
+                    url: https://alpha.example.com/
+                  - title: Beta
+                    url: https://beta.example.com/
+              - title: Docs
+                links:
+                  - title: Gamma
+                    url: https://gamma.example.com/
+      - size: full
+        widgets:
+          - type: group
+            widgets:
+              - type: rss
+                title: News
+                feeds: []
+          - type: bookmarks
+            title: Home links
+            groups:
+              - title: Family
+                links:
+                  - title: Delta
+                    url: https://delta.example.com/
+  - name: Ops
+    columns:
+      - size: full
+        widgets:
+          - type: to-do

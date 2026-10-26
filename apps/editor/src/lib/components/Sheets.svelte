@@ -15,7 +15,7 @@
   const sheet = $derived(app.sheet);
   const titles: Record<string, string> = {
     review: "Review and save", checking: "Checking", problems: "Problems", saved: "Saved", conflict: "Changed outside the editor",
-    loadFile: "Load the file", error: "Not saved", discard: "Discard changes", deletePage: "Delete page", add: "Add widget", icon: "Choose an icon", images: "Add images",
+    loadFile: "Load the file", error: "Not saved", discard: "Discard changes", deletePage: "Delete page", add: "Add widget", icon: "Choose an icon", images: "Add images", moveTo: "Move to",
   };
   const close = () => (app.sheet = null);
   // While a sheet or the preview is open, the page behind stays still: no scrolling it over the dimmed area, and none
@@ -149,6 +149,21 @@
           {#if !addList.length}<div class="empty">No widget type matches.</div>{/if}
         </div>
         {/if}
+      {:else if sheet.kind === "moveTo"}
+        <div class="row between" style="align-items: flex-start">
+          <div><span class="lbl">Move</span><h2 class="h2">Move {sheet.what} to…</h2></div>
+          <button type="button" class="ib" aria-label="Close" onclick={close}><Icon name="close" size={20} /></button>
+        </div>
+        <div class="tlist" role="list" aria-label="Places">
+          {#each sheet.options as o, i (i)}
+            <div role="listitem">
+              <button type="button" class="trow" disabled={o.here} onclick={() => { close(); o.go(); }}>
+                <span><span class="wname" style="white-space: normal">{o.label}</span>{#if o.detail || o.here}<span class="wsum">{o.here ? "It's here now" : o.detail}</span>{/if}</span>
+              </button>
+            </div>
+          {/each}
+          {#if !sheet.options.length}<div class="empty">There's nowhere else it can go.</div>{/if}
+        </div>
       {:else if sheet.kind === "images"}
         <AddImages {app} />
       {:else if sheet.kind === "icon"}

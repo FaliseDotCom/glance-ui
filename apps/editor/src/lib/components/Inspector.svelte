@@ -7,8 +7,10 @@
   import { tick, untrack } from "svelte";
   import { WIDGETS, isRawWidget, type ModelWidgetT, type WidgetT } from "@glance-editor/model";
   import {
-    canMove, childRef, formEntries, listLabel, moveWidget, parentOf, setIn, typeLabel, widgetAt, widgetName, type WidgetRef,
+    canMove, cantMoveInto, childRef, formEntries, listLabel, moveWidget, moveWidgetToList, parentOf, setIn, typeLabel, widgetAt,
+    widgetDestinations, widgetName, type ListRef, type WidgetRef,
   } from "@glance-editor/editing";
+  import { gripDrag, listKey, parseListKey } from "../client/drag.ts";
   import { api } from "../client/api.ts";
   import type { App } from "../client/app.svelte.ts";
   import Bookmarks from "./Bookmarks.svelte";
@@ -36,6 +38,16 @@
   const children = $derived(((w as ModelWidgetT).widgets ?? []) as WidgetT[]);
   const tab = $derived(app.insTab);
   const errIds = $derived(new Set(app.showErrors ? app.errors.flatMap((p) => p.location.widgetIds ?? []) : []));
+
+  // ADR-0031: a child moves by its grip: dragged within the list or out onto the layout, or (a tap) Move to….
+  const kidsList = $derived<ListRef>({ ...parentOf(wref), parentIds: wref.ids });
+  const kidsKey = $derived(listKey(kidsList));
+  const moveChild = (cref: WidgetRef, to: ListRef, at: number, toast?: string) =>
+    app.mutate((d) => moveWidgetToList(d, cref, to, at), toast ? { toast, undo: true } : {});
+  const childMoveTo = (cref: WidgetRef, cname: string) => (app.sheet = {
+    kind: "moveTo", what: cname,
+    options: widgetDestinations(app.draft!, cref).map((x) => ({ label: x.label, go: () => moveChild(cref, x.to, Number.MAX_SAFE_INTEGER, `Moved ${cname} to ${x.label}`) })),
+  });
 
   const set = (path: (string | number)[], value: unknown, opts: { toast?: string; undo?: boolean } = {}) =>
     app.editWidget(wref, (x) => setIn(x as Record<string, unknown>, path, value), opts);
@@ -164,7 +176,14 @@
               {#each children as c, i (c._id)}
                 {@const cref = childRef({ ...parentOf(wref), parentIds: wref.ids }, c._id)}
                 {@const cname = widgetName(c, typeLabel(c.type))}
-                <div class="crow">
+                <div class="crow" class:dragging={app.drag?.kind === "widget" && app.drag.id === c._id} style="padding-left: 4px"
+                  class:dropbefore={app.drag?.kind === "widget" && app.drag.target?.list === kidsKey && app.drag.target.index === i && app.drag.id !== c._id}
+                  data-drop-for="widget" data-drop-list={kidsKey} data-drop-index={i}>
+                  <button type="button" class="grip" aria-label={`Move ${cname}`} title="Drag to move, or tap for Move to…" disabled={override}
+                    use:gripDrag={{ app, kind: "widget", id: c._id,
+                      accept: (k) => { const l = parseListKey(k); return !!l && !cantMoveInto(app.draft!, cref, l); },
+                      onDrop: (t) => { const l = parseListKey(t.list); if (l) moveChild(cref, l, t.index); } }}
+                    onclick={() => childMoveTo(cref, cname)}><Icon name="grip" size={16} /></button>
                   <button type="button" class="crowmain" aria-label={`${cname}, ${typeLabel(c.type)}. Open settings`} onclick={() => app.select(cref)}>
                     <span class="tlabel">{typeLabel(c.type)}</span><span class="wname">{cname}</span></button>
                   {#if errIds.has(c._id)}<span class="errdot">Fix</span>{/if}
@@ -173,6 +192,10 @@
                   <button type="button" class="ib sm" aria-label={`Delete ${cname}`} disabled={override} onclick={() => app.deleteWidgetAt(cref)}><Icon name="trash" /></button>
                 </div>
               {/each}
+              {#if app.drag?.kind === "widget"}
+                <div class="dropzone show" class:on={app.drag.target?.list === kidsKey && app.drag.target.index === children.length}
+                  data-drop-for="widget" data-drop-list={kidsKey} data-drop-end={children.length} aria-hidden="true"></div>
+              {/if}
               {#if !children.length}<div class="empty">{isGroup ? "No tabs yet." : "No widgets yet."}</div>{/if}
               <button type="button" class="btn add" disabled={override}
                 onclick={() => (app.sheet = { kind: "add", target: { ...parentOf(wref), parentIds: wref.ids } })}><Icon name="plus" />{isGroup ? "Add tab" : "Add widget"}</button>

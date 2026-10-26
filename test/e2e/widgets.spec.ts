@@ -38,6 +38,8 @@ async function closeInspector(page: Page) {
   await inspector(page).getByRole("button", { name: isPhone(page) ? "Back to layout" : "Close settings" }).click();
   await expect(inspector(page)).toBeHidden();
 }
+/** The end of a column's (or the head strip's) list, shown while a widget is dragged (client/drag.ts list keys). */
+const endZone = (page: Page, column: number | "head") => page.locator(`[data-drop-end][data-drop-list^="w|"][data-drop-list$="|${column}|"]`);
 /** Drag a grip with the mouse (desktop, D-15) and drop it on `target` (found once the drag has started). */
 async function drag(page: Page, grip: Locator, target: () => Locator) {
   const g = (await grip.boundingBox())!;
@@ -158,10 +160,10 @@ test.describe("Flow 3: add and configure a widget", () => {
     await expect(services()).toHaveCount(1);
 
     if (!isPhone(page)) {
-      // Drag (desktop, mouse only): into another column at the end, into the head strip, and a column by its grip.
-      await drag(page, card(page, "Clock").getByRole("button", { name: "Move Clock" }), () => page.locator('[data-drop="end"][data-col="1"]'));
+      // Drag with the mouse: into another column at the end, into the head strip, and a column by its grip.
+      await drag(page, card(page, "Clock").getByRole("button", { name: "Move Clock" }), () => endZone(page, 1));
       await expect(column(page, 2).locator(".wcard").last()).toContainText("Clock");
-      await drag(page, card(page, "Calendar").getByRole("button", { name: "Move Calendar" }), () => page.locator('[data-drop="end"][data-col="head"]'));
+      await drag(page, card(page, "Calendar").getByRole("button", { name: "Move Calendar" }), () => endZone(page, "head"));
       await expect(page.getByRole("region", { name: "Head widgets" }).locator(".wcard")).toContainText("Calendar");
       await expect(column(page, 1).getByText("No widgets in this column yet.")).toBeVisible();
       await drag(page, page.getByRole("button", { name: "Move column 3", exact: true }), () => column(page, 1));

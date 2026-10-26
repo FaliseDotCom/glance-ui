@@ -7,6 +7,7 @@ import {
   addOptions, addWidget, childRef, deleteWidget, deletePage, editWidget, findWidget, listOf, newWidget, parentOf, plural, typeLabel, widgetAt, widgetName,
   type ListRef, type WidgetRef,
 } from "@glance-editor/editing";
+import type { DragKind, DropTarget } from "./drag.ts";
 import { api, type Change, type DraftState, type GlanceStatus, type ImportCheck, type Problem, type UploadCheck, type VersionSummary } from "./api.ts";
 
 export type Screen = "loading" | "welcome" | "import" | "layout" | "pages" | "theme" | "values" | "history";
@@ -23,6 +24,8 @@ export type Sheet =
   | { kind: "deletePage"; pageId: string }
   | { kind: "add"; target: ListRef }
   | { kind: "images" }
+  /** ADR-0031: Move to…, the touch and keyboard way to move a widget, a bookmark link or a group anywhere. */
+  | { kind: "moveTo"; what: string; options: { label: string; detail?: string; here?: boolean; go: () => void }[] }
   | { kind: "icon"; label: string; title: string; url: string; current: string; apply: (value: string | undefined) => void; offers?: { value: string; name: string; note: string }[] };
 
 export interface Toast {
@@ -51,10 +54,12 @@ export interface InputError {
   location: Problem["location"];
 }
 
-/** Desktop drag (D-15): what is being dragged and where it would land. */
-export type Drag =
-  | { kind: "widget"; id: string; column: number | "head"; target: { column: number | "head"; index: number } | null }
-  | { kind: "column"; index: number; target: number | null };
+/** Drag (D-15, ADR-0031): what is being dragged and where it would land (client/drag.ts). */
+export interface Drag {
+  kind: DragKind;
+  id: string;
+  target: DropTarget | null;
+}
 
 /** The colour picker (D-20): one open at a time, for a theme colour or a bookmark group. */
 export interface Picker {
