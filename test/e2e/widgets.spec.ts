@@ -3,6 +3,8 @@
 // empty states. Each test runs the built editor against a real Glance (fixtures.ts). The icon finder has its own
 // tests (icons.spec.ts); here the icon is typed.
 import { readFileSync } from "node:fs";
+import { createServer, type Server } from "node:http";
+import type { AddressInfo } from "node:net";
 import { dirname, join } from "node:path";
 import type { Locator, Page } from "@playwright/test";
 import { expect, expectAccessible, expectTargets, fixture, isPhone, test } from "./fixtures.ts";
@@ -575,5 +577,87 @@ test.describe("Community widgets without YAML (ADR-0030)", () => {
     expect(live).toContain("cache: 30m");
     expect(live).toContain("${JELLYFIN_URL_2}");
     expect(live).toContain("${JELLYFIN_URL}");
+  });
+});
+
+// ADR-0032: a community widget tried against its service. The stand-in answers as Uptime Kuma 2.5.7's source does: JSON
+// on its status page API, its web page (200) on every other address; a second one plays a sign-in page on another port.
+test.describe("Trying a widget against its service (ADR-0032)", () => {
+  test.use({ opts: { seed: fixture("home.yml"), glance: true, glanceEnvNames: ["PATH", "TZ"] } });
+
+  test("a pasted page address is cut back; the service answers; a wrong port says why; an empty slug is refused", async ({ page, editor }) => {
+    const html = (title: string) => `<!DOCTYPE html><html><head><title>${title}</title></head><body></body></html>`;
+    const kuma = createServer((req, res) => {
+      const path = new URL(req.url ?? "/", "http://x").pathname;
+      const json = (body: unknown) => { res.writeHead(200, { "content-type": "application/json" }); res.end(JSON.stringify(body)); };
+      if (/^\/api\/status-page\/heartbeat\/home\/?$/.test(path)) return json({ heartbeatList: { 1: [{ status: 1, ping: 9 }] }, uptimeList: {} });
+      if (/^\/api\/status-page\/home\/?$/.test(path)) return json({ publicGroupList: [{ monitorList: [{ id: 1, name: "Example service" }] }] });
+      res.writeHead(200, { "content-type": "text/html" });
+      res.end(html("Uptime Kuma"));
+    });
+    const other = createServer((_req, res) => { res.writeHead(200, { "content-type": "text/html" }); res.end(html("Sign in")); });
+    const listen = (s: Server) => new Promise<string>((r) => s.listen(0, "127.0.0.1", () => r(`http://127.0.0.1:${(s.address() as AddressInfo).port}`)));
+    const base = await listen(kuma);
+    const signIn = await listen(other);
+    try {
+      const envPath = join(dirname(editor.configPath), ".env");
+      await importSeed(page, editor.url);
+      await column(page, 2).getByRole("button", { name: "Add widget" }).click();
+      const sheet = page.getByRole("dialog", { name: "Add widget" });
+      await sheet.getByRole("button", { name: "Community", exact: true }).click();
+      await sheet.getByLabel("Search community widgets").fill("uptime kuma");
+      await sheet.getByRole("button", { name: /^Uptime Kuma/ }).click();
+      // Pasted from the browser: the dashboard's address, and the status page's address for the slug.
+      const address = sheet.getByLabel("Uptime Kuma address", { exact: true });
+      await address.fill(`${base}/dashboard`);
+      await address.blur();
+      await expect(address).toHaveValue(base);
+      await expect(sheet.getByText("Removed /dashboard: only the server and port are needed.")).toBeVisible();
+      const slug = sheet.getByLabel("Status page slug", { exact: true });
+      await slug.fill(`${base}/status/home`);
+      await slug.blur();
+      await expect(slug).toHaveValue("home");
+      await expect(sheet.getByText("Took home out of the address.")).toBeVisible();
+      await expectAccessible(page, "pasted addresses");
+      await shot(page, "try-pasted", { fullPage: false });
+      await sheet.getByRole("button", { name: "Add Uptime Kuma" }).click();
+      await expect(page.getByText("Added Uptime Kuma")).toBeVisible();
+      expect(readFileSync(envPath, "utf8")).toBe(`UPTIME_KUMA_URL=${base}\nUPTIME_KUMA_STATUS_SLUG=home\n`);
+
+      // Its settings open: the service is asked, as Glance asks it.
+      const ins = inspector(page);
+      await expect(ins.getByText("The service answered: Glance shows this widget without an error.")).toBeVisible({ timeout: 20_000 });
+      await expectAccessible(page, "service answered");
+      await expectTargets(page, "service answered");
+      await ins.getByRole("button", { name: "Try again" }).scrollIntoViewIfNeeded();
+      await shot(page, "try-answered", { fullPage: false });
+
+      // The port of a sign-in page: stored, and the reason in plain words with Glance's own text.
+      await ins.getByLabel("Uptime Kuma address", { exact: true }).fill(signIn);
+      await ins.getByRole("button", { name: "Store Uptime Kuma address" }).click();
+      await expect(ins.getByText(/^The address answered with a web page, not with data\./)).toBeVisible({ timeout: 20_000 });
+      await expect(ins.getByText("Glance says: invalid response JSON")).toBeVisible();
+      await expectAccessible(page, "service failed");
+      await expectTargets(page, "service failed");
+      await ins.getByRole("button", { name: "Try again" }).scrollIntoViewIfNeeded();
+      await shot(page, "try-failed", { fullPage: false });
+
+      // A slug the widget needs can't be stored empty.
+      await ins.getByLabel("Status page slug", { exact: true }).fill("");
+      await ins.getByRole("button", { name: "Store Status page slug" }).click();
+      await expect(ins.getByRole("alert")).toHaveText("Status page slug can't be empty: the widget needs it.");
+      expect(readFileSync(envPath, "utf8")).toContain("UPTIME_KUMA_STATUS_SLUG=home\n");
+
+      // Back to the right address (pasted with its page again), and Try again.
+      await ins.getByLabel("Uptime Kuma address", { exact: true }).fill(`${base}/status/home`);
+      await ins.getByLabel("Uptime Kuma address", { exact: true }).blur();
+      await ins.getByRole("button", { name: "Store Uptime Kuma address" }).click();
+      await expect(ins.getByText("The service answered: Glance shows this widget without an error.")).toBeVisible({ timeout: 20_000 });
+      await ins.getByRole("button", { name: "Try again" }).click();
+      await expect(ins.getByText("The service answered: Glance shows this widget without an error.")).toBeVisible({ timeout: 20_000 });
+      expect(readFileSync(envPath, "utf8")).toBe(`UPTIME_KUMA_URL=${base}\nUPTIME_KUMA_STATUS_SLUG=home\n`);
+    } finally {
+      for (const s of [kuma, other]) { s.closeAllConnections(); s.close(); }
+    }
   });
 });

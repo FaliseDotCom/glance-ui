@@ -1,4 +1,4 @@
-export { Editor, START_LAYOUTS, PREVIEW_BASE, previewServer, previewSeed, type ValueInfo, type PreviewCheck, type PreviewResult, type DraftState, type GlanceStatus, type ImportCheck, type UploadCheck, type UploadInfo, type EditorConfig, type SaveResult, type VersionSummary, type VersionSource } from "./editor.ts";
+export { Editor, START_LAYOUTS, PREVIEW_BASE, previewServer, previewSeed, type ValueInfo, type TryResult, type PreviewCheck, type PreviewResult, type DraftState, type GlanceStatus, type ImportCheck, type UploadCheck, type UploadInfo, type EditorConfig, type SaveResult, type VersionSummary, type VersionSource } from "./editor.ts";
 export { describeChanges, type Change } from "./changes.ts";
 export { locate, type Location, type Problem } from "./problems.ts";
 export { migrateModel, MODEL_MIGRATIONS, type ModelMigration } from "./migrations.ts";

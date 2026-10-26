@@ -14,6 +14,10 @@ export interface ValueSpec {
   default?: string;
   choices?: string[];
   optional?: boolean;
+  /** ADR-0032 (url, host): the server only; a page's address pasted from the browser is cut back to it. */
+  origin?: boolean;
+  /** ADR-0032: a pattern whose first group is the value, when an address holding it is pasted. */
+  extract?: string;
 }
 
 export interface CommunityVariant {

@@ -2926,15 +2926,17 @@
   },
   "UPTIME_KUMA_STATUS_SLUG": {
    "label": "Status page slug",
-   "help": "The last part of the status page's address: for http://192.0.2.10:3001/status/example it is example",
+   "help": "In Uptime Kuma: Status Pages → New Status Page, add the monitors to it and Save. Its slug is the last part of its address: for http://192.0.2.10:3001/status/example it is example",
    "kind": "text",
-   "example": "example"
+   "example": "example",
+   "extract": "(?:^|/)status/([^/?#]+)"
   },
   "UPTIME_KUMA_URL": {
    "label": "Uptime Kuma address",
-   "help": "Like http://192.0.2.10:3001, no slash at the end",
+   "help": "The server and port only, like http://192.0.2.10:3001: not the address of a page such as …/dashboard",
    "kind": "url",
-   "example": "http://192.0.2.10:3001"
+   "example": "http://192.0.2.10:3001",
+   "origin": true
   },
   "VIKUNJA_FILTER": {
    "label": "Task filter",

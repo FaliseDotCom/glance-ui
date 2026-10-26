@@ -144,3 +144,5 @@ function run(bin: string, args: string[], timeoutMs: number, trim = true, env: R
     });
   });
 }
+
+export * from "./try.ts";
