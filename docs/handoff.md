@@ -1,10 +1,10 @@
 # Handoff
 
 The single place to see where the project stands. Updated at the end of every work session and every PR.
-Last updated: 2026-10-26 (ADR-0030 merged as PR #27; ADR-0031 drag and drop built on `feat/drag-and-drop`).
+Last updated: 2026-10-26 (v1.3.0 released: ADR-0030 community widgets with fields, ADR-0031 drag and drop).
 
 ## Current state
-- **Released:** **v1.2.0** is `:latest` (`ghcr.io/gcarstoiu/glance-editor`, public). Earlier: v1.0.0, v1.0.1, v1.1.0
+- **Released:** **v1.3.0** is `:latest` (`ghcr.io/gcarstoiu/glance-editor`, public). Earlier: v1.0.0, v1.0.1, v1.1.0, v1.2.0
   (and test releases v1.0.0-rc.1 to rc.6, kept as pre-releases). Every release page shows its CHANGELOG section;
   every published image passed `test/all-in-one.sh` (including a real HTTPS weather fetch inside the container).
 - **v1.0.0 caveat:** PR #18 was merged before its last two commits were pushed, so v1.0.0 lacked "another server's
@@ -228,8 +228,8 @@ Nothing below may be built on until you decide. ★ = affects user experience.
 ## Next steps
 1. You: submit `gcarstoiu/unraid-templates` at https://ca.unraid.net/submit/new; paste any Validate/Scan findings to
    Claude.
-2. You: on Unraid, switch to `ghcr.io/gcarstoiu/glance-editor:latest` (v1.2.0) and update; try a community widget with
-   values (e.g. Beszel Stats) and the Values screen; report what you see.
+2. You: on Unraid, Docker → Check for Updates → apply the update (v1.3.0); try a community widget's fields, More
+   options and its settings panel, and drag a bookmark link to another group; report what you see.
 3. You: when ready, cut over from your old Glance (`docs/runbooks/cutover.md`; rehearse the fallback first).
 4. Open decisions above (D-62, assets list, default themes) whenever convenient.
 5. Claude, when asked: record the PM's Unraid observations in ADR-0024; move the community widgets pin to a newer
@@ -237,6 +237,9 @@ Nothing below may be built on until you decide. ★ = affects user experience.
    `test/community-live.sh` on the image, review, PR); a newer Glance pin (ADR-0006) when one is released.
 
 ## Session log
+- 2026-10-26: v1.3.0 released (notes approved by the PM): `:1.3.0` and `:latest` published, `test/all-in-one.sh` passed
+  on the published image. Main's CI was cancelled once at the job's 15-minute limit (GitHub took 13 minutes to install
+  Chromium) and passed on re-run.
 - 2026-10-26: PR #27 (ADR-0030) merged by the PM; PR #28 (a teardown race in the UI tests) merged by Claude.
   ADR-0031 (drag and drop) proposed, accepted as recommended, and built on `feat/drag-and-drop`.
 - 2026-10-26: community widgets checked one by one (README audit; each set up through the UI in a throwaway
