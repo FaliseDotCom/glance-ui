@@ -18,6 +18,11 @@ async function save(page: Page) {
   await page.getByRole("button", { name: "Save", exact: true }).click();
   await page.getByRole("dialog", { name: "Review and save" }).getByRole("button", { name: "Check and save" }).click();
 }
+/** The Values screen: the rail on desktop, the bottom tabs on a phone. */
+async function openValues(page: Page) {
+  await page.getByRole("button", { name: /^Values/ }).filter({ visible: true }).first().click();
+  await expect(page.getByRole("heading", { name: "Values", exact: true })).toBeVisible();
+}
 const column = (page: Page, n: number) => page.getByRole("region", { name: `Column ${n}`, exact: true });
 const inspector = (page: Page) => page.getByRole("complementary", { name: "Widget settings" });
 const card = (page: Page, name: string) => page.locator(".wcard", { has: page.getByRole("button", { name: new RegExp(`^${name}, `) }) });
@@ -391,11 +396,11 @@ test.describe("states", () => {
   });
 });
 
-// ADR-0028: the Community tab of Add widget, with the community widgets bundled with this release.
+// ADR-0028, ADR-0030: the Community tab of Add widget, with the community widgets bundled with this release.
 test.describe("Community widgets (ADR-0028)", () => {
   test.use({ opts: { seed: fixture("home.yml"), glance: true } });
 
-  test("pick one: its variants, the values it needs, Add exactly as written; server-only ones can't be added", async ({ page, editor }) => {
+  test("pick one: its variants, labelled fields, Show YAML; one that can't be set up with fields says why", async ({ page, editor }) => {
     await importSeed(page, editor.url);
     await column(page, 2).getByRole("button", { name: "Add widget" }).click();
     const sheet = page.getByRole("dialog", { name: "Add widget" });
@@ -406,25 +411,32 @@ test.describe("Community widgets (ADR-0028)", () => {
     await expectTargets(page, "community list");
     await shot(page, "community-list", { fullPage: false });
 
-    // One that needs a program of its own: no Add.
-    await sheet.getByLabel("Search community widgets").fill("animals display");
-    await sheet.getByRole("button", { name: /^Animals Display/ }).click();
-    await expect(sheet.getByText(/needs a program of its own/)).toBeVisible();
-    await expect(sheet.getByRole("button", { name: /^Add Animals Display/ })).toHaveCount(0);
+    // One that needs a helper program: listed with the reason, no Add.
+    await sheet.getByLabel("Search community widgets").fill("docker swarm");
+    await expect(sheet.getByRole("button", { name: /^Docker Swarm.*Can't be added/ })).toBeVisible();
+    await sheet.getByRole("button", { name: /^Docker Swarm/ }).click();
+    await expect(sheet.getByText(/^Can't be added: /)).toBeVisible();
+    await expect(sheet.getByRole("button", { name: /^Add Docker Swarm/ })).toHaveCount(0);
     await sheet.getByRole("button", { name: "All community widgets" }).click();
 
-    // One that needs values: they're named.
-    await sheet.getByLabel("Search community widgets").fill("arr releases");
-    await sheet.getByRole("button", { name: /^Arr Releases/ }).click();
-    await expect(sheet.getByText("The 3 values it needs")).toBeVisible(); // asked for here (ADR-0029)
-    for (const n of ["RADARR_URL", "RADARR_API_URL", "RADARR_KEY"]) await expect(sheet.getByLabel(n, { exact: true })).toBeVisible();
+    // One that needs values: a labelled field with help for each.
+    await sheet.getByLabel("Search community widgets").fill("jellyfin stats");
+    await sheet.getByRole("button", { name: /^Jellyfin Stats Live active playback/ }).click();
+    await expect(sheet.getByText("What it needs (2)")).toBeVisible();
+    await expect(sheet.getByLabel("Jellyfin (or Emby) address", { exact: true })).toBeVisible();
+    await expect(sheet.getByText("Like http://192.0.2.10:8096, no slash at the end")).toBeVisible();
+    await expect(sheet.getByLabel("Jellyfin (or Emby) API key", { exact: true })).toHaveAttribute("type", "password");
+    // The YAML is folded away; it shows the ${NAMES} the fields fill in.
+    await expect(sheet.locator("pre")).toHaveCount(0);
+    await sheet.getByRole("button", { name: "Show YAML" }).click();
+    await expect(sheet.locator("pre")).toContainText("${JELLYFIN_URL}");
     await sheet.getByRole("button", { name: "All community widgets" }).click();
 
-    // Two variants; the second one is added.
+    // Two variants; the second one is added; it needs nothing.
     await sheet.getByLabel("Search community widgets").fill("AFL");
     await sheet.getByRole("button", { name: /^AFL Widgets/ }).click();
     await sheet.getByRole("group", { name: "Variant" }).getByRole("button", { name: "Ladder" }).click();
-    await expect(sheet.locator("pre")).toContainText("type: custom-api");
+    await expect(sheet.getByText("Nothing to fill in.")).toBeVisible();
     await expectAccessible(page, "community widget");
     await expectTargets(page, "community widget");
     await shot(page, "community-widget", { fullPage: false });
@@ -439,57 +451,127 @@ test.describe("Community widgets (ADR-0028)", () => {
   });
 });
 
-// ADR-0029: values for ${VARIABLES}, filled in where they're needed and kept in .env (never in glance.yml).
-test.describe("Values (ADR-0029)", () => {
+// ADR-0029, ADR-0030: values for ${VARIABLES}, filled in where they're needed and kept in .env (never in glance.yml);
+// labelled and tidied for their field, and checked with Glance before they're stored.
+test.describe("Values (ADR-0029, ADR-0030)", () => {
   test.use({ opts: { seed: fixture("home.yml"), glance: true, glanceEnvNames: ["PATH", "TZ"] } });
 
-  test("filled in while adding a community widget; the eye; the Values screen; Review's Set values", async ({ page, editor }) => {
+  test("filled in while adding a community widget; the eye; the Values screen; a value Glance can't load is refused", async ({ page, editor }) => {
     const envPath = join(dirname(editor.configPath), ".env");
     await importSeed(page, editor.url);
     await column(page, 2).getByRole("button", { name: "Add widget" }).click();
     const sheet = page.getByRole("dialog", { name: "Add widget" });
     await sheet.getByRole("button", { name: "Community", exact: true }).click();
-    await sheet.getByLabel("Search community widgets").fill("arr releases");
-    await sheet.getByRole("button", { name: /^Arr Releases/ }).click();
-    await expect(sheet.getByText("The 3 values it needs")).toBeVisible();
-    await sheet.getByLabel("RADARR_URL").fill("http://nas.lan:7878");
-    const key = sheet.getByLabel("RADARR_KEY", { exact: true });
+    await sheet.getByLabel("Search community widgets").fill("jellyfin stats");
+    await sheet.getByRole("button", { name: /^Jellyfin Stats Live active playback/ }).click();
+    const address = sheet.getByLabel("Jellyfin (or Emby) address", { exact: true });
+    await address.fill("192.0.2.10:8096/");
+    await address.blur();
+    await expect(address).toHaveValue("http://192.0.2.10:8096"); // an address is tidied as it's left
+    const key = sheet.getByLabel("Jellyfin (or Emby) API key", { exact: true });
     await key.fill("abc 123");
     await expect(key).toHaveAttribute("type", "password"); // a key is hidden…
-    await sheet.getByRole("button", { name: "Show RADARR_KEY" }).click();
+    await sheet.getByRole("button", { name: "Show Jellyfin (or Emby) API key" }).click();
     await expect(key).toHaveAttribute("type", "text"); // …until the eye is pressed
     await expectAccessible(page, "community values");
     await expectTargets(page, "community values");
     await shot(page, "community-values", { fullPage: false });
-    await sheet.getByRole("button", { name: "Add Arr Releases" }).click();
-    await expect(page.getByText("Added Arr Releases")).toBeVisible();
-    expect(readFileSync(envPath, "utf8")).toBe('RADARR_URL=http://nas.lan:7878\nRADARR_KEY="abc 123"\n');
+    await sheet.getByRole("button", { name: "Add Jellyfin Stats" }).click();
+    await expect(page.getByText("Added Jellyfin Stats")).toBeVisible();
+    expect(readFileSync(envPath, "utf8")).toBe('JELLYFIN_URL=http://192.0.2.10:8096\nJELLYFIN_API_KEY="abc 123"\n');
 
-    // Review warns about the one left empty, and Set values goes to the Values screen.
     if (isPhone(page)) await inspector(page).getByRole("button", { name: "Back to layout" }).click();
     await page.getByRole("button", { name: "Save", exact: true }).click();
     const review = page.getByRole("dialog", { name: "Review and save" });
-    await expect(review.getByText(/^\$\{RADARR_API_URL\} has no value\./)).toBeVisible();
-    await review.getByRole("button", { name: "Set values" }).click();
-    await expect(page.getByRole("heading", { name: "Values", exact: true })).toBeVisible();
-    await expect(page.getByLabel("RADARR_URL")).toHaveValue("http://nas.lan:7878"); // not a secret: shown
-    await expect(page.getByLabel("RADARR_KEY", { exact: true })).toHaveValue(""); // a secret: hidden until the eye
-    await page.getByRole("button", { name: "Show RADARR_KEY" }).click();
-    await expect(page.getByLabel("RADARR_KEY", { exact: true })).toHaveValue("abc 123");
-    await page.getByLabel("RADARR_API_URL").fill("http://nas.lan:7878/api");
-    await page.locator(".panel", { has: page.getByLabel("RADARR_API_URL") }).getByRole("button", { name: "Store" }).click();
-    await expect(page.getByText("Stored RADARR_API_URL.", { exact: false })).toBeVisible();
-    expect(readFileSync(envPath, "utf8")).toContain("RADARR_API_URL=http://nas.lan:7878/api\n");
+    await expect(review.getByText(/has no value/)).toHaveCount(0);
+    await review.getByRole("button", { name: "Check and save" }).click();
+    // This test's Glance doesn't read .env (the container's does: test/all-in-one.sh), so the reload may not be
+    // confirmed; glance.yml is written all the same.
+    await expect(page.getByRole("heading", { name: /^Version 1 is (live|written)$/ })).toBeVisible({ timeout: 30_000 });
+    expect(editor.live()).toContain("${JELLYFIN_API_KEY}"); // glance.yml keeps the placeholders
+    expect(editor.live()).not.toContain("abc 123");
+
+    // The Values screen: labels and help; a value Glance can't load the dashboard with is refused, with its reason.
+    await page.goto(`${editor.url}/`);
+    await openValues(page);
+    await expect(page.getByLabel("Jellyfin (or Emby) address", { exact: true })).toHaveValue("http://192.0.2.10:8096");
+    await page.getByLabel("Jellyfin (or Emby) address", { exact: true }).fill("http://192.0.2.10:port");
+    const row = page.locator(".panel", { has: page.getByLabel("Jellyfin (or Emby) address", { exact: true }) });
+    await row.getByRole("button", { name: "Store" }).click();
+    await expect(row.getByRole("alert")).toHaveText(/^With this value Glance can't load your dashboard: .*invalid port/);
+    expect(readFileSync(envPath, "utf8")).toContain("JELLYFIN_URL=http://192.0.2.10:8096\n");
     await expectAccessible(page, "values screen");
     await expectTargets(page, "values screen");
     await shot(page, "values-screen");
-    await page.getByRole("button", { name: "Save", exact: true }).click();
-    await expect(page.getByRole("dialog", { name: "Review and save" }).getByText(/has no value/)).toHaveCount(0);
-    await page.getByRole("dialog", { name: "Review and save" }).getByRole("button", { name: "Check and save" }).click();
-    // This test's Glance doesn't read .env (the container's does: test/all-in-one.sh), so it keeps its old config
-    // and the reload isn't confirmed; glance.yml is written all the same.
+  });
+});
+
+// ADR-0030: More options with their defaults, the settings panel of a community widget (title, cache, values), and a
+// second copy with its own values.
+test.describe("Community widgets without YAML (ADR-0030)", () => {
+  test.use({ opts: { seed: fixture("home.yml"), glance: true, glanceEnvNames: ["PATH", "TZ"] } });
+
+  test("options under More options; title, cache and values in its settings; a second copy with its own values", async ({ page, editor }) => {
+    const envPath = join(dirname(editor.configPath), ".env");
+    await importSeed(page, editor.url);
+    await column(page, 2).getByRole("button", { name: "Add widget" }).click();
+    const sheet = page.getByRole("dialog", { name: "Add widget" });
+    await sheet.getByRole("button", { name: "Community", exact: true }).click();
+    await sheet.getByLabel("Search community widgets").fill("jellyfin latest");
+    await sheet.getByRole("button", { name: /^Jellyfin Latest/ }).click();
+    await sheet.getByLabel("Jellyfin (or Emby) address", { exact: true }).fill("http://192.0.2.10:8096");
+    await sheet.getByLabel("Jellyfin (or Emby) API key", { exact: true }).fill("k3y");
+    await sheet.getByLabel("Jellyfin user name", { exact: true }).fill("viewer");
+    await sheet.getByLabel("Library name", { exact: true }).fill("Shows");
+    await expect(sheet.getByLabel("What to show", { exact: true })).toHaveCount(0); // folded
+    await sheet.getByRole("button", { name: "More options (5)" }).click();
+    await expect(sheet.getByLabel("What to show", { exact: true })).toHaveValue("latest"); // its default
+    await sheet.getByLabel("What to show", { exact: true }).selectOption("nextup");
+    await expect(sheet.getByLabel("Number of items", { exact: true })).toHaveValue("10");
+    await expectAccessible(page, "community options");
+    await expectTargets(page, "community options");
+    await shot(page, "community-options", { fullPage: false });
+    await sheet.getByRole("button", { name: /^Add Jellyfin Latest/ }).click();
+    await expect(page.getByText(/^Added Jellyfin Latest/)).toBeVisible();
+    const env = readFileSync(envPath, "utf8");
+    expect(env).toContain("JELLYFIN_LATEST_MODE=nextup\n");
+    expect(env).toContain("JELLYFIN_LATEST_ITEM_COUNT=10\n"); // optional values are stored with their defaults
+
+    // Its settings: no form behind it, so no Discard; title and cache written into its YAML; its values.
+    const ins = inspector(page);
+    await expect(ins.getByText("This widget is kept as YAML. Its title, cache and values are here; everything else is in the YAML tab.")).toBeVisible();
+    await expect(ins.getByRole("button", { name: "Discard YAML override" })).toHaveCount(0);
+    await ins.getByLabel("Title", { exact: true }).fill("My shows");
+    await ins.getByLabel("Cache", { exact: true }).fill("30m");
+    await ins.getByLabel("Cache", { exact: true }).blur();
+    await ins.getByLabel("Number of items", { exact: true }).fill("12");
+    await ins.getByRole("button", { name: "Store Number of items" }).click();
+    await expect(page.getByText(/^Stored Number of items\./)).toBeVisible();
+    expect(readFileSync(envPath, "utf8")).toContain("JELLYFIN_LATEST_ITEM_COUNT=12\n");
+    await expectAccessible(page, "community widget settings");
+    await expectTargets(page, "community widget settings");
+    await shot(page, "community-settings", { fullPage: false });
+    if (isPhone(page)) await ins.getByRole("button", { name: "Back to layout" }).click();
+
+    // A second Jellyfin widget: it can share the first one's values or have its own.
+    await column(page, 2).getByRole("button", { name: "Add widget" }).click();
+    await sheet.getByRole("button", { name: "Community", exact: true }).click();
+    await sheet.getByLabel("Search community widgets").fill("jellyfin stats");
+    await sheet.getByRole("button", { name: /^Jellyfin Stats Live active playback/ }).click();
+    await expect(sheet.getByText(/uses some of the same values/)).toBeVisible();
+    await sheet.getByRole("group", { name: "Values for this copy" }).getByRole("button", { name: "Its own" }).click();
+    await sheet.getByLabel("Jellyfin (or Emby) address (copy 2)", { exact: true }).fill("http://192.0.2.20:8096");
+    await sheet.getByLabel("Jellyfin (or Emby) API key (copy 2)", { exact: true }).fill("other");
+    await sheet.getByRole("button", { name: "Add Jellyfin Stats" }).click();
+    await expect(page.getByText("Added Jellyfin Stats")).toBeVisible();
+    expect(readFileSync(envPath, "utf8")).toContain("JELLYFIN_URL_2=http://192.0.2.20:8096\n");
+    if (isPhone(page)) await inspector(page).getByRole("button", { name: "Back to layout" }).click();
+    await save(page);
     await expect(page.getByRole("heading", { name: /^Version 1 is (live|written)$/ })).toBeVisible({ timeout: 30_000 });
-    expect(editor.live()).toContain("${RADARR_KEY}"); // glance.yml keeps the placeholders
-    expect(editor.live()).not.toContain("abc 123");
+    const live = editor.live();
+    expect(live).toContain("title: My shows");
+    expect(live).toContain("cache: 30m");
+    expect(live).toContain("${JELLYFIN_URL_2}");
+    expect(live).toContain("${JELLYFIN_URL}");
   });
 });

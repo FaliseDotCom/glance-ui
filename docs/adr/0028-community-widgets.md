@@ -1,6 +1,7 @@
 # 0028. Community widgets, ready to pick
 
-- **Status:** accepted by the PM, 2026-10-14 (via chat; all four as recommended). Built.
+- **Status:** accepted by the PM, 2026-10-14 (via chat; all four as recommended). Built. In part superseded by
+  [ADR-0030](0030-community-widgets-without-code.md): the README's YAML is repaired where needed, and every value has a field.
 - **Date:** 2026-10-14
 - **Decider:** PM
 - **UX impact:** yes: a new way to add widgets.

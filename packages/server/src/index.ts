@@ -10,5 +10,5 @@ export { backgroundCss, editorCss, NO_LINES_CSS, EDIT_LINK_JS, writeEditorFiles,
 export { Pixabay, PIXABAY_CHIPS, PIXABAY_API, type PixabayHit, type PixabayError } from "./pixabay.ts";
 export { readZip, safePath, ZIP_LIMITS, type ZipFile, type ZipLimits } from "./zip.ts";
 export { findConfig, findAssets, assetLinks, type UploadFound } from "./upload.ts";
-export { COMMUNITY, communityList, communityWidget, asWidgetYaml, type CommunitySnapshot, type CommunityWidget, type CommunityVariant } from "./community.ts";
+export { COMMUNITY, communityList, communityWidget, asWidgetYaml, communityWidgetView, valueSpec, type CommunitySnapshot, type CommunityWidget, type CommunityVariant, type CommunityWidgetView, type ValueSpec } from "./community.ts";
 export { envNames, envValue, setEnvValues, formatValue, VALUE_NAME } from "./values.ts";

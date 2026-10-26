@@ -189,7 +189,9 @@ export class App {
     if (this.sel && !this.selWidget) this.sel = null;
   }
 
+  /** The server's state. Edits not sent yet go first: the server's draft would replace them (found with ADR-0030). */
   async reload() {
+    await this.settle();
     this.apply(await api.state());
     this.versions = await api.versions();
   }

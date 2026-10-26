@@ -80,3 +80,21 @@ describe("typed placeholder dummies", () => {
     expect(substituteForValidation("a \\${X} ${lower} ${foo:B} ${A}${B}")).toBe("a \\${X} ${lower} ${foo:B} glance-editor-placeholder\\${B}");
   });
 });
+
+// ADR-0030: the editor's own values reach Glance in its environment, as they will when it runs: a value that breaks the
+// config (Glance pastes it into the text) is found before it's stored or saved.
+describe("real values in Glance's environment", () => {
+  const config = (header: string) => `pages:\n  - name: P\n    columns:\n      - size: full\n        widgets:\n          - type: custom-api\n            url: http://\${HOST}:\${PORT}/api\n            headers:\n              X-Key: ${header}\n            template: x\n`;
+  it("keeps a name given a value, so Glance substitutes it; stand-ins for the rest", () => {
+    expect(substituteForValidation("a ${A} ${B}", new Map(), new Set(["A"]))).toBe("a ${A} glance-editor-placeholder");
+  });
+  it("accepts values that fit, and refuses one that breaks the YAML or the URL, with Glance's reason", async () => {
+    expect((await validateConfig(config('"${KEY}"'), { env: { KEY: "abc 123", PORT: "8080" } })).ok).toBe(true);
+    const quote = await validateConfig(config('"${KEY}"'), { env: { KEY: 'a"b' } });
+    expect(quote.ok).toBe(false);
+    expect(quote.output).toMatch(/yaml/);
+    const port = await validateConfig(config("${KEY}"), { env: { PORT: "web" } });
+    expect(port.ok).toBe(false);
+    expect(port.output).toContain("invalid port");
+  });
+});

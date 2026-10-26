@@ -5,7 +5,7 @@ import { dirname, join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import type { WidgetT } from "@glance-editor/model";
 import { parseDotenv } from "../../../image/dotenv.ts";
-import { setEnvValues, type Editor } from "../src/index.ts";
+import { COMMUNITY, setEnvValues, type Editor } from "../src/index.ts";
 import { open, setup } from "./helpers.ts";
 
 const editors: Editor[] = [];
@@ -40,7 +40,9 @@ describe("the editor's values", () => {
     const { e } = await editor(["TZ", "PATH"], "OTHER=1\n");
     const r = await e.values();
     expect(r.applies).toBe(true);
-    expect(r.values).toEqual([
+    // ADR-0030: a name a community widget uses carries its field (label, help, kind).
+    expect(r.values.find((v) => v.name === "BESZEL_URL")?.field).toEqual(COMMUNITY.values.BESZEL_URL);
+    expect(r.values.map(({ field: _f, ...v }) => v)).toEqual([
       { name: "BESZEL_TOKEN", set: false, container: false, hidden: true, usedBy: ["Home › Beszel"] },
       { name: "BESZEL_URL", set: false, container: false, hidden: false, usedBy: ["Home › Beszel"] },
       { name: "OTHER", set: true, container: false, hidden: false, usedBy: [] },

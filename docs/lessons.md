@@ -3,6 +3,23 @@
 Things learned the hard way or by surprise. Newest first. Each entry: date, what happened, what to do.
 Auto memory is machine-local. This file is the record.
 
+### 2026-10-26: Things learned making every community widget settable without code (ADR-0030)
+- **Glance pastes values into the YAML text before reading it,** so a value can break the whole file: `"`, `\`, `: `,
+  `{{` or a leading `%` (tested with v0.8.6 `config:validate`). **Do:** check with the real values in Glance's
+  environment (`validateConfig(…, { env })`) before storing one and before Save; stand-ins alone let a bad value through
+  (a text port stopped the whole dashboard in the live check).
+- **An unset `${NAME}` stops the whole dashboard, even inside a YAML comment;** of two side by side (`${A}${B}`), Glance
+  substitutes only the first. **Do:** store optional values with their defaults; keep a character between placeholders.
+- **READMEs aren't consistent:** code fences without a `yaml` label, YAML in files or sub-folders beside the README,
+  several widgets in one block, fragments without a template, and addresses that must or must not include `http://`.
+  The snapshot script handles each; the settings file records the rest per widget, and the script refuses a pin where
+  a repair no longer fits.
+- **A text stand-in inside `{{ }}` breaks template parsing.** **Do:** pick stand-ins by the field's kind (`fieldHints`).
+- **`reload()` replaced edits the client hadn't sent yet** (the draft goes to the server 250 ms after the last edit), so
+  a value stored right after an edit lost the edit. **Do:** settle pending edits before reading the server's state.
+- **A test that only runs the README's YAML through `config:validate` misses most problems.** Setting each widget up
+  through the UI in a container (`test/community-live.sh`) found the address-format and value problems.
+
 ### 2026-10-14: Things learned in Phase 10b
 - **A stand-in HTTP server's `close()` waits for open keep-alive connections.** The browser kept one open to the icon
   stand-in (previews), so teardown hung past the test timeout: once in CI, once locally in Phase 9 ("5 passed" of 6,

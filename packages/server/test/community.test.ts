@@ -1,13 +1,15 @@
-// ADR-0028: the community widgets bundled with this release. Every variant marked addable is checked again here, the
-// way the editor adds it (the YAML tab's reader, then a draft with it checked by the pinned Glance), so the snapshot
-// can't claim more than the release does.
+// ADR-0028, ADR-0030: the community widgets bundled with this release. Every variant marked addable is checked again
+// here, the way the editor adds it (the YAML tab's reader, then a draft with it checked by the pinned Glance), so the
+// snapshot can't claim more than the release does; and every value it needs has a field whose example or default Glance
+// accepts, given to it as a real value, as the user's will be.
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { widgetFromYaml } from "@glance-editor/document";
-import { validateConfig } from "@glance-editor/glance";
+import { fieldHints, validateConfig } from "@glance-editor/glance";
 import { toGlanceJson, generate } from "@glance-editor/generator";
 import { SCHEMA_VERSION, type DashboardT, type WidgetT } from "@glance-editor/model";
-import { asWidgetYaml, COMMUNITY, communityList, communityWidget } from "../src/index.ts";
+import { sample, specProblems } from "../../../scripts/community-readme.ts";
+import { asWidgetYaml, COMMUNITY, communityList, communityWidget, communityWidgetView, valueSpec } from "../src/index.ts";
 
 const pin = (file: string, key: string) => new RegExp(`^${key}=(.*)$`, "m").exec(readFileSync(file, "utf8"))?.[1];
 
@@ -36,9 +38,36 @@ describe("community widgets snapshot", () => {
       if (!r.ok) { failures.push(`${w.dir}: the editor can't read it: ${r.message}`); continue; }
       const d: DashboardT = { schemaVersion: SCHEMA_VERSION, pages: [{ _id: "p", name: "P", columns: [{ _id: "c0", size: "full", widgets: [{ ...r.widget, _yaml: { text: asWidgetYaml(v.yaml), form: "{}" } } as WidgetT] }] }] };
       const text = generate(d, { glanceVersion: COMMUNITY.glance }).yaml;
-      const res = await validateConfig(text, { hints: toGlanceJson(d).placeholderHints });
+      const res = await validateConfig(text, { hints: fieldHints(text, valueSpec, toGlanceJson(d).placeholderHints) });
       if (!res.ok) failures.push(`${w.dir}: ${res.output.trim().split("\n").pop()}`);
     }
     expect(failures).toEqual([]);
   }, 120_000);
+
+  it("every value of an addable variant has a field, and Glance accepts the variant with the fields' examples and defaults", async () => {
+    const failures: string[] = [];
+    for (const w of COMMUNITY.widgets) for (const [i, v] of w.variants.entries()) {
+      if (!v.check.ok) continue;
+      const bad = v.variables.flatMap((n) => specProblems(n, COMMUNITY.values[n]));
+      if (bad.length) { failures.push(...bad.map((b) => `${w.dir} #${i}: ${b}`)); continue; }
+      const env = Object.fromEntries(v.variables.map((n) => [n, sample(COMMUNITY.values[n]!)]));
+      const r = widgetFromYaml(asWidgetYaml(v.yaml), "c");
+      if (!r.ok) continue; // reported by the test above
+      const d: DashboardT = { schemaVersion: SCHEMA_VERSION, pages: [{ _id: "p", name: "P", columns: [{ _id: "c0", size: "full", widgets: [{ ...r.widget, _yaml: { text: asWidgetYaml(v.yaml), form: "{}" } } as WidgetT] }] }] };
+      const text = generate(d, { glanceVersion: COMMUNITY.glance }).yaml;
+      const res = await validateConfig(text, { hints: fieldHints(text, valueSpec, toGlanceJson(d).placeholderHints), env });
+      if (!res.ok) failures.push(`${w.dir} #${i} with its examples: ${res.output.trim().split("\n").pop()}`);
+    }
+    expect(failures).toEqual([]);
+  }, 120_000);
+
+  it("a field per value in the view; a second copy's name has its first copy's field", () => {
+    const w = COMMUNITY.widgets.find((x) => x.variants.some((v) => v.check.ok && v.variables.length))!;
+    const view = communityWidgetView(w.dir)!;
+    const v = view.variants.find((x) => x.check.ok && x.variables.length)!;
+    expect(Object.keys(v.fields)).toEqual(v.variables);
+    const name = v.variables[0]!;
+    expect(valueSpec(`${name}_2`)).toEqual({ ...valueSpec(name), label: `${valueSpec(name)!.label} (copy 2)` });
+    expect(valueSpec("NO_SUCH_NAME")).toBeNull();
+  });
 });

@@ -43,7 +43,9 @@ Install it once, and it's all there.
   library icons by image name, and tidy names.
 - **Community widgets.** Add any of the widgets Glance users share in
   [glanceapp/community-widgets](https://github.com/glanceapp/community-widgets) from Add widget → Community: search,
-  preview, pick a variant, fill in the values it needs, add. Each one is checked with the pinned Glance for every release.
+  preview, pick a variant, fill in labelled fields for what it needs (an address, a key, a user name, a location;
+  options under More options), add. No YAML: its title, cache and values stay editable in its settings. Each one is
+  checked with the pinned Glance for every release, and set up through the editor in a test container.
 - **Values** for `${VARIABLES}` (addresses, keys, passwords) are set in the editor and kept in `.env` next to glance.yml,
   out of glance.yml and History.
 - **Icon finder** for bookmarks, monitors and containers. It searches Simple Icons, selfh.st Icons, Dashboard Icons

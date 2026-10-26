@@ -10,6 +10,9 @@ const LINE = /^[ \t]*(?:export[ \t]+)?([A-Za-z_][A-Za-z0-9_]*)[ \t]*=/;
 /** The names `.env` sets. */
 export const envNames = (text: string): string[] => Object.keys(parseDotenv(text));
 
+/** Every value `.env` sets, as Glance gets them (image/dotenv.ts). */
+export const envMap = (text: string): Record<string, string> => parseDotenv(text);
+
 /** The value `.env` sets for a name, as Glance gets it (image/dotenv.ts), or null. */
 export const envValue = (text: string, name: string): string | null => parseDotenv(text)[name] ?? null;
 

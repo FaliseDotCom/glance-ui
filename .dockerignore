@@ -7,3 +7,6 @@ test
 dev
 docs
 design
+.spike
+test-results
+playwright-report

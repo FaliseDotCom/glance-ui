@@ -1,0 +1,4416 @@
+# Community widgets without code (ADR-0030): a field for every ${NAME} an addable community widget uses, and the
+# repairs that turn each README's YAML into one a user can set up with fields. scripts/community-widgets.ts applies it
+# to the pinned README YAML and checks every variant with the pinned Glance; it names anything that no longer fits.
+# values: label, help (one line), kind (url | host | secret | text | number | choice | boolean | list | date), example
+#   (required ones), default and optional: true (optional ones), choices (choice).
+# widgets: per widget folder, `needs` (one sentence), and per variant in the snapshot's order (null: nothing to change):
+#   name, rewrite (exact find/replace, count = occurrences), refuse (the reason a user reads).
+values:
+  ABS_LIBRARY:
+    label: Library name
+    help: The library's name exactly as Audiobookshelf shows it, like Audiobooks or Podcasts
+    kind: text
+    example: Audiobooks
+  ABS_PROGRESS_BAR:
+    label: Show progress bar
+    help: Shows how far you got, on the continue-listening and listen-again shelves
+    kind: boolean
+    example: "false"
+    default: "true"
+    optional: true
+  ABS_SHELF:
+    label: Shelf
+    help: "Books: continue-listening, continue-series, recently-added, listen-again; podcasts: continue-listening, newest-episodes, recently-added, listen-again"
+    kind: choice
+    example: recently-added
+    default: continue-listening
+    choices:
+      - continue-listening
+      - continue-series
+      - recently-added
+      - listen-again
+      - newest-episodes
+  ABS_SHOW_THUMBNAIL:
+    label: Show covers
+    help: Shows covers; this puts the API key into the page, so don't turn it on for a dashboard reachable from the internet
+    kind: boolean
+    example: "true"
+    default: "false"
+    optional: true
+  ABS_SMALL_COLUMN:
+    label: Small column
+    help: Turn on when the widget sits in a small column
+    kind: boolean
+    example: "true"
+    default: "false"
+    optional: true
+  ABS_THUMBNAIL_ASPECT:
+    label: Cover shape
+    help: "default: as the cover is; square; portrait (2:3); landscape (16:9)"
+    kind: choice
+    example: portrait
+    default: square
+    choices:
+      - default
+      - square
+      - portrait
+      - landscape
+    optional: true
+  AIR_QUALITY_LAT:
+    label: Latitude
+    help: Your location's latitude in decimal degrees, like 52.52 (south is negative); the nearest WAQI station is used
+    kind: number
+    example: "52.52"
+  AIR_QUALITY_LON:
+    label: Longitude
+    help: Your location's longitude in decimal degrees, like 13.405 (west is negative)
+    kind: number
+    example: "13.405"
+  AIR_QUALITY_TOKEN:
+    label: WAQI API token
+    help: A free token from aqicn.org/data-platform/token
+    kind: secret
+    example: 0123456789abcdef0123456789abcdef01234567
+  AIRCRAFT_LAT_MAX:
+    label: Northern edge (latitude)
+    help: The area's northern edge in decimal degrees, like 52.7
+    kind: number
+    example: "52.7"
+  AIRCRAFT_LAT_MIN:
+    label: Southern edge (latitude)
+    help: The area's southern edge in decimal degrees, like 52.3
+    kind: number
+    example: "52.3"
+  AIRCRAFT_LON_MAX:
+    label: Eastern edge (longitude)
+    help: The area's eastern edge in decimal degrees, like 13.7
+    kind: number
+    example: "13.7"
+  AIRCRAFT_LON_MIN:
+    label: Western edge (longitude)
+    help: The area's western edge in decimal degrees, like 13.1
+    kind: number
+    example: "13.1"
+  ALGAL_BEACH_ID:
+    label: Beach ID
+    help: The beach's ID on beachsafe.org.au, like brighton-3; it ends the api/v4/beach/ address your browser loads when you open the beach (developer tools, Network tab)
+    kind: text
+    example: brighton-3
+  ARR_API_KEY:
+    label: API key
+    help: "In Sonarr, Radarr or Lidarr: Settings → General → Security → API Key"
+    kind: secret
+    example: 0123456789abcdef0123456789abcdef
+  ARR_API_URL:
+    label: Sonarr, Radarr or Lidarr address
+    help: The address Glance uses to reach the app, with its port, like http://192.0.2.10:7878, no slash at the end
+    kind: url
+    example: http://192.0.2.10:7878
+  ARR_COLLAPSE_AFTER:
+    label: Items before "Show more"
+    help: How many items show before the list collapses
+    kind: number
+    example: "5"
+    default: "3"
+    optional: true
+  ARR_COVER_PROXY:
+    label: Cover proxy address
+    help: Only with a reverse proxy that serves covers with the key added (the README shows how), so the key stays out of the page and covers load over https; like https://proxy.example.com/radarrcover
+    kind: url
+    example: https://proxy.example.com/radarrcover
+    default: ""
+    optional: true
+  ARR_INTERVAL_DAYS:
+    label: Days
+    help: Only items within this many days, ahead for upcoming and back for recent or missing
+    kind: number
+    example: "14"
+    default: "20"
+    optional: true
+  ARR_LINK_URL:
+    label: Address for links
+    help: Only if links and the title should open another address than the one above, like https://radarr.example.com; leave empty to use that one
+    kind: url
+    example: https://radarr.example.com
+    default: ""
+    optional: true
+  ARR_SERVICE:
+    label: App
+    help: Which app the address and API key below belong to
+    kind: choice
+    example: sonarr
+    default: radarr
+    choices:
+      - sonarr
+      - radarr
+      - lidarr
+  ARR_SHOW_GRABBED:
+    label: Show grabbed status
+    help: Shows a Grabbed/Missing button instead of the description (still shown when hovering the cover)
+    kind: boolean
+    example: "true"
+    default: "false"
+    optional: true
+  ARR_SIZE:
+    label: Cover size
+    help: small, medium, large or huge; small moves the Grabbed/Missing button to the right
+    kind: choice
+    example: small
+    default: medium
+    choices:
+      - small
+      - medium
+      - large
+      - huge
+    optional: true
+  ARR_SORT_TIME:
+    label: Sort order
+    help: "desc: latest date first; asc: earliest date first"
+    kind: choice
+    example: asc
+    default: desc
+    choices:
+      - desc
+      - asc
+    optional: true
+  ARR_TYPE:
+    label: Show
+    help: "upcoming: soon to release; recent: recently grabbed; missing: available but not grabbed"
+    kind: choice
+    example: recent
+    default: upcoming
+    choices:
+      - upcoming
+      - recent
+      - missing
+  AUDIOBOOKSHELF_KEY:
+    label: Audiobookshelf API key
+    help: "In Audiobookshelf: Settings → API Keys (older versions: Settings → Users → your account → API token)"
+    kind: secret
+    example: eyJhbGciOiJIUzI1NiJ9.example.signature
+  AUDIOBOOKSHELF_URL:
+    label: Audiobookshelf address
+    help: Like http://192.0.2.10:13378 or https://audiobookshelf.example.com, no slash at the end
+    kind: url
+    example: http://192.0.2.10:13378
+  AZIREVPN_HIDE_IP:
+    label: Hide the IP address
+    help: Shows "Redacted" instead of the public IP address
+    kind: boolean
+    example: "true"
+    default: "false"
+    optional: true
+  BACKREST_LIMIT:
+    label: Backups shown
+    help: The most backups to list
+    kind: number
+    example: "10"
+    default: "5"
+    optional: true
+  BACKREST_PLAN_HEADING:
+    label: Heading
+    help: The heading above the list, like Local USB or Amazon S3
+    kind: text
+    example: Amazon S3
+    default: Backups
+    optional: true
+  BACKREST_PLAN_LOCAL:
+    label: Backup plan ID
+    help: The ID of the Backrest plan to show, as set in Backrest's plans
+    kind: text
+    example: local-usb
+  BACKREST_PRECISION:
+    label: Size decimals
+    help: Decimal places for the backup size in GB
+    kind: number
+    example: "2"
+    default: "1"
+    optional: true
+  BACKREST_URL:
+    label: Backrest address
+    help: Like http://192.0.2.10:9898, no slash at the end
+    kind: url
+    example: http://192.0.2.10:9898
+  BESZEL_EMAIL:
+    label: Beszel e-mail
+    help: The e-mail address you log in to Beszel with
+    kind: text
+    example: user@example.com
+  BESZEL_PASSWORD:
+    label: Beszel password
+    help: The password you log in to Beszel with
+    kind: secret
+    example: correct-horse-battery
+  BESZEL_TOKEN:
+    label: Beszel API token
+    help: Only to use a token instead of the e-mail and password (the README shows how to get one); leave empty otherwise
+    kind: secret
+    example: eyJhbGciOiJIUzI1NiJ9.example.signature
+    default: ""
+    optional: true
+  BESZEL_URL:
+    label: Beszel hub address
+    help: Like http://192.0.2.10:8090 or https://beszel.example.com, no slash at the end
+    kind: url
+    example: http://192.0.2.10:8090
+  BIBLE_TRANSLATION:
+    label: Translation
+    help: A translation ID from bible-api.com; web is the World English Bible
+    kind: text
+    default: web
+    optional: true
+  BLUESKY_FEED_URI:
+    label: Bluesky feed
+    help: The feed's at:// address (at://did:…/app.bsky.feed.generator/…); only posts with a link card show
+    kind: text
+    example: at://did:plc:abcdefghijklmnopqrstuvwx/app.bsky.feed.generator/example-feed
+    default: at://did:plc:kkf4naxqmweop7dv4l2iqqf5/app.bsky.feed.generator/news-2-0
+    optional: true
+  CALIBREWEB_PASSWORD:
+    label: Calibre-Web password
+    help: That user's password
+    kind: secret
+    example: correct-horse-battery
+  CALIBREWEB_URL:
+    label: Calibre-Web address
+    help: Like http://192.0.2.10:8083 or https://calibre.example.com, no slash at the end
+    kind: url
+    example: http://192.0.2.10:8083
+  CALIBREWEB_USER:
+    label: Calibre-Web user name
+    help: A Calibre-Web user the widget logs in as
+    kind: text
+    example: reader
+  CALVIN_YEAR_OFFSET:
+    label: Years back
+    help: Shows the strip from this many years ago today; strips exist from 18 Nov 1985 to 31 Dec 1995
+    kind: number
+    example: "35"
+    default: "37"
+    optional: true
+  CAT_TAGS:
+    label: Cat tags
+    help: Tags separated by commas, no spaces, like cute,orange; with many tags few or no photos match; empty for any cat
+    kind: list
+    example: cute,orange
+    default: ""
+    optional: true
+  CF_ACCOUNT_ID:
+    label: Cloudflare account ID
+    help: Your Cloudflare account ID (32 letters and digits), shown on your account's overview page
+    kind: text
+    example: 0123456789abcdef0123456789abcdef
+  CF_API_TOKEN:
+    label: Cloudflare API token
+    help: An API token with the Account → Cloudflare Tunnel → Read permission
+    kind: secret
+    example: example-token-0123456789abcdefghijklmnopqrstuv
+  CF_TUNNEL_ID:
+    label: Tunnel ID
+    help: The ID of the Cloudflare tunnel to watch
+    kind: text
+    example: 01234567-89ab-cdef-0123-456789abcdef
+  CINEPLEX_FILTER:
+    label: Only titles containing
+    help: Shows only movies whose title contains this text (case-sensitive); empty for all
+    kind: text
+    example: Japanese
+    default: ""
+    optional: true
+  CINEPLEX_ITEMS:
+    label: Movies shown
+    help: The most movies to show
+    kind: number
+    example: "8"
+    default: "10"
+    optional: true
+  CINEPLEX_NOW_PLAYING_ONLY:
+    label: Now playing only
+    help: Hides movies that aren't playing yet
+    kind: boolean
+    example: "true"
+    default: "false"
+    optional: true
+  CINEPLEX_SUBSCRIPTION_KEY:
+    label: Cineplex API key
+    help: The ocp-apim-subscription-key header that cineplex.com sends to apis.cineplex.com (your browser's developer tools, Network tab)
+    kind: secret
+    example: 0123456789abcdef0123456789abcdef
+  CLOUDFLARE_ACCOUNT_ID:
+    label: Cloudflare account ID
+    help: Your Cloudflare account ID (32 letters and digits), shown on your account's overview page
+    kind: text
+    example: 0123456789abcdef0123456789abcdef
+  CLOUDFLARE_API_KEY:
+    label: Cloudflare API token
+    help: An API token (not the Global API Key) with the Account → Cloudflare Tunnel → Read permission
+    kind: secret
+    example: example-token-0123456789abcdefghijklmnopqrstuv
+  CLOUDFLARE_TUNNEL_ID:
+    label: Tunnel ID
+    help: The ID of the Cloudflare tunnel whose public hostnames to list
+    kind: text
+    example: 01234567-89ab-cdef-0123-456789abcdef
+  CLOUDFLARED_DOMAIN:
+    label: Domain to hide in names
+    help: Your domain with a leading dot, like .example.com; it is cut from the end of each hostname shown
+    kind: text
+    example: .example.com
+    default: ""
+    optional: true
+  CLOUDFLARED_LOCAL_HOST:
+    label: Address for local links
+    help: The LAN address of the machine that runs cloudflared, like 192.0.2.10; local links to services set as localhost use it
+    kind: text
+    example: 192.0.2.10
+    default: localhost
+    optional: true
+  CRAFTY_API_TOKEN:
+    label: Crafty API token
+    help: An API token from Crafty Controller with Full Access permission
+    kind: secret
+    example: eyJhbGciOiJIUzI1NiJ9.example.signature
+  CRAFTY_DISPLAY_MOTD:
+    label: Show the message of the day
+    help: Shows the server's MOTD under its name
+    kind: boolean
+    example: "false"
+    default: "true"
+    optional: true
+  CRAFTY_SERVER_ID:
+    label: Server ID
+    help: The id= value in the address of the server's page in Crafty (…/panel/server_detail?id=…)
+    kind: text
+    example: 01234567-89ab-cdef-0123-456789abcdef
+  CRAFTY_URL:
+    label: Crafty Controller address
+    help: With https:// (or http://) and the port, like https://192.0.2.10:8443, no slash at the end
+    kind: url
+    example: https://192.0.2.10:8443
+  CRYPTOPANIC_CURRENCIES:
+    label: Currencies
+    help: Currency codes separated by commas, no spaces, like BTC,ETH; empty for all
+    kind: list
+    example: BTC,ETH
+    default: ""
+    optional: true
+  CRYPTOPANIC_FILTER:
+    label: News filter
+    help: One of rising, hot, bullish, bearish or important; empty for all news
+    kind: text
+    example: hot
+    default: ""
+    optional: true
+  CRYPTOPANIC_KIND:
+    label: Kind
+    help: news or media; empty for both
+    kind: text
+    example: news
+    default: ""
+    optional: true
+  CRYPTOPANIC_REGIONS:
+    label: Regions
+    help: Language codes separated by commas, no spaces, like en,de; empty for the default
+    kind: list
+    example: en,de
+    default: ""
+    optional: true
+  CRYPTOPANIC_TOKEN:
+    label: CryptoPanic API token
+    help: The API auth token from your account on cryptopanic.com
+    kind: secret
+    example: 0123456789abcdef0123456789abcdef01234567
+  CUP_DEFAULT_SERVER_NAME:
+    label: Default server name
+    help: The name shown for images whose server Cup doesn't report
+    kind: text
+    example: Home server
+    default: Glance
+    optional: true
+  CUP_ONLY_IN_USE:
+    label: Only images in use
+    help: Hides updates for images no container uses
+    kind: boolean
+    example: "false"
+    default: "true"
+    optional: true
+  CUP_SHOW_UPDATE_KIND:
+    label: Show update types
+    help: Shows the Major, Minor, Patch, Digest and Unknown counts
+    kind: boolean
+    example: "false"
+    default: "true"
+    optional: true
+  CUP_URL:
+    label: Cup server address (without http://)
+    help: Host and port of your Cup server, like 192.0.2.10:8000; the widget adds http:// itself
+    kind: host
+    example: 192.0.2.10:8000
+  DAWARICH_API_KEY:
+    label: Dawarich API key
+    help: "In Dawarich: click your profile photo (top right) → Account"
+    kind: secret
+    example: 0123456789abcdef0123456789abcdef
+  DAWARICH_URL:
+    label: Dawarich address
+    help: Like http://192.0.2.10:3000 or https://dawarich.example.com, no slash at the end
+    kind: url
+    example: http://192.0.2.10:3000
+  DHL_API_KEY:
+    label: DHL API key
+    help: From an app on developer.dhl.com that includes the "Shipment Tracking - Unified" API; access can take a few days to be granted
+    kind: secret
+    example: AbCdEfGhIjKlMnOpQrStUvWxYz012345
+  DHL_LANGUAGE:
+    label: Language
+    help: Two-letter language code for the event descriptions, like en or de
+    kind: text
+    example: de
+    default: en
+    optional: true
+  DHL_TRACKING_NUMBER:
+    label: Tracking number
+    help: The DHL shipment's tracking number
+    kind: text
+    example: "00340434000000000000"
+  DISCOPANEL_HOST:
+    label: DiscoPanel address
+    help: Like http://192.0.2.10:8080 or https://discopanel.example.com, no slash at the end
+    kind: url
+    example: http://192.0.2.10:8080
+  DISCOPANEL_TOKEN:
+    label: DiscoPanel API token
+    help: "An API token from DiscoPanel's user page (v2.0.0 or later), for a user with the Read: Servers and Read: Server Config permissions"
+    kind: secret
+    example: dp_0123456789abcdef0123456789abcdef
+  DUO_JWT_TOKEN:
+    label: Duolingo login token (JWT)
+    help: From the Authorization header of any duolingo.com API request in the developer tools; paste only the part after "Bearer ". Renew it if the widget stops working
+    kind: secret
+    example: eyJhbGciOiJIUzI1NiJ9.example.signature
+  DUO_USER_ID:
+    label: Duolingo user ID
+    help: A number like 1234567890. Log in on duolingo.com, open the browser's developer tools (F12) → Network and look for an API call that contains it
+    kind: number
+    example: "1234567890"
+  EPIC_ALLOW_COUNTRIES:
+    label: Allowed countries
+    help: Country codes separated by commas, usually the same as Country
+    kind: list
+    example: DE
+    default: US
+    optional: true
+  EPIC_COUNTRY:
+    label: Country
+    help: Two-letter country code for regional availability, like US, FR, DE or ES
+    kind: text
+    example: DE
+    default: US
+    optional: true
+  EPIC_LOCALE:
+    label: Language
+    help: Language code for game titles, like en, fr, de or es
+    kind: text
+    example: de
+    default: en
+    optional: true
+  EVENTIM_CITIES:
+    label: Cities
+    help: Where to look for events; several cities separated by commas. Leave empty for everywhere
+    kind: list
+    example: Berlin,Hamburg
+    default: ""
+    optional: true
+  EVENTIM_SEARCH_TERM:
+    label: Search for
+    help: An event or band name, or a kind of event like concert or sport event; searches eventim.de. Leave empty for all events
+    kind: text
+    example: concert
+    default: ""
+    optional: true
+  F1_TIMEZONE:
+    label: Time zone
+    help: Session times are shown in this zone, like Europe/Berlin. Use the zone Glance runs in (its TZ setting), or the countdowns are off
+    kind: text
+    example: Europe/Berlin
+  FOOTBALL_COMPETITION_ID:
+    label: Competition ID
+    help: The league's number on football-data.org, from the list at api.football-data.org/v4/competitions
+    kind: number
+    example: "2021"
+  FOOTBALL_DATA_TOKEN:
+    label: football-data.org API key
+    help: Sent to you by e-mail when you register at football-data.org/client/register
+    kind: secret
+    example: 0123456789abcdef0123456789abcdef
+  FOOTBALL_FIXTURES_TEAM_ID:
+    label: Team ID
+    help: Your team's number on football-data.org (see football-data.org/coverage)
+    kind: number
+    example: "123"
+  FOOTBALL_TABLE_TEAM_ID:
+    label: Team to highlight
+    help: Your team's number on football-data.org; its row is highlighted. 0 highlights none
+    kind: number
+    example: "123"
+    default: "0"
+    optional: true
+  FORGEJO_TOKEN:
+    label: Forgejo access token
+    help: An access token for your Forgejo user (created in Forgejo under Settings → Applications)
+    kind: secret
+    example: 0123456789abcdef0123456789abcdef01234567
+  FORGEJO_URL:
+    label: Forgejo host and port
+    help: Like 192.0.2.10:3000, without http:// (the widget adds it) and no slash at the end
+    kind: host
+    example: 192.0.2.10:3000
+  FRED_API_KEY:
+    label: FRED API key
+    help: A free key from fred.stlouisfed.org/docs/api/api_key.html
+    kind: secret
+    example: 0123456789abcdef0123456789abcdef
+  FRED_SERIES_ID:
+    label: FRED series
+    help: The ID at the end of a series' address on fred.stlouisfed.org; MORTGAGE30US is the 30-year fixed rate. The widget is made for a rate in percent.
+    kind: text
+    default: MORTGAGE30US
+    optional: true
+  FRESHRSS_QUERY_TOKEN:
+    label: Shared query token
+    help: 'In FreshRSS: pick a category, bookmark the current query, enable sharing by HTML & RSS, then copy the t= part of its "Shareable link to the GReader JSON"'
+    kind: secret
+    example: 0123456789abcdef
+  FRESHRSS_URL:
+    label: FreshRSS address
+    help: Like http://192.0.2.10:8080, no slash at the end
+    kind: url
+    example: http://192.0.2.10:8080
+  FRESHRSS_USER:
+    label: FreshRSS user name
+    help: The user= part of the query's "Shareable link to the GReader JSON"
+    kind: text
+    example: alice
+  FRIGATE_TOKEN:
+    label: Frigate login token
+    help: "Only if Frigate asks for a login: a JWT for your Frigate user, signed (HS256) with the secret in the .jwt_secret file of Frigate's config folder. Leave empty otherwise"
+    kind: secret
+    example: eyJhbGciOiJIUzI1NiJ9.example.signature
+    default: ""
+    optional: true
+  FRIGATE_URL:
+    label: Frigate host and port
+    help: Like 192.0.2.10:8971, without https://; the widget always connects with https://
+    kind: host
+    example: 192.0.2.10:8971
+  GATUS_COMPACT_METRIC:
+    label: Compact style shows
+    help: Which number the compact style shows for each endpoint
+    kind: choice
+    example: response-time
+    default: uptime
+    choices:
+      - uptime
+      - response-time
+    optional: true
+  GATUS_DURATION:
+    label: Averaged over
+    help: The period for uptime and response time
+    kind: choice
+    example: 7d
+    default: 24h
+    choices:
+      - 1h
+      - 24h
+      - 7d
+      - 30d
+    optional: true
+  GATUS_GROUP:
+    label: Only this group
+    help: Show only the endpoints of this Gatus group. Leave empty for all groups
+    kind: text
+    example: core
+    default: ""
+    optional: true
+  GATUS_SHOW_FAILING_ONLY:
+    label: Show failing endpoints only
+    help: Hide endpoints whose last check passed
+    kind: boolean
+    example: "true"
+    default: "false"
+    optional: true
+  GATUS_STYLE:
+    label: Style
+    help: full (icons, uptime and response time) or compact (one line per endpoint)
+    kind: choice
+    example: compact
+    default: full
+    choices:
+      - full
+      - compact
+    optional: true
+  GATUS_URL:
+    label: Gatus address
+    help: Like http://192.0.2.10:8080, no slash at the end
+    kind: url
+    example: http://192.0.2.10:8080
+  GH_ACTIONS_BRANCH:
+    label: Branch
+    help: Only runs on this branch, like main
+    kind: text
+    example: main
+  GH_ACTIONS_COLLAPSE_AFTER:
+    label: Shown before "Show more"
+    help: How many runs are visible before the list collapses
+    kind: number
+    example: "4"
+    default: "2"
+    optional: true
+  GH_ACTIONS_COUNT:
+    label: Runs to fetch
+    help: How many recent workflow runs to load
+    kind: number
+    example: "10"
+    default: "6"
+    optional: true
+  GH_ACTIONS_REPO:
+    label: Repository
+    help: Owner and repository name as in its GitHub address, like octo-org/example-repo
+    kind: text
+    example: octo-org/example-repo
+  GHOSTFOLIO_ACCESS_ID:
+    label: Public access ID
+    help: "In Ghostfolio: My Ghostfolio → Access → Add a public access; the ID is the last part of its link"
+    kind: text
+    example: 0a1b2c3d-4e5f-4a7b-8c9d-0e1f2a3b4c5d
+  GHOSTFOLIO_URL:
+    label: Ghostfolio address
+    help: Like http://192.0.2.10:3333, no slash at the end
+    kind: url
+    example: http://192.0.2.10:3333
+  GITHUB_TOKEN:
+    label: GitHub personal access token
+    help: GitHub → Settings → Developer settings → Personal access tokens → Tokens (classic); give it the notifications and repo scopes
+    kind: secret
+    example: ghp_exampleexampleexampleexample0000
+  GLANCES_DISK_MOUNTS:
+    label: Disks to show
+    help: Mount points, like /mnt/data; several separated by |
+    kind: list
+    example: /mnt/data|/mnt/backup
+  GLANCES_HOST:
+    label: Glances host
+    help: The Glances server's host name or IP, like 192.0.2.10, without http:// or a port; the widget adds http:// and port 61208
+    kind: host
+    example: 192.0.2.10
+  GLANCES_NETWORK_INTERFACE:
+    label: Network interface
+    help: The interface whose traffic is shown, as Glances names it, like eth0 or enp5s0
+    kind: text
+    example: enp5s0
+    default: eth0
+    optional: true
+  GLANCES_SERVER_NAME:
+    label: Server name
+    help: The name shown at the top of the widget
+    kind: text
+    example: Home server
+    default: Server
+    optional: true
+  GLANCES_SHOW_DISK_BAR:
+    label: Show disk usage bar
+    help: A bar under the disk usage
+    kind: boolean
+    example: "false"
+    default: "true"
+    optional: true
+  GLANCES_SHOW_NETWORK:
+    label: Show network speed
+    help: Download and upload speed of the network interface
+    kind: boolean
+    example: "true"
+    default: "false"
+    optional: true
+  GLANCES_SHOW_TEMPERATURE:
+    label: Show CPU temperature
+    help: If Glances reports one
+    kind: boolean
+    example: "false"
+    default: "true"
+    optional: true
+  GLANCES_URL:
+    label: Glances address
+    help: Address of the Glances web server (API v4), like http://192.0.2.10:61208, no slash at the end
+    kind: url
+    example: http://192.0.2.10:61208
+  GLUETUN_API_KEY:
+    label: Gluetun API key
+    help: The API key set for the control server in Gluetun's config.toml (control server authentication)
+    kind: secret
+    example: example-api-key-0123
+  GLUETUN_URL:
+    label: Gluetun control server (host and port)
+    help: Like 192.0.2.10:8000 (8000 is the control server's default port), without http://; the widget adds it
+    kind: host
+    example: 192.0.2.10:8000
+  GOTIFY_CLIENT_TOKEN:
+    label: Gotify client token
+    help: Gotify web UI → Clients → Create Client; a client token, not an application token
+    kind: secret
+    example: CexampleToken123
+  GOTIFY_COLLAPSE_AFTER:
+    label: Shown before "Show more"
+    help: How many messages are visible before the list collapses
+    kind: number
+    example: "3"
+    default: "5"
+    optional: true
+  GOTIFY_LIMIT:
+    label: Messages to fetch
+    help: How many of the most recent messages to load
+    kind: number
+    example: "20"
+    default: "10"
+    optional: true
+  GOTIFY_URL:
+    label: Gotify address
+    help: Like http://192.0.2.10:8070 or https://gotify.example.com, no slash at the end
+    kind: url
+    example: http://192.0.2.10:8070
+  GRAFANA_DASHBOARD:
+    label: Dashboard for the links
+    help: The part after /d/ in the address of the dashboard each machine links to; the default is Grafana Cloud's Linux node overview
+    kind: text
+    example: example-uid/node-exporter
+    default: nodes/linux-node-overview
+    optional: true
+  GRAFANA_DATASOURCE_TYPE:
+    label: Data source type
+    help: The data source's type; prometheus for Prometheus or Mimir
+    kind: text
+    example: prometheus
+    default: prometheus
+    optional: true
+  GRAFANA_DATASOURCE_UID:
+    label: Data source UID
+    help: The UID of your Prometheus data source (the last part of its page address in Grafana → Connections → Data sources); grafanacloud-prom on Grafana Cloud
+    kind: text
+    example: example-prom-uid
+  GRAFANA_QUERY:
+    label: Query (PromQL)
+    help: The default lists the machines whose node_exporter job is up; the widget shows one line per instance
+    kind: text
+    example: group(up{job=~".*node_exporter.*"}) by (instance)
+    default: group(up{job=~".*node_exporter.*"}) by (instance)
+    optional: true
+  GRAFANA_TOKEN:
+    label: Grafana service account token
+    help: In Grafana, create a service account with data source reader permission, then add a token on the same page
+    kind: secret
+    example: glsa_exampleexampleexample_0123abcd
+  GRAFANA_URL:
+    label: Grafana address
+    help: Like https://example.grafana.net or http://192.0.2.10:3000, no slash at the end
+    kind: url
+    example: http://192.0.2.10:3000
+  HARDCOVER_API_KEY:
+    label: Hardcover API token
+    help: From hardcover.app/account/api; paste it exactly as shown there, including any "Bearer " in front, because the widget sends it as it is
+    kind: secret
+    example: Bearer eyJhbGciOiJIUzI1NiJ9.example.signature
+  HASS_API_KEY:
+    label: Home Assistant long-lived token
+    help: Home Assistant → your user (bottom left) → Security → Long-lived access tokens → Create token
+    kind: secret
+    example: eyJhbGciOiJIUzI1NiJ9.example.signature
+  HASS_FIRST_SENSOR:
+    label: First sensor
+    help: Entity ID as Home Assistant shows it, like sensor.living_room_temperature
+    kind: text
+    example: sensor.living_room_temperature
+  HASS_SECOND_SENSOR:
+    label: Second sensor
+    help: Entity ID as Home Assistant shows it, like sensor.outdoor_humidity. Leave empty for one sensor only
+    kind: text
+    example: sensor.outdoor_humidity
+    default: ""
+    optional: true
+  HASS_URL:
+    label: Home Assistant address
+    help: Like http://192.0.2.10:8123 or https://homeassistant.example.org, no slash at the end
+    kind: url
+    example: http://192.0.2.10:8123
+  IMMICH_API_KEY:
+    label: Immich API key (statistics)
+    help: Immich → Account settings → API keys; it needs the server.statistics permission
+    kind: secret
+    example: exampleImmichApiKey0123456789
+  IMMICH_KEY:
+    label: Immich API key (statistics and storage)
+    help: Immich → Account settings → API keys; give it the server.statistics and server.storage permissions
+    kind: secret
+    example: exampleImmichApiKey0123456789
+  IMMICH_SHOW_CARDS:
+    label: Show photo, video and storage cards
+    help: The three summary cards
+    kind: boolean
+    example: "false"
+    default: "true"
+    optional: true
+  IMMICH_SHOW_STORAGE_BAR:
+    label: Show storage bar
+    help: The storage space section with its bar
+    kind: boolean
+    example: "false"
+    default: "true"
+    optional: true
+  IMMICH_URL:
+    label: Immich address
+    help: Including the port, no slash at the end, like http://192.0.2.10:2283 or https://immich.example.com
+    kind: url
+    example: http://192.0.2.10:2283
+  JELLYFIN_API_KEY:
+    label: Jellyfin (or Emby) API key
+    help: "In Jellyfin: Dashboard → API Keys → add one"
+    kind: secret
+    example: 0123456789abcdef0123456789abcdef
+  JELLYFIN_LATEST_ITEM_COUNT:
+    label: Number of items
+    help: How many items to show
+    kind: number
+    default: "10"
+    optional: true
+  JELLYFIN_LATEST_LIBRARY:
+    label: Library name
+    help: The library to show, exactly as named in Jellyfin, like Shows or Movies (not used for Next up)
+    kind: text
+    example: Shows
+  JELLYFIN_LATEST_MODE:
+    label: What to show
+    help: "latest: the newest additions to the library; nextup: the next episodes to watch"
+    kind: choice
+    choices:
+      - latest
+      - nextup
+    default: latest
+    optional: true
+  JELLYFIN_LATEST_SHOW_THUMBNAIL:
+    label: Show pictures
+    help: Shows cover pictures; this puts the API key into the page, so leave it off on a dashboard reachable from the internet
+    kind: boolean
+    default: "false"
+    optional: true
+  JELLYFIN_LATEST_SMALL_COLUMN:
+    label: In a small column
+    help: Turn on if the widget sits in a small column (smaller text)
+    kind: boolean
+    default: "false"
+    optional: true
+  JELLYFIN_LATEST_THUMBNAIL_ASPECT_RATIO:
+    label: Picture shape
+    help: "default: as the picture is; square: 1:1; portrait: 2:3; landscape: 16:9"
+    kind: choice
+    choices:
+      - default
+      - square
+      - portrait
+      - landscape
+    default: default
+    optional: true
+  JELLYFIN_NOW_PLAYING_ART:
+    label: Show album artwork
+    help: The pictures' addresses carry the API key, so turn this off to keep the key out of the page
+    kind: boolean
+    default: "true"
+    optional: true
+  JELLYFIN_URL:
+    label: Jellyfin (or Emby) address
+    help: Like http://192.0.2.10:8096, no slash at the end
+    kind: url
+    example: http://192.0.2.10:8096
+  JELLYFIN_USER_NAME:
+    label: Jellyfin user name
+    help: Exactly as it appears in Jellyfin; the widget shows this user's items
+    kind: text
+    example: example_user
+  KARAKEEP_API_KEY:
+    label: Karakeep API key
+    help: An API key generated in Karakeep
+    kind: secret
+    example: ak1_0123456789abcdef_0123456789abcdef
+  KARAKEEP_COLLAPSE_AFTER:
+    label: Collapse after
+    help: How many bookmarks show before the list collapses
+    kind: number
+    default: "6"
+    optional: true
+  KARAKEEP_IN_NEW_TAB:
+    label: Open links in a new tab
+    help: Open bookmarks in a new browser tab
+    kind: boolean
+    default: "true"
+    optional: true
+  KARAKEEP_LIMIT:
+    label: Bookmarks to list
+    help: How many of the latest bookmarks to show, like 10, 20 or 30
+    kind: number
+    default: "10"
+    optional: true
+  KARAKEEP_SCHEME:
+    label: Connection
+    help: http, or https if Karakeep is served over HTTPS
+    kind: choice
+    choices:
+      - http
+      - https
+    default: http
+    optional: true
+  KARAKEEP_URL:
+    label: Karakeep address (without http://)
+    help: Host name and port only, like karakeep.example.com or 192.0.2.10:3000; for HTTPS, choose https under Connection
+    kind: host
+    example: 192.0.2.10:3000
+  KAVITA_KEY:
+    label: Kavita API key
+    help: "In Kavita: Settings → Account → API Key / OPDS"
+    kind: secret
+    example: 01234567-89ab-cdef-0123-456789abcdef
+  KAVITA_MODE:
+    label: What to show
+    help: "on-deck: series in progress; recently-updated: series updated lately; recently-added: new series"
+    kind: choice
+    choices:
+      - on-deck
+      - recently-updated
+      - recently-added
+    default: on-deck
+    optional: true
+  KAVITA_SHOW_THUMBNAIL:
+    label: Show covers
+    help: Shows cover pictures; this puts the API key into the page, so leave it off on a dashboard reachable from the internet
+    kind: boolean
+    default: "false"
+    optional: true
+  KAVITA_SMALL_COLUMN:
+    label: In a small column
+    help: Turn on if the widget sits in a small column (smaller text)
+    kind: boolean
+    default: "false"
+    optional: true
+  KAVITA_THUMBNAIL_ASPECT_RATIO:
+    label: Cover shape
+    help: "default: as the picture is; square: 1:1; portrait: 2:3; landscape: 16:9"
+    kind: choice
+    choices:
+      - default
+      - square
+      - portrait
+      - landscape
+    default: portrait
+    optional: true
+  KAVITA_URL:
+    label: Kavita address
+    help: Like http://192.0.2.10:5000, no slash at the end
+    kind: url
+    example: http://192.0.2.10:5000
+  KOMGA_API_KEY:
+    label: Komga API key
+    help: "In Komga: My Account → API Keys → +"
+    kind: secret
+    example: 0123456789abcdef0123456789abcdef
+  KOMGA_ITEMS:
+    label: Number of cards
+    help: How many series to show at most
+    kind: number
+    default: "10"
+    optional: true
+  KOMGA_LIBRARY_ID:
+    label: Komga library ID
+    help: Open the library in Komga; the ID is the part of the address after /libraries/
+    kind: text
+    example: 0A1B2C3D4E5F6
+  KOMGA_MODE:
+    label: Which series
+    help: "new: recently added; updated: recently changed"
+    kind: choice
+    choices:
+      - new
+      - updated
+    default: new
+    optional: true
+  KOMGA_URL:
+    label: Komga address
+    help: Like http://192.0.2.10:25600, no slash at the end
+    kind: url
+    example: http://192.0.2.10:25600
+  KOMODO_ALLOW_INSECURE:
+    label: Accept a self-signed certificate
+    help: Turn on if Komodo Core uses a self-signed HTTPS certificate
+    kind: boolean
+    default: "false"
+    optional: true
+  KOMODO_API_KEY:
+    label: Komodo API key
+    help: "In Komodo: Settings → New API Key (expiry: never); starts with K-"
+    kind: secret
+    example: K-0123456789abcdef
+  KOMODO_API_SECRET:
+    label: Komodo API secret
+    help: Shown together with the API key when you create it; starts with S-
+    kind: secret
+    example: S-0123456789abcdef
+  KOMODO_URL:
+    label: Komodo Core address
+    help: With the port, like https://192.0.2.10:9120 or https://komodo.example.com, no slash at the end
+    kind: url
+    example: https://192.0.2.10:9120
+  LASTFM_API_KEY:
+    label: Last.fm API key
+    help: Free; create an API account at last.fm/api/accounts
+    kind: secret
+    example: 0123456789abcdef0123456789abcdef
+  LASTFM_USERNAME:
+    label: Last.fm user name
+    help: The Last.fm user whose recent tracks to show
+    kind: text
+    example: example_listener
+  LEMMY_COLLAPSE_AFTER:
+    label: Collapse after
+    help: How many posts show before the list collapses
+    kind: number
+    default: "5"
+    optional: true
+  LEMMY_COMMUNITY:
+    label: Community
+    help: The community's name without the !, like technology
+    kind: text
+    example: technology
+  LEMMY_INSTANCE_URL:
+    label: Lemmy server
+    help: The Lemmy instance to read from, like https://lemmy.ml, no slash at the end
+    kind: url
+    default: https://lemmy.world
+    optional: true
+  LEMMY_POST_LIMIT:
+    label: Number of posts
+    help: How many posts to show
+    kind: number
+    default: "10"
+    optional: true
+  LEMMY_POST_SORT:
+    label: Sort by
+    help: The order of the posts
+    kind: choice
+    choices:
+      - Hot
+      - Active
+      - New
+      - TopDay
+      - TopWeek
+    default: Hot
+    optional: true
+  LEMMY_POST_TYPE:
+    label: Post type
+    help: Lemmy's post filter, All or Local
+    kind: choice
+    choices:
+      - All
+      - Local
+    default: All
+    optional: true
+  LINKWARDEN_API_KEY:
+    label: Linkwarden API key
+    help: An access token from Linkwarden's settings
+    kind: secret
+    example: eyJhbGciOiJIUzI1NiJ9.example.token
+  LINKWARDEN_COLLAPSE_AFTER:
+    label: Collapse after
+    help: How many links show before the list collapses
+    kind: number
+    default: "5"
+    optional: true
+  LINKWARDEN_URL:
+    label: Linkwarden address
+    help: Like http://192.0.2.10:3000, no slash at the end
+    kind: url
+    example: http://192.0.2.10:3000
+  LISTENBRAINZ_USER:
+    label: ListenBrainz user name
+    help: The ListenBrainz user whose latest listen to show
+    kind: text
+    example: example_listener
+  LIVETENNIS_API_KEY:
+    label: Live Tennis API key
+    help: Free key from livetennisapi.com/subscribe/free (1,000 requests a day)
+    kind: secret
+    example: lt_0123456789abcdef
+  LIVETENNIS_LIMIT:
+    label: Most matches shown
+    help: Up to how many live matches to show (still one request)
+    kind: number
+    default: "10"
+    optional: true
+  MACRO_COLLAPSE_AFTER:
+    label: Collapse after
+    help: How many releases show before the "show more" toggle
+    kind: number
+    default: "5"
+    optional: true
+  MACRO_MAX_ITEMS:
+    label: Most releases listed
+    help: How many upcoming releases to list at most
+    kind: number
+    default: "10"
+    optional: true
+  MACRO_MIN_IMPORTANCE:
+    label: Lowest importance shown
+    help: Releases below this importance are hidden
+    kind: choice
+    choices:
+      - low
+      - medium
+      - high
+    default: medium
+    optional: true
+  MAL_COLLAPSE_AFTER:
+    label: Collapse after
+    help: How many anime show before the list collapses
+    kind: number
+    default: "5"
+    optional: true
+  MAL_MAX_ITEMS:
+    label: Most anime listed
+    help: How many anime the list shows at most
+    kind: number
+    default: "8"
+    optional: true
+  MAL_USER:
+    label: MyAnimeList user name
+    help: The MyAnimeList user whose statistics to show
+    kind: text
+    example: example_user
+  MASTODON_URL:
+    label: Mastodon instance (without https://)
+    help: Host name of any public Mastodon instance, like mastodon.social
+    kind: host
+    example: mastodon.example.com
+  MC_SERVER_URL:
+    label: Minecraft server address
+    help: The public host name or IP of a Java Edition server, optionally with :port, like mc.example.com
+    kind: host
+    example: mc.example.com:25565
+  MEALIE_API_TOKEN:
+    label: Mealie API token
+    help: Create one in Mealie as described at docs.mealie.io (Getting started → API usage)
+    kind: secret
+    example: eyJhbGciOiJIUzI1NiJ9.example.token
+  MEALIE_SCHEME:
+    label: Connection
+    help: http, or https if Mealie is served over HTTPS
+    kind: choice
+    choices:
+      - http
+      - https
+    default: http
+    optional: true
+  MEALIE_URL:
+    label: Mealie address (without http://)
+    help: Host name and port only, like 192.0.2.10:9000 or mealie.example.com; for HTTPS, choose https under Connection
+    kind: host
+    example: 192.0.2.10:9000
+  MEDIA_SERVER_TOKEN:
+    label: Media server token or API key
+    help: 'Plex: your X-Plex-Token (Plex support article "Finding an authentication token"); Tautulli: Settings → Web Interface → API key; Jellyfin: Administration → Dashboard → API Keys; Emby: ⚙️ → Advanced → API Keys'
+    kind: secret
+    example: 0123456789abcdef0123
+  MEDIA_SERVER_TYPE:
+    label: Media server
+    help: Which kind of server the address and key below belong to
+    kind: choice
+    choices:
+      - plex
+      - tautulli
+      - jellyfin
+      - emby
+    example: plex
+  MEDIA_SERVER_URL:
+    label: Media server address
+    help: The address of the server chosen above, like http://192.0.2.10:32400, no slash at the end
+    kind: url
+    example: http://192.0.2.10:32400
+  MEDIA_SERVER_USER:
+    label: User name (Jellyfin, Emby)
+    help: Needed for Jellyfin and Emby, whose history is per user; not used for Plex or Tautulli
+    kind: text
+    default: ""
+    optional: true
+  MEDIATRACKER_API_KEY:
+    label: MediaTracker application token
+    help: "In MediaTracker: your account name → Application tokens → Add Token"
+    kind: secret
+    example: 0123456789abcdef0123456789abcdef
+  MEDIATRACKER_ITEMS:
+    label: Number of cards
+    help: How many cards to show at most
+    kind: number
+    default: "10"
+    optional: true
+  MEDIATRACKER_MEDIA_TYPE:
+    label: What to show
+    help: "tv: TV shows; movie: movies; video_game: video games"
+    kind: choice
+    choices:
+      - tv
+      - movie
+      - video_game
+    default: tv
+    optional: true
+  MEDIATRACKER_URL:
+    label: MediaTracker address
+    help: Like http://192.0.2.10:7481, no slash at the end
+    kind: url
+    example: http://192.0.2.10:7481
+  MSH_COMPACT:
+    label: Compact layout
+    help: Turn off for a more spread-out layout
+    kind: boolean
+    default: "true"
+    optional: true
+  MSH_HISTORY_LENGTH:
+    label: Number of items
+    help: How many played items to show
+    kind: number
+    default: "10"
+    optional: true
+  MSH_SHOW_THUMBNAIL:
+    label: Show pictures
+    help: Puts the token or API key into the page, so leave it off on a dashboard reachable from the internet
+    kind: boolean
+    default: "false"
+    optional: true
+  MSH_SHOW_USER:
+    label: Show who played it
+    help: Shows the user name with each item
+    kind: boolean
+    default: "true"
+    optional: true
+  MSH_SMALL_COLUMN:
+    label: In a small column
+    help: Turn on if the widget sits in a small column
+    kind: boolean
+    default: "false"
+    optional: true
+  MSH_THUMBNAIL_ASPECT_RATIO:
+    label: Picture shape
+    help: "default: as the picture is; square: 1:1; portrait: 3:4; landscape: 4:3"
+    kind: choice
+    choices:
+      - default
+      - square
+      - portrait
+      - landscape
+    default: default
+    optional: true
+  MSH_TIME_ABSOLUTE:
+    label: Show the date and time
+    help: Shows when each item was played instead of how long ago (2h ago)
+    kind: boolean
+    default: "false"
+    optional: true
+  MSH_TIME_FORMAT:
+    label: Date and time format
+    help: Used when the date and time are shown; write how Jan 2 2006 15:04 should look, like Jan 02 15:04 or 02.01. 15:04
+    kind: text
+    default: Jan 02 15:04
+    optional: true
+  MSP_COMPACT:
+    label: Compact layout
+    help: Turn off for a more spread-out layout
+    kind: boolean
+    default: "true"
+    optional: true
+  MSP_PLAY_STATE:
+    label: Play state
+    help: "indicator: a pulsing dot; text: plain text"
+    kind: choice
+    choices:
+      - indicator
+      - text
+    default: indicator
+    optional: true
+  MSP_SHOW_PAUSED:
+    label: Show paused items
+    help: Also list sessions that are paused
+    kind: boolean
+    default: "false"
+    optional: true
+  MSP_SHOW_PROGRESS_BAR:
+    label: Show a progress bar
+    help: Moved along by the browser; it doesn't refresh when it reaches the end
+    kind: boolean
+    default: "false"
+    optional: true
+  MSP_SHOW_PROGRESS_INFO:
+    label: Show progress details
+    help: Needs the progress bar turned on
+    kind: boolean
+    default: "true"
+    optional: true
+  MSP_SHOW_THUMBNAIL:
+    label: Show pictures
+    help: Puts the token or API key into the page, so leave it off on a dashboard reachable from the internet
+    kind: boolean
+    default: "false"
+    optional: true
+  MSP_SMALL_COLUMN:
+    label: In a small column
+    help: Turn on if the widget sits in a small column
+    kind: boolean
+    default: "false"
+    optional: true
+  MSP_TIME_FORMAT:
+    label: Clock
+    help: 15:04 for 24-hour, 03:04pm for 12-hour
+    kind: choice
+    choices:
+      - 15:04
+      - 03:04pm
+    default: 15:04
+    optional: true
+  NEBULA_CHANNEL_IDS:
+    label: Nebula channel IDs
+    help: Separated by commas, each like video_channel:8f3a2a56-…; the widget's instructions (How to find a channel ID) show where to see one in the browser's developer tools
+    kind: list
+    example: video_channel:00000000-0000-4000-8000-000000000001,video_channel:00000000-0000-4000-8000-000000000002
+  NEBULA_COLLAPSE_AFTER:
+    label: Videos shown before "Show more"
+    help: The list collapses after this many videos
+    kind: number
+    example: "5"
+    default: "5"
+    optional: true
+  NEBULA_MAX_ITEMS:
+    label: Most videos to show
+    help: The largest number of videos the widget shows
+    kind: number
+    example: "12"
+    default: "12"
+    optional: true
+  NETALERTX_API_TOKEN:
+    label: NetAlertX API token
+    help: Found in NetAlertX's settings
+    kind: secret
+    example: a1b2c3d4e5f6
+  NETALERTX_URL:
+    label: NetAlertX host and port
+    help: "Like 192.0.2.10:20211: no http:// (the widget adds it) and no slash at the end"
+    kind: host
+    example: 192.0.2.10:20211
+  NETBIRD_API_KEY:
+    label: NetBird API token
+    help: Create one in the NetBird dashboard under User settings
+    kind: secret
+    example: nbp_AbCdEf0123456789
+  NETBIRD_API_URL:
+    label: NetBird management address
+    help: Keep the default for NetBird cloud; for a self-hosted NetBird, its management address, no slash at the end
+    kind: url
+    example: https://netbird.example.com
+    default: https://api.netbird.io
+    optional: true
+  NEXTCLOUD_DECK_BOARD_ID:
+    label: Deck board number
+    help: The number after /apps/deck/board/ in the board's address in Nextcloud
+    kind: number
+    example: "2"
+  NEXTCLOUD_DECK_COLLAPSE_AFTER:
+    label: Cards shown before "Show more"
+    help: Each list collapses after this many cards
+    kind: number
+    example: "3"
+    default: "3"
+    optional: true
+  NEXTCLOUD_DECK_SHOW_LABELS:
+    label: Show card labels
+    help: Show each card's labels under its title
+    kind: boolean
+    example: "true"
+    default: "true"
+    optional: true
+  NEXTCLOUD_HOST:
+    label: Nextcloud address
+    help: Like https://cloud.example.com, with http:// or https://, no slash at the end
+    kind: url
+    example: https://cloud.example.com
+  NEXTCLOUD_PASSWORD:
+    label: Nextcloud password
+    help: That user's password, or an app password (Personal settings → Security) if two-factor login is on
+    kind: secret
+    example: correct-horse-battery
+  NEXTCLOUD_USER:
+    label: Nextcloud user name
+    help: The user whose Deck board the widget shows
+    kind: text
+    example: glance
+  NEXTDNS_API_KEY:
+    label: NextDNS API key
+    help: Created in your NextDNS account (user profile) settings
+    kind: secret
+    example: 0123456789abcdef0123456789abcdef
+  NEXTDNS_PROFILE_ID:
+    label: NextDNS profile ID
+    help: The short ID of your profile, shown in the NextDNS control panel (also in its address, my.nextdns.io/<ID>/…)
+    kind: text
+    example: abc123
+  NGINX_COLLAPSE_AFTER:
+    label: Hosts shown before "Show more"
+    help: Number of proxy hosts shown when the page loads
+    kind: number
+    example: "6"
+    default: "6"
+    optional: true
+  NGINX_DOMAIN_NAME:
+    label: Your domain
+    help: "Cut from each host name so only the subdomain shows: for homeassistant.example.com, type .example.com (with the leading dot); empty shows the whole name"
+    kind: text
+    example: .example.com
+    default: ""
+    optional: true
+  NGINX_EMAIL_ID:
+    label: Nginx Proxy Manager login email
+    help: The email you sign in to the Nginx Proxy Manager console with
+    kind: text
+    example: admin@example.com
+  NGINX_PASSWORD:
+    label: Nginx Proxy Manager password
+    help: The password for that console login
+    kind: secret
+    example: correct-horse-battery
+  NGINX_PROXY_URL:
+    label: Nginx Proxy Manager address
+    help: The admin console's address, like http://192.0.2.10:81 or https://proxy.example.com, no slash at the end
+    kind: url
+    example: http://192.0.2.10:81
+  NGINX_SHOW_ICONS:
+    label: Show icons
+    help: Show an icon next to each host
+    kind: boolean
+    example: "true"
+    default: "true"
+    optional: true
+  NGINX_TOOLTIP_ENABLED:
+    label: Show the full address on hover
+    help: A tooltip with the full proxy address over each subdomain
+    kind: boolean
+    example: "true"
+    default: "true"
+    optional: true
+  NHL_MY_TEAM:
+    label: Team
+    help: Your team's official three-letter abbreviation in capitals (like TOR or BOS) to show only its games; ALL shows every game
+    kind: text
+    example: TOR
+    default: ALL
+    optional: true
+  NHL_TOOLTIP_ENABLED:
+    label: Show goal scorers on hover
+    help: A tooltip over each team's logo and score lists who scored
+    kind: boolean
+    example: "true"
+    default: "true"
+    optional: true
+  NUMBER_OF_CATS:
+    label: Number of cats
+    help: Photos per refresh; keep it low, 12 is recommended
+    kind: number
+    example: "6"
+    default: "12"
+    optional: true
+  NZBGET_BASE_URL:
+    label: NZBGet address
+    help: Like http://192.0.2.10:6789, no slash at the end; if NZBGet asks for a login, fill in its user name and password too
+    kind: url
+    example: http://192.0.2.10:6789
+  NZBGET_PASSWORD:
+    label: NZBGet password
+    help: NZBGet's ControlPassword (Settings → Security); leave empty if NZBGet has no login
+    kind: secret
+    example: correct-horse-battery
+    default: ""
+    optional: true
+  NZBGET_QUEUE_ENABLED:
+    label: Show the queue
+    help: Turn off for a more minimal look
+    kind: boolean
+    example: "true"
+    default: "true"
+    optional: true
+  NZBGET_QUEUE_ITEMS:
+    label: Queue items shown
+    help: Shows this many queue items before "Show more"
+    kind: number
+    example: "3"
+    default: "3"
+    optional: true
+  NZBGET_SLOW_SPEED:
+    label: Slow speed warning (KB/s)
+    help: Below this speed the speed shows in the warning colour; 0 turns it off
+    kind: number
+    example: "100"
+    default: "0"
+    optional: true
+  NZBGET_USER:
+    label: NZBGet user name
+    help: NZBGet's ControlUsername (Settings → Security); leave empty if NZBGet has no login
+    kind: text
+    example: nzbget
+    default: ""
+    optional: true
+  OUTAGEDECK_PROVIDER:
+    label: Provider
+    help: The provider's slug from outagedeck.com/providers, like github
+    kind: text
+    example: github
+    default: github
+    optional: true
+  OVERSEERR_API_KEY:
+    label: Overseerr API key
+    help: Settings → General → API Key in Overseerr
+    kind: secret
+    example: MTYzMDAwMDAwMDAwMGFiY2RlZg==
+  OVERSEERR_API_URL:
+    label: Overseerr address
+    help: Like http://192.0.2.10:5055 or https://overseerr.example.com, with http:// or https://, no slash at the end
+    kind: url
+    example: http://192.0.2.10:5055
+  OVERSEERR_COLLAPSE_AFTER:
+    label: Users shown before "Show more"
+    help: How many users show while the list is collapsed
+    kind: number
+    example: "5"
+    default: "5"
+    optional: true
+  OVERSEERR_COMPACT:
+    label: Compact
+    help: Smaller text and a tighter layout
+    kind: boolean
+    example: "false"
+    default: "false"
+    optional: true
+  OVERSEERR_DISCOVER:
+    label: What to show
+    help: "trending: movies and TV together; movies or tv: only that kind"
+    kind: choice
+    example: trending
+    default: trending
+    choices:
+      - trending
+      - movies
+      - tv
+    optional: true
+  OVERSEERR_LANGUAGE:
+    label: Language
+    help: Language code for titles and summaries, like en or de
+    kind: text
+    example: de
+    default: en
+    optional: true
+  OVERSEERR_MAX_USERS:
+    label: Most users
+    help: The largest number of users shown (one extra request per user)
+    kind: number
+    example: "10"
+    default: "10"
+    optional: true
+  OVERSEERR_SHOW_MEDIA_DESC:
+    label: Show summaries
+    help: Show each title's summary
+    kind: boolean
+    example: "true"
+    default: "true"
+    optional: true
+  OVERSEERR_SHOW_MEDIA_TYPE:
+    label: Show Movie / TV
+    help: Show the "| TV" or "| Movie" after each title
+    kind: boolean
+    example: "true"
+    default: "true"
+    optional: true
+  OVERSEERR_SMALL_COLUMN:
+    label: Small column layout
+    help: On for a small column (a list); off for a full-width column (big numbers)
+    kind: boolean
+    example: "true"
+    default: "false"
+    optional: true
+  PAGERDUTY_TOKEN:
+    label: PagerDuty user API token
+    help: "In PagerDuty: your profile → User Settings → create a User Token REST API key"
+    kind: secret
+    example: u+AbCdEfGhIjKlMnOpQr
+  PAPERLESS_KEY:
+    label: Paperless-ngx API token
+    help: "In Paperless: user menu → My Profile → the circular arrow button creates the token"
+    kind: secret
+    example: 0123456789abcdef0123456789abcdef01234567
+  PAPERLESS_URL:
+    label: Paperless-ngx host
+    help: "Host name (and port) only, like paperless.example.com: no https:// (the widget adds it) and no slash at the end; it must be served over HTTPS"
+    kind: host
+    example: paperless.example.com
+  PAPRA_API_KEY:
+    label: Papra API key
+    help: In Papra, open /api-keys → Create API Key with at least read permissions, then copy it
+    kind: secret
+    example: ppapi_AbCdEf0123456789
+  PAPRA_ORGANISATION_ID:
+    label: Papra organisation ID
+    help: The ID after /organizations/ in Papra's address bar
+    kind: text
+    example: org_abc123def456
+  PAPRA_URL:
+    label: Papra host
+    help: "Domain or IP (and port) only, like papra.example.com: no https:// (the widget adds it), no slash at the end; it must be served over HTTPS"
+    kind: host
+    example: papra.example.com
+  PBS_HOST:
+    label: Proxmox Backup Server host and port
+    help: "Like 192.0.2.10:8007 or pbs.example.com:8007: no https:// (the widget adds it), no slash at the end"
+    kind: host
+    example: 192.0.2.10:8007
+  PBS_TOKEN:
+    label: Proxmox Backup Server API token
+    help: Written as PBSAPIToken=user@realm!tokenid:secret; create it in PBS under Configuration → Access Control → API Tokens
+    kind: secret
+    example: PBSAPIToken=root@pam!glance:00000000-0000-0000-0000-000000000000
+  PEANUT_DEVICE:
+    label: UPS name
+    help: The UPS's device name as PeaNUT lists it, like ups
+    kind: text
+    example: ups
+  PEANUT_PASSWORD:
+    label: PeaNUT password
+    help: Only if PeaNUT asks for a login; leave empty otherwise
+    kind: secret
+    example: correct-horse-battery
+    default: ""
+    optional: true
+  PEANUT_URL:
+    label: PeaNUT host and port
+    help: "Like 192.0.2.10:8080: no http:// (the widget adds it), no slash at the end"
+    kind: host
+    example: 192.0.2.10:8080
+  PEANUT_USER:
+    label: PeaNUT user name
+    help: Only if PeaNUT asks for a login; leave empty otherwise
+    kind: text
+    example: admin
+    default: ""
+    optional: true
+  PLEX_MOVIES_SECTION:
+    label: Movies library number
+    help: "Plex's number for your movie library: open the library in Plex Web, the address ends in source=<number> (often 1)"
+    kind: number
+    example: "1"
+  PLEX_SHOWS_SECTION:
+    label: TV shows library number
+    help: "Plex's number for your TV library: open the library in Plex Web, the address ends in source=<number> (often 2)"
+    kind: number
+    example: "2"
+  PLEX_TOKEN:
+    label: Plex token
+    help: Your X-Plex-Token; Plex's support article "Finding an authentication token" shows where it is
+    kind: secret
+    example: AbCdEf0123456789xyz
+  PLEX_URL:
+    label: Plex address
+    help: Like http://192.0.2.10:32400, no slash at the end
+    kind: url
+    example: http://192.0.2.10:32400
+  PORTAINER_API_KEY:
+    label: Portainer API key
+    help: "In Portainer: My account → Access tokens → Add access token"
+    kind: secret
+    example: ptr_AbCdEf0123456789
+  PORTAINER_ENDPOINT_ID:
+    label: Portainer environment number
+    help: "The number in Portainer's address when the environment is open: …/#!/2/docker/dashboard → 2"
+    kind: number
+    example: "2"
+  PORTAINER_URL:
+    label: Portainer address
+    help: Like http://192.0.2.10:9000 or https://portainer.example.com, no slash at the end
+    kind: url
+    example: http://192.0.2.10:9000
+  PROWLARR_API_URL:
+    label: Prowlarr address for Glance
+    help: The address Glance reaches Prowlarr at (often the same as above), like http://192.0.2.10:9696, no slash at the end
+    kind: url
+    example: http://192.0.2.10:9696
+  PROWLARR_COLLAPSE_AFTER:
+    label: Indexers shown before "Show more"
+    help: How many indexers show while the list is collapsed
+    kind: number
+    example: "5"
+    default: "5"
+    optional: true
+  PROWLARR_KEY:
+    label: Prowlarr API key
+    help: Settings → General → Security → API Key in Prowlarr
+    kind: secret
+    example: 0123456789abcdef0123456789abcdef
+  PROWLARR_URL:
+    label: Prowlarr address for links
+    help: The address your browser opens Prowlarr at, like http://192.0.2.10:9696, no slash at the end
+    kind: url
+    example: http://192.0.2.10:9696
+  PROXMOX_CPU_GRAPH:
+    label: Show CPU column
+    help: CPU usage bars for VMs and containers
+    kind: boolean
+    example: "true"
+    default: "true"
+    optional: true
+  PROXMOX_DISK_GRAPH:
+    label: Show disk column
+    help: Disk usage bars for containers and storage
+    kind: boolean
+    example: "true"
+    default: "true"
+    optional: true
+  PROXMOX_RAM_GRAPH:
+    label: Show RAM column
+    help: RAM usage bars for VMs and containers
+    kind: boolean
+    example: "true"
+    default: "true"
+    optional: true
+  PROXMOX_TOKEN:
+    label: Proxmox VE API token (with PVEAPIToken=)
+    help: Written as PVEAPIToken=user@realm!tokenid=secret; a read-only token from Datacenter → Permissions → API Tokens
+    kind: secret
+    example: PVEAPIToken=api@pam!glance=00000000-0000-0000-0000-000000000000
+  PROXMOX_URL:
+    label: Proxmox VE address (with https://)
+    help: With https:// and the port, no slash at the end, like https://192.0.2.10:8006
+    kind: url
+    example: https://192.0.2.10:8006
+  PROXMOXVE_COLLAPSE_AFTER:
+    label: Nodes shown before "Show more"
+    help: How many nodes show while the list is collapsed
+    kind: number
+    example: "5"
+    default: "5"
+    optional: true
+  PROXMOXVE_KEY:
+    label: Proxmox VE API token
+    help: Written as user@realm!tokenid=secret, without PVEAPIToken=; a read-only (PVEAuditor) token from Datacenter → Permissions → API Tokens
+    kind: secret
+    example: api@pam!glance=00000000-0000-0000-0000-000000000000
+  PROXMOXVE_UPTIME_MODE:
+    label: Uptime shown as
+    help: duration (like 312h…) or relative (since a time); the other appears on hover
+    kind: choice
+    example: duration
+    default: duration
+    choices:
+      - duration
+      - relative
+    optional: true
+  PROXMOXVE_URL:
+    label: Proxmox VE host and port
+    help: "Like 192.0.2.11:8006 or pve.example.com:8006: no https:// (the widget adds it), no slash at the end"
+    kind: host
+    example: 192.0.2.11:8006
+  QBITTORRENT_IP:
+    label: qBittorrent host and port
+    help: "Like 192.0.2.10:8080: no http:// (the widget adds it), no slash at the end"
+    kind: host
+    example: 192.0.2.10:8080
+  QBITTORRENT_MODE:
+    label: Mode
+    help: default shows the number of torrents leeching; upload shows upload speed instead (and seeding torrents in the detailed view)
+    kind: choice
+    example: upload
+    default: upload
+    choices:
+      - default
+      - upload
+    optional: true
+  QBITTORRENT_VIEW:
+    label: View
+    help: detailed adds a list of active torrents under "Show more"; basic shows only the totals
+    kind: choice
+    example: detailed
+    default: detailed
+    choices:
+      - detailed
+      - basic
+    optional: true
+  RA_API:
+    label: RetroAchievements web API key
+    help: retroachievements.org → Settings → Web API Key
+    kind: secret
+    example: AbCdEf0123456789AbCdEf0123456789
+  RADARR_API_KEY:
+    label: Radarr API key
+    help: Settings → General → Security → API Key in Radarr
+    kind: secret
+    example: 0123456789abcdef0123456789abcdef
+  RADARR_URL:
+    label: Radarr address
+    help: Like http://192.0.2.10:7878, no slash at the end
+    kind: url
+    example: http://192.0.2.10:7878
+  RAINDROP_AUTO_OPEN:
+    label: Open on load
+    help: first = every group and the first collection open; all = everything open; none = everything closed
+    kind: choice
+    example: first
+    default: first
+    choices:
+      - first
+      - all
+      - none
+    optional: true
+  RAINDROP_COLLECTION_ID:
+    label: Collection
+    help: 0 lists all your bookmarks; for one collection, its ID (the number in its address on app.raindrop.io)
+    kind: text
+    default: "0"
+    optional: true
+  RAINDROP_LINK_COUNT:
+    label: Number of links
+    help: How many of the latest bookmarks to fetch
+    kind: number
+    default: "10"
+    optional: true
+  RAINDROP_SHOW_CONTENT_TYPES:
+    label: Show content types
+    help: Lists how many bookmarks there are of each type (link, article, image…)
+    kind: boolean
+    default: "false"
+    optional: true
+  RAINDROP_SHOW_COVER:
+    label: Show cover images
+    help: Off shows bookmarks as text only
+    kind: boolean
+    example: "true"
+    default: "true"
+    optional: true
+  RAINDROP_SHOW_TAGS:
+    label: Show top tags
+    help: Lists your tags with how many bookmarks each has
+    kind: boolean
+    default: "true"
+    optional: true
+  RAINDROP_TOKEN:
+    label: Raindrop.io token
+    help: app.raindrop.io → Settings → Integrations → create an app → Create test token
+    kind: secret
+    example: 00000000-0000-0000-0000-000000000000
+  RAINDROP_VIEW:
+    label: Layout
+    help: Cards or a list
+    kind: choice
+    choices:
+      - cards
+      - list
+    default: cards
+    optional: true
+  ROMM_URL:
+    label: RomM address (without http://)
+    help: Host and port only, like 192.0.2.10:8080; the widget adds http:// itself
+    kind: host
+    example: 192.0.2.10:8080
+  RSS_BRIDGE:
+    label: RSS-Bridge address
+    help: Your own RSS-Bridge or a public one (list at rss-bridge.github.io/rss-bridge/General/Public_Hosts.html), like https://rss-bridge.example.com
+    kind: url
+    example: https://rss-bridge.example.com
+  SABNZBD_API_KEY:
+    label: SABnzbd API key
+    help: SABnzbd → Settings → General → API Key
+    kind: secret
+    example: 0123456789abcdef0123456789abcdef
+  SABNZBD_URL:
+    label: SABnzbd address
+    help: Including the port, no slash at the end, like http://192.0.2.10:8080 or https://sabnzbd.example.com
+    kind: url
+    example: http://192.0.2.10:8080
+  SCRUTINY_FILTER_ARCHIVED:
+    label: Hide archived drives
+    help: Leaves out the drives archived in Scrutiny
+    kind: boolean
+    default: "true"
+    optional: true
+  SCRUTINY_SORT_BY:
+    label: Sort by
+    help: Device name, model name, capacity or power-on hours
+    kind: choice
+    choices:
+      - device.device_name
+      - device.model_name
+      - device.capacity
+      - smart.power_on_hours
+    default: device.device_name
+    optional: true
+  SCRUTINY_SORT_ORDER:
+    label: Sort order
+    help: asc for ascending, desc for descending
+    kind: choice
+    choices:
+      - asc
+      - desc
+    default: asc
+    optional: true
+  SCRUTINY_URL:
+    label: Scrutiny address (without http://)
+    help: Host and port only, like 192.0.2.10:8080; the widget adds http:// itself
+    kind: host
+    example: 192.0.2.10:8080
+  SEERR_API_KEY:
+    label: Seerr API key
+    help: Seerr → Settings → General → API Key
+    kind: secret
+    example: MTAwMDAwMDAwMDAwMDAwMDAwMDAwMDAw
+  SEERR_COLLAPSE_AFTER:
+    label: Requests shown before "Show more"
+    help: In a wide column, a multiple of how many fit side by side keeps the last row full
+    kind: number
+    default: "4"
+    optional: true
+  SEERR_FILTER:
+    label: Which requests
+    help: Pending, all, or those with one status
+    kind: choice
+    choices:
+      - pending
+      - all
+      - approved
+      - processing
+      - available
+      - unavailable
+      - failed
+    default: pending
+    optional: true
+  SEERR_HA_WEBHOOK_URL:
+    label: Home Assistant webhook for Approve and Decline
+    help: Empty for no buttons. Needs SeerrHA set up in Home Assistant (see the widget's instructions); like http://192.0.2.20:8123/api/webhook/<your id>. Must work from the browser, and be HTTPS if Glance is.
+    kind: url
+    example: http://192.0.2.20:8123/api/webhook/x7Kq2mP9vR4tL8nW
+    default: ""
+    optional: true
+  SEERR_LINK_URL:
+    label: Seerr address for browsers
+    help: Only if browsers reach Seerr at another address than Glance does (a Docker host name, say); used for each request's links. Empty uses the Seerr address.
+    kind: url
+    example: https://seerr.example.com
+    default: ""
+    optional: true
+  SEERR_MAX_REQUESTS:
+    label: Requests to show
+    help: Each one costs one extra call to Seerr per refresh, for its title and poster
+    kind: number
+    default: "10"
+    optional: true
+  SEERR_SHOW_POSTERS:
+    label: Show posters
+    help: Off gives a text-only list
+    kind: boolean
+    default: "true"
+    optional: true
+  SEERR_SORT:
+    label: Sort by
+    help: When the request was added or last changed
+    kind: choice
+    choices:
+      - added
+      - modified
+    default: added
+    optional: true
+  SEERR_URL:
+    label: Seerr address
+    help: The address Glance uses to reach Seerr (or Overseerr, Jellyseerr), like http://192.0.2.10:5055, or http://seerr:5055 inside Docker
+    kind: url
+    example: http://192.0.2.10:5055
+  SHOULDIDEPLOY_TIMEZONE:
+    label: Time zone
+    help: Your time zone as Region/City, like Europe/Berlin
+    kind: text
+    example: Europe/Berlin
+  SONARR_API_KEY:
+    label: Sonarr API key
+    help: Sonarr → Settings → General → Security → API Key
+    kind: secret
+    example: 0123456789abcdef0123456789abcdef
+  SONARR_URL:
+    label: Sonarr address
+    help: The full address, no slash at the end, like http://192.0.2.10:8989
+    kind: url
+    example: http://192.0.2.10:8989
+  SPARKDASH_DASHBOARD_URL:
+    label: sparkDash dashboard address
+    help: Where the node names link to, like https://sparkdash.example.com; empty for no link
+    kind: url
+    example: https://sparkdash.example.com
+    default: ""
+    optional: true
+  SPARKDASH_HEAD_URL:
+    label: Head node's metrics address
+    help: The full address of the head node's metrics endpoint, like https://sparkdash.example.com/api/sparks/spark1/metrics
+    kind: url
+    example: https://sparkdash.example.com/api/sparks/spark1/metrics
+  SPARKDASH_NODE2_URL:
+    label: Second node's metrics address
+    help: The full address of a second sparkDash unit's metrics endpoint, like https://sparkdash.example.com/api/sparks/spark2/metrics
+    kind: url
+    example: https://sparkdash.example.com/api/sparks/spark2/metrics
+  SPEEDTEST_SHOW_PERCENTAGE_DIFF:
+    label: Show change from average
+    help: Shows how far the latest test is above or below the average
+    kind: boolean
+    default: "true"
+    optional: true
+  SPEEDTEST_TRACKER_API_TOKEN:
+    label: Speedtest Tracker API token
+    help: An API token created in Speedtest Tracker
+    kind: secret
+    example: 1|AbCdEfGhIjKlMnOpQrStUvWxYz0123456789
+  SPEEDTEST_URL:
+    label: Speedtest Tracker address
+    help: Like http://192.0.2.10:8765, no slash at the end; the widget's title links there too
+    kind: url
+    example: http://192.0.2.10:8765
+  STEAM_API_KEY:
+    label: Steam Web API key
+    help: From steamcommunity.com/dev/apikey
+    kind: secret
+    example: 0123456789ABCDEF0123456789ABCDEF
+  STEAM_CURRENCY_SYMBOL:
+    label: Currency symbol
+    help: Shown before each price; should match the store country's currency, like € or £
+    kind: text
+    default: $
+    optional: true
+  STEAM_STORE_COUNTRY:
+    label: Store country
+    help: Two-letter country code for the store's prices and currency, like gb or de
+    kind: text
+    default: us
+    optional: true
+  STEAM_USER:
+    label: Steam ID (SteamID64)
+    help: The 17-digit number in a steamcommunity.com/profiles/… address, not the profile name; steamid.io finds it from a profile address
+    kind: text
+    example: "76561190000000000"
+  STEAM_USER_IDS:
+    label: Steam IDs (SteamID64)
+    help: Up to 100 17-digit Steam IDs, separated by commas without spaces; steamid.io finds an ID from a profile address
+    kind: list
+    example: 76561190000000001,76561190000000002
+  STEAM_USERS_COLLAPSE_AFTER:
+    label: Users shown before "Show more"
+    kind: number
+    default: "5"
+    optional: true
+  SUNRISE_TIME_FORMAT:
+    label: Time format
+    help: 12-hour (3:04 PM) or 24-hour (15:04)
+    kind: choice
+    choices:
+      - 3:04 PM
+      - 15:04
+    default: 3:04 PM
+    optional: true
+  SYNCTHING_API_KEY:
+    label: Syncthing API key
+    help: Syncthing → Settings → General → API Key
+    kind: secret
+    example: AbCdEf0123456789AbCdEf0123456789
+  SYNCTHING_FOLDER_1_ID:
+    label: First folder's ID
+    help: Syncthing → the folder → Edit → General → Folder ID (not its label), like abcde-12345
+    kind: text
+    example: abcde-12345
+  SYNCTHING_FOLDER_1_NAME:
+    label: First folder's name
+    help: The name the widget shows for it
+    kind: text
+    default: Backup Folder 1
+    optional: true
+  SYNCTHING_FOLDER_2_ID:
+    label: Second folder's ID
+    help: Syncthing → the folder → Edit → General → Folder ID (not its label), like fghij-67890
+    kind: text
+    example: fghij-67890
+  SYNCTHING_FOLDER_2_NAME:
+    label: Second folder's name
+    help: The name the widget shows for it
+    kind: text
+    default: Backup Folder 2
+    optional: true
+  SYNCTHING_URL:
+    label: Syncthing address
+    help: Like http://192.0.2.10:8384, no slash at the end
+    kind: url
+    example: http://192.0.2.10:8384
+  SYNOLOGY_HOST:
+    label: NAS address (without http://)
+    help: IP address or host name only, without http:// and without the port, like 192.0.2.10
+    kind: host
+    example: 192.0.2.10
+  SYNOLOGY_PASSWORD:
+    label: DSM password
+    help: That account's password
+    kind: secret
+    example: correct-horse-battery
+  SYNOLOGY_PORT:
+    label: DSM port
+    help: DSM's HTTP port, 5000 unless you changed it (this widget can't use HTTPS)
+    kind: number
+    default: "5000"
+    optional: true
+  SYNOLOGY_USERNAME:
+    label: DSM user name
+    help: The DSM account the widget signs in with
+    kind: text
+    example: glance
+  TAILSCALE_API_KEY:
+    label: Tailscale API access token
+    help: Tailscale admin console → Settings → Keys → generate an API key; it lasts 90 days at most
+    kind: secret
+    example: tskey-api-k0000000000CNTRL-0000000000000000000000000000
+  TAILSCALE_COLLAPSE_AFTER:
+    label: Devices shown before "Show more"
+    kind: number
+    default: "3"
+    optional: true
+  TAILSCALE_DEVICE_IP:
+    label: Device's Tailscale IP
+    help: The 100.x.y.z address of the device to watch (Tailscale admin console → Machines)
+    kind: text
+    example: 100.64.0.10
+  TAILSCALE_HIDE_OFFLINE_DOT:
+    label: Hide the offline dot
+    help: Hides the red dot shown for offline devices
+    kind: boolean
+    default: "false"
+    optional: true
+  TAILSCALE_HIDE_UPDATE_DOT:
+    label: Hide the update dot
+    help: Hides the dot shown when a device has an update available
+    kind: boolean
+    default: "false"
+    optional: true
+  TAILSCALE_PRIORITISE_TAGS:
+    label: Show tag instead of user
+    help: Shows a device's first tag instead of its user, when it has one
+    kind: boolean
+    default: "false"
+    optional: true
+  TAILSCALE_TAILNET:
+    label: Tailnet name
+    help: Your tailnet's name, like example.com, or a single - for the tailnet the access token belongs to
+    kind: text
+    example: example.com
+  TAUTULLI_API_KEY:
+    label: Tautulli API key
+    help: Tautulli → Settings → Web Interface → API → API key
+    kind: secret
+    example: 0123456789abcdef0123456789abcdef
+  TAUTULLI_COLLAPSE:
+    label: Items shown before "Show more"
+    help: Small layout only
+    kind: number
+    default: "5"
+    optional: true
+  TAUTULLI_IP:
+    label: Tautulli address (without http://)
+    help: IP address or host name only, without http:// and without the port, like 192.0.2.10. Browsers load the posters from it too, so it must work from the devices that open the dashboard.
+    kind: host
+    example: 192.0.2.10
+  TAUTULLI_PLEX_SERVER_ID:
+    label: Plex server ID
+    help: For the links to Plex. Open any title in Plex Web (app.plex.tv); the long ID after /server/ in the address.
+    kind: text
+    example: 0123456789abcdef0123456789abcdef01234567
+  TAUTULLI_PORT:
+    label: Tautulli port
+    help: A number, Tautulli's web port; 8181 unless you changed it
+    kind: number
+    example: "8181"
+  TAUTULLI_SIZE:
+    label: Layout
+    help: small for a list, large for a row of posters
+    kind: choice
+    choices:
+      - small
+      - large
+    default: small
+    optional: true
+  TAUTULLI_TIME_RANGE:
+    label: Days counted
+    help: How many days of history the ranking covers
+    kind: number
+    default: "90"
+    optional: true
+  TECHNITIUM_IP_PORT:
+    label: Technitium address (without http://)
+    help: IP address or host name and port, like 192.0.2.10:5380 (5380 is Technitium's default port); the widget adds http://
+    kind: host
+    example: 192.0.2.10:5380
+  TECHNITIUM_STATS_TIMEFRAME:
+    label: Time frame
+    help: The period the query counts and top lists cover
+    kind: choice
+    choices:
+      - LastHour
+      - LastDay
+      - LastWeek
+      - LastMonth
+      - LastYear
+    example: LastDay
+  TECHNITIUM_TOKEN:
+    label: Technitium API token
+    help: "In Technitium: account icon (top right) → Create API Token, for an account in the DNS Administrators group"
+    kind: secret
+    example: a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2
+  TERMIX_ALLOW_INSECURE:
+    label: Accept a self-signed certificate
+    help: Turn on if Termix uses a self-signed HTTPS certificate
+    kind: boolean
+    default: "false"
+    optional: true
+  TERMIX_API_KEY:
+    label: Termix API key
+    help: "In Termix: Admin → Settings → API Keys (it starts with tmx_)"
+    kind: secret
+    example: tmx_0123456789abcdef0123456789abcdef
+  TERMIX_URL:
+    label: Termix address
+    help: Like http://192.0.2.10:8080, no slash at the end
+    kind: url
+    example: http://192.0.2.10:8080
+  TFL_LINES:
+    label: Lines to show
+    help: "[] for all lines, or line names in square brackets separated by commas, like [jubilee, elizabeth]. Names: bakerloo, central, circle, district, hammersmith-city, jubilee, metropolitan, northern, piccadilly, victoria, waterloo-city, elizabeth, liberty, lioness, mildmay, suffragette, weaver, windrush"
+    kind: list
+    default: "[]"
+    optional: true
+  TMDB_API_KEY:
+    label: TMDB API key
+    help: The API Key on your TMDB API dashboard; used for the posters
+    kind: secret
+    example: 0123456789abcdef0123456789abcdef
+  TODOIST_API_TOKEN:
+    label: Todoist API token
+    help: Todoist Settings → Integrations → Developer → API token
+    kind: secret
+    example: 0123456789abcdef0123456789abcdef01234567
+  TODOIST_FILTER:
+    label: Task filter
+    help: A Todoist filter that picks the tasks, like today, overdue or today | overdue
+    kind: text
+    default: today
+    optional: true
+  TRAKT_API_KEY:
+    label: Trakt Client ID
+    help: Create an API app on Trakt and copy the Client ID it lists
+    kind: secret
+    example: 0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+  TRAKT_COLLAPSE_AFTER:
+    label: Items before "Show more"
+    help: How many items show before the list collapses
+    kind: number
+    default: "3"
+    optional: true
+  TRAKT_SHOW_EPISODE_NUMBER:
+    label: Show episode numbers
+    help: Show S##E## next to TV episodes
+    kind: boolean
+    default: "true"
+    optional: true
+  TRAKT_SHOW_MOVIE_YEAR:
+    label: Show the year of movies
+    help: Show the year next to movie titles
+    kind: boolean
+    default: "false"
+    optional: true
+  TRAKT_SHOW_TV_YEAR:
+    label: Show the year of TV shows
+    help: Show the year a TV show started next to its title
+    kind: boolean
+    default: "false"
+    optional: true
+  TRAKT_USERNAME:
+    label: Trakt user name
+    help: The Trakt user whose watch history is shown
+    kind: text
+    example: example-user
+  TRANSITLAND_API_KEY:
+    label: Transitland API key
+    help: "Free: sign up at transit.land/operators and click API access"
+    kind: secret
+    example: AbCdEfGh0123456789AbCdEfGh012345
+  TRANSITLAND_PER_ROUTE_CAP:
+    label: Departures per line
+    help: Without a line filter, how many departures show for each line and direction
+    kind: number
+    default: "2"
+    optional: true
+  TRANSITLAND_ROUTE_ONESTOP_ID:
+    label: Only this line (route Onestop ID)
+    help: The route's Onestop ID from its transit.land page, starting with r- (each direction is its own route, ending ~n or ~s); empty shows every line at the stop
+    kind: text
+    example: r-9q9-example~n
+    default: ""
+    optional: true
+  TRANSITLAND_STOP_KEY:
+    label: Stop (Onestop ID)
+    help: Search your stop on transit.land and copy the Onestop ID from its page; it starts with s- (a parent station's ID works too)
+    kind: text
+    example: s-9q9p1abcde-mainst~1st
+  TRENDING_REPOS_LANGUAGE:
+    label: Language
+    help: The repositories' main language; All for every language
+    kind: choice
+    choices:
+      - All
+      - JavaScript
+      - Java
+      - Python
+      - PHP
+      - C++
+      - C#
+      - TypeScript
+      - Shell
+      - C
+      - Ruby
+      - Rust
+      - Go
+      - Kotlin
+      - HCL
+      - PowerShell
+      - CMake
+      - Groovy
+      - PLpgSQL
+      - TSQL
+      - Dart
+      - Swift
+      - HTML
+      - CSS
+      - Elixir
+      - Haskell
+      - Solidity
+      - Assembly
+      - R
+      - Scala
+      - Julia
+      - Lua
+      - Clojure
+      - Erlang
+      - Common Lisp
+      - Emacs Lisp
+      - OCaml
+      - MATLAB
+      - Objective-C
+      - Perl
+      - Fortran
+    default: All
+    optional: true
+  TRENDING_REPOS_PERIOD:
+    label: Trend period
+    help: The period the trend is calculated over
+    kind: choice
+    choices:
+      - past_24_hours
+      - past_week
+      - past_month
+      - past_3_months
+    example: past_week
+  TRUENAS_API_KEY:
+    label: TrueNAS API key
+    help: "In TrueNAS: Settings → API Keys"
+    kind: secret
+    example: 1-AbCdEfGhIjKlMnOpQrStUvWxYz0123456789AbCdEfGhIjKlMnOpQrStUvWx
+  TRUENAS_URL:
+    label: TrueNAS address
+    help: Like http://192.0.2.10 or https://truenas.example.com, no slash at the end
+    kind: url
+    example: http://192.0.2.10
+  TSUMEGO_CATEGORY:
+    label: Difficulty
+    help: Which of the daily problems to show
+    kind: choice
+    choices:
+      - beginner
+      - easy
+      - medium
+      - hard
+    default: medium
+    optional: true
+  UK_BIN_COLLECTION_URL:
+    label: Bin collection address for your council
+    help: Your UK Bin Collection API server's address for your council, with its query (uprn or postcode), like http://192.0.2.10:8080/api/bin_collection/ExampleCouncil?uprn=100000000000
+    kind: url
+    example: http://192.0.2.10:8080/api/bin_collection/ExampleCouncil?uprn=100000000000
+  UKBIN_GARDEN_BIN_NAME:
+    label: Name of your garden waste bin
+    help: The bin's name exactly as your council's data gives it; this bin gets the green colour and recycling icon
+    kind: text
+    example: Green bin
+    default: Food bin, green bin, textiles and garden waste bin
+    optional: true
+  UKBIN_RUBBISH_BIN_NAME:
+    label: Name of your rubbish bin
+    help: The bin's name exactly as your council's data gives it; this bin gets the "Rubbish & Food" caption, grey colour and bin icon
+    kind: text
+    example: Black bin
+    default: Grey bin, small electrical items and food bin
+    optional: true
+  UNIFI_API_KEY:
+    label: UniFi API key
+    help: "A local API key from the UniFi Network app: Site Settings → Control Plane → Integrations"
+    kind: secret
+    example: AbCdEfGhIjKlMnOpQrStUvWxYz012345
+  UNIFI_CONSOLE_IP:
+    label: UniFi console address (without https://)
+    help: IP address or host name of your UniFi gateway or console, like 192.0.2.1; the widget adds https://
+    kind: host
+    example: 192.0.2.1
+  UNRAID_API_KEY:
+    label: Unraid API key
+    help: The API key generated by your Unraid API
+    kind: secret
+    example: b8a7c2d4e6f8a0b2c4d6e8f0a2b4c6d8e0f2a4b6c8d0e2f4a6b8c0d2e4f92a3
+  UNRAID_API_URL:
+    label: Unraid API address
+    help: The address of the Unraid API's GraphQL endpoint, like http://192.0.2.10/graphql
+    kind: url
+    example: http://192.0.2.10/graphql
+  UPTIME_KUMA_STATUS_SLUG:
+    label: Status page slug
+    help: "The last part of the status page's address: for http://192.0.2.10:3001/status/example it is example"
+    kind: text
+    example: example
+  UPTIME_KUMA_URL:
+    label: Uptime Kuma address
+    help: Like http://192.0.2.10:3001, no slash at the end
+    kind: url
+    example: http://192.0.2.10:3001
+  VIKUNJA_FILTER:
+    label: Task filter
+    help: A Vikunja filter, typed as is (Vikunja's API docs at /api/v1/docs list the fields), like done=false&&priority>3
+    kind: text
+    default: ((due_date>now-1d&&due_date<now+10d)||(due_date>now&&priority>3))&&done=false
+    optional: true
+  VIKUNJA_FILTER_DESCRIPTION:
+    label: Filter description
+    help: A short text above the table that says which tasks the filter picks
+    kind: text
+    default: Open tasks due within 10 days, and high-priority ones due later
+    optional: true
+  VIKUNJA_GLANCE_API_TOKEN:
+    label: Vikunja API token
+    help: "In Vikunja: avatar → Settings → API Tokens → create one with permission for tasks (tokens expire after 30 days unless you pick Custom)"
+    kind: secret
+    example: tk_0123456789abcdef0123456789abcdef01234567
+  VIKUNJA_HOST:
+    label: Vikunja host (without http:// and port)
+    help: IP address or host name of your Vikunja server, like 192.0.2.10 (not localhost); the widget adds http://
+    kind: host
+    example: 192.0.2.10
+  VIKUNJA_NUMBER_OF_TASKS:
+    label: Number of tasks
+    help: At most this many tasks show
+    kind: number
+    example: "10"
+  VIKUNJA_PORT:
+    label: Vikunja port
+    help: 3456 unless you changed it
+    kind: number
+    default: "3456"
+    optional: true
+  WANIKANI_API_KEY:
+    label: WaniKani API key
+    help: A read-only API token from the WaniKani website's settings
+    kind: secret
+    example: 01234567-89ab-cdef-0123-456789abcdef
+  WANIKANI_SHOW_FORECAST:
+    label: Show the forecast
+    help: Show bars with the reviews coming up, like the WaniKani dashboard
+    kind: boolean
+    default: "true"
+    optional: true
+  WANIKANI_SHOW_LESSONS:
+    label: Show lessons
+    help: Also show the total number of lessons available
+    kind: boolean
+    default: "false"
+    optional: true
+  WEATHER_LOCATION:
+    label: Location
+    help: A place name Open-Meteo knows, like Berlin, Germany
+    kind: text
+    example: Berlin, Germany
+  WEATHER7_TEMP_UNIT:
+    label: Temperature unit
+    help: Celsius or Fahrenheit
+    kind: choice
+    choices:
+      - celsius
+      - fahrenheit
+    default: celsius
+    optional: true
+  WEATHER7_TIMEZONE:
+    label: Time zone for the days
+    help: auto uses the location's own time zone; or a time zone name like Europe/Berlin
+    kind: text
+    default: auto
+    optional: true
+  WG_EASY_PASSWORD:
+    label: WG-Easy password
+    help: The password you sign in to the WG-Easy web page with
+    kind: secret
+    example: example-password
+  WG_EASY_URL:
+    label: WG-Easy address
+    help: The address of the WG-Easy web page, like http://192.0.2.10:51821, no slash at the end
+    kind: url
+    example: http://192.0.2.10:51821
+  WG_EASY_USER:
+    label: WG-Easy user name
+    help: The user name you sign in to the WG-Easy web page with
+    kind: text
+    example: admin
+  WIKIPEDIA_LANGUAGE:
+    label: Wikipedia language
+    help: The language code of the Wikipedia edition, like en, de, fr or ja (list at meta.wikimedia.org/wiki/Special:SiteMatrix)
+    kind: text
+    default: en
+    optional: true
+  WIKIPEDIA_OTD_TYPE:
+    label: What to show
+    help: Historical events, people born on this day, or people who died on it
+    kind: choice
+    choices:
+      - events
+      - births
+      - deaths
+    default: events
+    optional: true
+  WIKIPEDIA_USER_AGENT:
+    label: User-Agent for Wikimedia
+    help: Wikimedia asks every client to name itself with a contact, like MyDashboard/1.0 (admin@example.com)
+    kind: text
+    example: MyDashboard/1.0 (admin@example.com)
+  WUD_HIDE_UP_TO_DATE:
+    label: Hide the up-to-date message
+    help: Don't show "All containers are up to date" when nothing needs an update
+    kind: boolean
+    default: "false"
+    optional: true
+  WUD_SHOW_ALL:
+    label: Show all containers
+    help: List every container, not only those with an update
+    kind: boolean
+    default: "false"
+    optional: true
+  WUD_SHOW_INFO:
+    label: Show the summary
+    help: Show the Updates, Total and Running counts
+    kind: boolean
+    default: "true"
+    optional: true
+  WUD_SHOW_LIST:
+    label: Show the container list
+    help: Show the list of containers
+    kind: boolean
+    default: "true"
+    optional: true
+  WUD_SHOW_LOCAL_VERSION:
+    label: Show the current version
+    help: Show each container's current version instead of "Available"
+    kind: boolean
+    default: "true"
+    optional: true
+  WUD_SHOW_UPDATE_KIND:
+    label: Show the update kind
+    help: Show whether each update is major, minor or patch, and its new tag
+    kind: boolean
+    default: "true"
+    optional: true
+  WUD_SHOW_UPDATE_TYPES:
+    label: Show the update counts by type
+    help: Show how many updates are major, minor, patch or unknown
+    kind: boolean
+    default: "false"
+    optional: true
+  WUD_URL:
+    label: What's Up Docker address (without http://)
+    help: IP address or host name and port of your WUD server, like 192.0.2.10:3000; the widget adds http://
+    kind: host
+    example: 192.0.2.10:3000
+  YT_CHANNEL_USERNAME:
+    label: YouTube channel's user name
+    help: The user name of the YouTube channel whose videos show (RSS-Bridge's "By username")
+    kind: text
+    example: ExampleChannel
+  YT_CLOSE_OUTSIDE:
+    label: Close by clicking outside
+    help: Close the video pop-up by clicking anywhere around it
+    kind: boolean
+    default: "false"
+    optional: true
+  YT_EMBED_INSTANCE:
+    label: Embed address
+    help: Where the videos are embedded from; any instance that supports YouTube embedding, ending in /embed/
+    kind: text
+    default: https://www.youtube-nocookie.com/embed/
+    optional: true
+widgets:
+  air-quality:
+    variants:
+      - name: Air quality
+        rewrite:
+          - find: ${LAT}
+            replace: ${AIR_QUALITY_LAT}
+            count: 1
+          - find: ${LON}
+            replace: ${AIR_QUALITY_LON}
+            count: 1
+          - find: ${YOUR_TOKEN}
+            replace: ${AIR_QUALITY_TOKEN}
+            count: 1
+  algal-bloom-update:
+    variants:
+      - rewrite:
+          - find: beach/brighton-3
+            replace: beach/${ALGAL_BEACH_ID}
+            count: 1
+  animals-display:
+    variants:
+      - null
+      - null
+      - null
+      - rewrite:
+          - find: |2-
+                template: |
+                <img
+            replace: |2-
+                template: |
+                  <img
+            count: 1
+      - rewrite:
+          - find: |2-
+                template: |
+                <img
+            replace: |2-
+                template: |
+                  <img
+            count: 1
+      - rewrite:
+          - find: |2-
+                template: |
+                <img
+            replace: |2-
+                template: |
+                  <img
+            count: 1
+      - rewrite:
+          - find: |2-
+                template: |
+                <img
+            replace: |2-
+                template: |
+                  <img
+            count: 1
+  arr-releases:
+    variants:
+      - rewrite:
+          - find: "service: radarr"
+            replace: "service: ${ARR_SERVICE}"
+            count: 1
+          - find: "type: upcoming"
+            replace: "type: ${ARR_TYPE}"
+            count: 1
+          - find: "size: medium"
+            replace: "size: ${ARR_SIZE}"
+            count: 1
+          - find: "collapse-after: 3"
+            replace: "collapse-after: ${ARR_COLLAPSE_AFTER}"
+            count: 1
+          - find: "show-grabbed: false"
+            replace: "show-grabbed: ${ARR_SHOW_GRABBED}"
+            count: 1
+          - find: "interval: 20"
+            replace: "interval: ${ARR_INTERVAL_DAYS}"
+            count: 1
+          - find: "#sort-time: asc"
+            replace: "sort-time: ${ARR_SORT_TIME}"
+            count: 1
+          - find: '#cover-proxy: "https://proxy.example.com/radarrcover"'
+            replace: 'cover-proxy: "${ARR_COVER_PROXY}"'
+            count: 1
+          - find: ${RADARR_API_URL}
+            replace: ${ARR_API_URL}
+            count: 1
+          - find: ${RADARR_KEY}
+            replace: ${ARR_API_KEY}
+            count: 1
+          - find: ${RADARR_URL}
+            replace: ${ARR_LINK_URL}
+            count: 2
+  astronomy-picture-of-the-day:
+    variants:
+      - name: Image
+      - name: Image with title
+      - name: Image with title and explanation
+        rewrite:
+          - find: .JSON.String "explanation"
+            replace: .JSON.String "0.explanation"
+            count: 1
+  audiobookshelf:
+    variants:
+      - name: Library stats
+  audiobookshelf-personalized:
+    variants:
+      - rewrite:
+          - find: 'library: "Podcasts"'
+            replace: 'library: "${ABS_LIBRARY}"'
+            count: 1
+          - find: 'shelf: "continue-listening"'
+            replace: 'shelf: "${ABS_SHELF}"'
+            count: 1
+          - find: "small-column: false"
+            replace: "small-column: ${ABS_SMALL_COLUMN}"
+            count: 1
+          - find: "show-thumbnail: false"
+            replace: "show-thumbnail: ${ABS_SHOW_THUMBNAIL}"
+            count: 1
+          - find: 'thumbnail-aspect-ratio: "square"'
+            replace: |-
+              thumbnail-aspect-ratio: "${ABS_THUMBNAIL_ASPECT}"
+                  progress-bar: ${ABS_PROGRESS_BAR}
+            count: 1
+  azirevpn-connection-status:
+    needs: It shows the connection of the machine Glance runs on, so that machine must connect through AzireVPN.
+    variants:
+      - name: Connection status
+  backrest-job-status:
+    needs: Backrest's authentication must be turned off, as the widget reads its API without logging in.
+    variants:
+      - rewrite:
+          - find: "planId: ${BACKREST_PLAN_LOCAL}"
+            replace: 'planId: "${BACKREST_PLAN_LOCAL}"'
+            count: 1
+          - find: "LIMIT: 5"
+            replace: "LIMIT: ${BACKREST_LIMIT}"
+            count: 1
+          - find: "PRECISION: 1"
+            replace: "PRECISION: ${BACKREST_PRECISION}"
+            count: 1
+          - find: "BACKREST_PLAN_TITLE: Local USB"
+            replace: 'BACKREST_PLAN_TITLE: "${BACKREST_PLAN_HEADING}"'
+            count: 1
+  beszel-metrics:
+    variants:
+      - refuse: Needs an API token fetched by hand with a curl command; Beszel Server Stats shows your servers with just your Beszel e-mail and password.
+  beszel-server-stats:
+    variants:
+      - rewrite:
+          - find: "# email: ${BESZEL_EMAIL}"
+            replace: 'email: "${BESZEL_EMAIL}"'
+            count: 1
+          - find: "# password: ${BESZEL_PASSWORD}"
+            replace: 'password: "${BESZEL_PASSWORD}"'
+            count: 1
+  calibre-web-stats:
+    variants:
+      - name: Library stats
+        rewrite:
+          - find: |2
+                headers:
+                    Authorization: Basic ${CALIBREWEB_CREDS_B64}
+            replace: |2
+                basic-auth:
+                  username: "${CALIBREWEB_USER}"
+                  password: "${CALIBREWEB_PASSWORD}"
+            count: 1
+  calvin-and-hobbes:
+    variants:
+      - rewrite:
+          - find: $yearOffset := 37
+            replace: $yearOffset := ${CALVIN_YEAR_OFFSET}
+            count: 1
+  cats-as-a-service-photos:
+    variants:
+      - name: Cat photos
+  cineplex-movies:
+    variants:
+      - rewrite:
+          - find: 'subscription-key: "abc"'
+            replace: 'subscription-key: "${CINEPLEX_SUBSCRIPTION_KEY}"'
+            count: 1
+          - find: 'filter-keyword: "Japanese"'
+            replace: 'filter-keyword: "${CINEPLEX_FILTER}"'
+            count: 1
+          - find: "playing-now-only: false"
+            replace: "playing-now-only: ${CINEPLEX_NOW_PLAYING_ONLY}"
+            count: 1
+          - find: "items: 10"
+            replace: "items: ${CINEPLEX_ITEMS}"
+            count: 1
+  cloudflared-tunnels:
+    needs: The arrow before each local link is an image you put in Glance's assets folder yourself (img/link-down-right.png from the widget's page); without it a broken image shows.
+    variants:
+      - rewrite:
+          - find: $domain_name := ".example.com"
+            replace: $domain_name := "${CLOUDFLARED_DOMAIN}"
+            count: 1
+          - match: replaceAll "localhost" "192\.168\.\d+\.\d+"
+            replace: replaceAll "localhost" "${CLOUDFLARED_LOCAL_HOST}"
+            count: 1
+  countdown:
+    variants:
+      - refuse: The README's template is broken (Glance can't read it), too much to repair here.
+  crafty-controller-minecraft-server:
+    variants:
+      - rewrite:
+          - find: "display-MOTD: true"
+            replace: "display-MOTD: ${CRAFTY_DISPLAY_MOTD}"
+            count: 1
+          - find: "server-id: ${CRAFTY_SERVER_ID}"
+            replace: 'server-id: "${CRAFTY_SERVER_ID}"'
+            count: 1
+          - find: '        | withHeader "Authorization" (print "Bearer " $apiKey)'
+            replace: |2-
+                      | withAllowInsecure true
+                      | withHeader "Authorization" (print "Bearer " $apiKey)
+            count: 1
+  cryptopanic-news:
+    variants:
+      - rewrite:
+          - find: "&filter=${filter}&currencies=${currencies}&regions=${regions}&kind=${kind}"
+            replace: "&filter=${CRYPTOPANIC_FILTER}&currencies=${CRYPTOPANIC_CURRENCIES}&regions=${CRYPTOPANIC_REGIONS}&kind=${CRYPTOPANIC_KIND}"
+            count: 1
+          - find: |2
+                parameters:
+                  auth_token: ${CRYPTOPANIC_TOKEN}
+                  #filter: hot # Options: rising|hot|bullish|bearish|important
+                  #currencies: "SOL" # Example: BTC,ETH for multiple currencies
+                  #regions: de # Example: en,de for multiple regions
+                  #kind: "" # Optional: news|media
+            replace: ""
+            count: 1
+  cup-updates:
+    variants:
+      - rewrite:
+          - find: $defaultServerName := "Glance"
+            replace: $defaultServerName := "${CUP_DEFAULT_SERVER_NAME}"
+            count: 1
+          - find: $showUpdateKind := true
+            replace: $showUpdateKind := ${CUP_SHOW_UPDATE_KIND}
+            count: 1
+          - find: $filterInactiveImages := true
+            replace: $filterInactiveImages := ${CUP_ONLY_IN_USE}
+            count: 1
+  dhl-tracking:
+    variants:
+      - rewrite:
+          - find: 'trackingNumber: "your-tracking-number-here"'
+            replace: 'trackingNumber: "${DHL_TRACKING_NUMBER}"'
+            count: 1
+          - find: 'language: "en"'
+            replace: 'language: "${DHL_LANGUAGE}"'
+            count: 1
+  docker-swarm:
+    variants:
+      - refuse: Needs a Docker socket proxy container next to Glance and glance labels on your Swarm services, which can't be set up with fields.
+  epic-free-widget:
+    variants:
+      - rewrite:
+          - find: locale=en&
+            replace: locale=${EPIC_LOCALE}&
+            count: 1
+          - find: "&country=US&"
+            replace: "&country=${EPIC_COUNTRY}&"
+            count: 1
+          - find: allowCountries=US
+            replace: allowCountries=${EPIC_ALLOW_COUNTRIES}
+            count: 1
+  eventim:
+    variants:
+      - rewrite:
+          - find: 'searchTerm: "Sabaton"'
+            replace: 'searchTerm: "${EVENTIM_SEARCH_TERM}"'
+            count: 1
+          - find: 'cities: ""'
+            replace: 'cities: "${EVENTIM_CITIES}"'
+            count: 1
+  football-fixtures:
+    variants:
+      - rewrite:
+          - find: teams/TEAM_ID/matches
+            replace: teams/${FOOTBALL_FIXTURES_TEAM_ID}/matches
+            count: 1
+          - find: "X-Auth-Token: FOOTBALL_DATA_TOKEN"
+            replace: "X-Auth-Token: ${FOOTBALL_DATA_TOKEN}"
+            count: 1
+  football-league-table:
+    variants:
+      - rewrite:
+          - find: ${COMPETITION_ID}
+            replace: ${FOOTBALL_COMPETITION_ID}
+            count: 1
+          - find: ${TEAM_ID}
+            replace: ${FOOTBALL_TABLE_TEAM_ID}
+            count: 1
+  formula1-widgets:
+    variants:
+      - name: "Config: Next Race"
+      - null
+      - null
+      - null
+      - name: "Config: Next Race with all sessions"
+        rewrite:
+          - find: |-
+              template: |
+                {{ if ne
+            replace: |-
+              template: |
+                  {{ if ne
+            count: 1
+          - find: timezone=Europe/London
+            replace: timezone=${F1_TIMEZONE}
+            count: 1
+  frigate-stats:
+    variants:
+      - rewrite:
+          - find: |2-
+                # headers:
+                #   Cookie: frigate_token=${FRIGATE_TOKEN}
+            replace: |2-
+                headers:
+                  Cookie: frigate_token=${FRIGATE_TOKEN}
+            count: 1
+  gatus-monitor:
+    variants:
+      - rewrite:
+          - find: "style: full"
+            replace: "style: ${GATUS_STYLE}"
+            count: 1
+          - find: "duration: 24h"
+            replace: "duration: ${GATUS_DURATION}"
+            count: 1
+          - find: 'groupFilter: ""'
+            replace: 'group: "${GATUS_GROUP}"'
+            count: 1
+          - find: "compactMetric: uptime"
+            replace: "compact-metric: ${GATUS_COMPACT_METRIC}"
+            count: 1
+          - find: "showFailingOnly: false"
+            replace: "show-failing-only: ${GATUS_SHOW_FAILING_ONLY}"
+            count: 1
+  ghostfolio-stats:
+    variants:
+      - rewrite:
+          - find: "url: ${GHOSTFOLIO_PUBLIC_URL}"
+            replace: "url: ${GHOSTFOLIO_URL}/api/v1/public/${GHOSTFOLIO_ACCESS_ID}/portfolio"
+            count: 1
+  github-actions-status:
+    variants:
+      - rewrite:
+          - find: repos/OWNER/REPO_NAME/actions
+            replace: repos/${GH_ACTIONS_REPO}/actions
+            count: 1
+          - find: "branch: develop"
+            replace: "branch: ${GH_ACTIONS_BRANCH}"
+            count: 1
+          - find: "per_page: 6"
+            replace: "per_page: ${GH_ACTIONS_COUNT}"
+            count: 1
+          - find: data-collapse-after="2"
+            replace: data-collapse-after="${GH_ACTIONS_COLLAPSE_AFTER}"
+            count: 1
+  github-personal-repos:
+    variants:
+      - rewrite:
+          - find: Bearer ${Github_Personal_Access_Token}
+            replace: Bearer ${GITHUB_TOKEN}
+            count: 1
+  glance-widgets:
+    variants:
+      - name: System monitor
+        rewrite:
+          - find: |2-
+              
+                base_url:    ${GLANCES_URL}
+            replace: |2-
+              
+                  base_url:    ${GLANCES_URL}
+            count: 1
+          - find: |2-
+              
+                net_iface:   "<you network>"
+            replace: |2-
+              
+                  net_iface:   "${GLANCES_NETWORK_INTERFACE}"
+            count: 1
+          - find: |2-
+              
+                disk_mounts: "^(/youdisk1|/youdisk2)$"
+            replace: |2-
+              
+                  disk_mounts: "^(${GLANCES_DISK_MOUNTS})$"
+            count: 1
+          - find: |2-
+              
+                {{
+            replace: |2-
+              
+                  {{
+            count: 36
+          - find: |2-
+              
+                </div>
+            replace: |2-
+              
+                  </div>
+            count: 1
+  glances-stats:
+    variants:
+      - name: Server stats
+        rewrite:
+          - find: '"http://${GLANCES_URL}:61208"'
+            replace: '"http://${GLANCES_HOST}:61208"'
+            count: 1
+          - find: 'server-name: "Server Name Here"'
+            replace: 'server-name: "${GLANCES_SERVER_NAME}"'
+            count: 1
+          - find: 'show-temperature: "true"'
+            replace: 'show-temperature: "${GLANCES_SHOW_TEMPERATURE}"'
+            count: 1
+          - find: 'show-disk-bar: "true"'
+            replace: 'show-disk-bar: "${GLANCES_SHOW_DISK_BAR}"'
+            count: 1
+          - find: 'show-network: "false"'
+            replace: 'show-network: "${GLANCES_SHOW_NETWORK}"'
+            count: 1
+          - find: 'network-interface: "eth0"'
+            replace: 'network-interface: "${GLANCES_NETWORK_INTERFACE}"'
+            count: 1
+  gluetun-vpn-status:
+    variants:
+      - name: "Version 1: IP, country and city"
+      - name: "Version 2: connected or not"
+  google-calendar-list:
+    variants:
+      - refuse: Needs a Google sign-in done by hand (a browser address and a curl command) to get a refresh token, which the editor can't do.
+  gotify-notifications:
+    variants:
+      - rewrite:
+          - find: ${SERVER_ADDRESS}
+            replace: ${GOTIFY_URL}
+            count: 2
+          - find: "limit: 10"
+            replace: "limit: ${GOTIFY_LIMIT}"
+            count: 1
+          - find: data-collapse-after="5"
+            replace: data-collapse-after="${GOTIFY_COLLAPSE_AFTER}"
+            count: 1
+  grafana:
+    needs: Grafana needs a Prometheus data source that collects node_exporter metrics; the widget lists the machines reporting them.
+    variants:
+      - rewrite:
+          - find: "uid: grafanacloud-prom"
+            replace: "uid: ${GRAFANA_DATASOURCE_UID}"
+            count: 1
+          - find: "type: prometheus"
+            replace: "type: ${GRAFANA_DATASOURCE_TYPE}"
+            count: 1
+          - find: 'expr: group(up{job=~".*node_exporter.*"}) by (instance)'
+            replace: "expr: ${GRAFANA_QUERY}"
+            count: 1
+          - find: /d/nodes/linux-node-overview
+            replace: /d/${GRAFANA_DASHBOARD}
+            count: 1
+  homeassistant-sensor-stats:
+    variants:
+      - rewrite:
+          - find: (eq $id "sensor.example1")
+            replace: (eq $id "${HASS_FIRST_SENSOR}")
+            count: 1
+          - find: (eq $id "sensor.example2")
+            replace: (eq $id "${HASS_SECOND_SENSOR}")
+            count: 1
+  immich-styled:
+    variants:
+      - rewrite:
+          - find: "show-cards: true"
+            replace: "show-cards: ${IMMICH_SHOW_CARDS}"
+            count: 1
+          - find: "show-storage-bar: true"
+            replace: "show-storage-bar: ${IMMICH_SHOW_STORAGE_BAR}"
+            count: 1
+  jellyfin-latest:
+    variants:
+      - rewrite:
+          - find: "api-key: ${JELLYFIN_KEY}"
+            replace: "api-key: ${JELLYFIN_API_KEY}"
+            count: 1
+          - find: 'user-name: "yourUserName"'
+            replace: 'user-name: "${JELLYFIN_USER_NAME}"'
+            count: 1
+          - find: 'library-name: "Shows"'
+            replace: 'library-name: "${JELLYFIN_LATEST_LIBRARY}"'
+            count: 1
+          - find: 'mode: "latest"'
+            replace: 'mode: "${JELLYFIN_LATEST_MODE}"'
+            count: 1
+          - find: 'item-count: "10"'
+            replace: 'item-count: "${JELLYFIN_LATEST_ITEM_COUNT}"'
+            count: 1
+          - find: "small-column: false"
+            replace: "small-column: ${JELLYFIN_LATEST_SMALL_COLUMN}"
+            count: 1
+          - find: "show-thumbnail: false"
+            replace: "show-thumbnail: ${JELLYFIN_LATEST_SHOW_THUMBNAIL}"
+            count: 1
+          - find: 'thumbnail-aspect-ratio: "default"'
+            replace: 'thumbnail-aspect-ratio: "${JELLYFIN_LATEST_THUMBNAIL_ASPECT_RATIO}"'
+            count: 1
+  jellyfin-now-playing:
+    variants:
+      - rewrite:
+          - find: ${API_TOKEN}
+            replace: ${JELLYFIN_API_KEY}
+            count: 2
+          - find: "{{ $showArt := true }}"
+            replace: "{{ $showArt := ${JELLYFIN_NOW_PLAYING_ART} }}"
+            count: 1
+  karakeep-dashboard:
+    variants:
+      - rewrite:
+          - find: "url: http://"
+            replace: "url: ${KARAKEEP_SCHEME}://"
+            count: 1
+          - find: '"http://%s/api'
+            replace: '"${KARAKEEP_SCHEME}://%s/api'
+            count: 1
+          - find: "limit: 10"
+            replace: "limit: ${KARAKEEP_LIMIT}"
+            count: 1
+          - find: "collapse-after: 6"
+            replace: "collapse-after: ${KARAKEEP_COLLAPSE_AFTER}"
+            count: 1
+          - find: "in-new-tab: true"
+            replace: "in-new-tab: ${KARAKEEP_IN_NEW_TAB}"
+            count: 1
+  kavita-latest:
+    variants:
+      - rewrite:
+          - find: 'mode: "on-deck"'
+            replace: 'mode: "${KAVITA_MODE}"'
+            count: 1
+          - find: "small-column: false"
+            replace: "small-column: ${KAVITA_SMALL_COLUMN}"
+            count: 1
+          - find: "show-thumbnail: false"
+            replace: "show-thumbnail: ${KAVITA_SHOW_THUMBNAIL}"
+            count: 1
+          - find: 'thumbnail-aspect-ratio: "portrait"'
+            replace: 'thumbnail-aspect-ratio: "${KAVITA_THUMBNAIL_ASPECT_RATIO}"'
+            count: 1
+  komga-latest:
+    variants:
+      - rewrite:
+          - find: "library-id: ${LIBRARY_ID}"
+            replace: "library-id: ${KOMGA_LIBRARY_ID}"
+            count: 1
+          - find: "items: 10"
+            replace: "items: ${KOMGA_ITEMS}"
+            count: 1
+          - find: "mode: new"
+            replace: "mode: ${KOMGA_MODE}"
+            count: 1
+  komodo-container-manager-stunt-and-gimmicks-alex:
+    variants:
+      - rewrite:
+          - find: "allow-insecure: false"
+            replace: "allow-insecure: ${KOMODO_ALLOW_INSECURE}"
+            count: 1
+          - find: newRequest (concat $urlBase "/read")
+            replace: newRequest (concat $urlBase "/read") | withAllowInsecure "${KOMODO_ALLOW_INSECURE}"
+            count: 1
+          - find: concat $urlBase "servers/"
+            replace: concat $urlBase "/servers/"
+            count: 1
+      - rewrite:
+          - find: "url: http://monitor.sandg.site:9120/read"
+            replace: "url: ${KOMODO_URL}/read"
+            count: 1
+          - find: "allow-insecure: true"
+            replace: "allow-insecure: ${KOMODO_ALLOW_INSECURE}"
+            count: 1
+          - find: newRequest (concat $urlBase "/read")
+            replace: newRequest (concat $urlBase "/read") | withAllowInsecure "${KOMODO_ALLOW_INSECURE}"
+            count: 3
+          - find: concat $urlBase "stacks/"
+            replace: concat $urlBase "/stacks/"
+            count: 1
+          - find: concat $urlBase "servers/"
+            replace: concat $urlBase "/servers/"
+            count: 1
+  latest-community-widgets:
+    variants:
+      - name: Latest community widgets
+  lemmy:
+    variants:
+      - rewrite:
+          - find: "title: L/${LEMMY_COMMUNITY}"
+            replace: "title: Lemmy"
+            count: 1
+          - find: "url: https://lemmy.world"
+            replace: "url: ${LEMMY_INSTANCE_URL}"
+            count: 1
+          - find: "COLLAPSE_AFTER_COUNT: 5"
+            replace: "COLLAPSE_AFTER_COUNT: ${LEMMY_COLLAPSE_AFTER}"
+            count: 1
+  linkwarden-latest-bookmarks:
+    variants:
+      - rewrite:
+          - find: "url: http://<LINKWARDEN_HOST>/api"
+            replace: "url: ${LINKWARDEN_URL}/api"
+            count: 1
+          - find: Bearer <LINKWARDEN_API_KEY>
+            replace: Bearer ${LINKWARDEN_API_KEY}
+            count: 1
+          - find: data-collapse-after="<LINKS_TO_BE_VISIBLE>"
+            replace: data-collapse-after="${LINKWARDEN_COLLAPSE_AFTER}"
+            count: 1
+  listenbrainz-latest:
+    variants:
+      - name: Latest listen
+  live-tennis-matches:
+    variants:
+      - rewrite:
+          - find: limit=10
+            replace: limit=${LIVETENNIS_LIMIT}
+            count: 1
+  london-tube-status:
+    variants:
+      - rewrite:
+          - find: "lines: []"
+            replace: "lines: ${TFL_LINES}"
+            count: 1
+  macro-release-calendar:
+    variants:
+      - rewrite:
+          - find: "min-importance: medium"
+            replace: "min-importance: ${MACRO_MIN_IMPORTANCE}"
+            count: 1
+          - find: "max-items: 10"
+            replace: "max-items: ${MACRO_MAX_ITEMS}"
+            count: 1
+          - find: "collapse-after: 5"
+            replace: "collapse-after: ${MACRO_COLLAPSE_AFTER}"
+            count: 1
+  mealie-todays-meal:
+    variants:
+      - name: Today's meal
+        rewrite:
+          - find: "url: http://"
+            replace: "url: ${MEALIE_SCHEME}://"
+            count: 1
+          - find: src="http://
+            replace: src="${MEALIE_SCHEME}://
+            count: 1
+  media-server-history:
+    variants:
+      - rewrite:
+          - find: 'media-server: "plex"'
+            replace: 'media-server: "${MEDIA_SERVER_TYPE}"'
+            count: 1
+          - find: "base-url: ${PLEX_URL}"
+            replace: "base-url: ${MEDIA_SERVER_URL}"
+            count: 1
+          - find: "api-key: ${PLEX_TOKEN}"
+            replace: "api-key: ${MEDIA_SERVER_TOKEN}"
+            count: 1
+          - find: '# user-name: "yourUserName" # for Jellyfin/Emby'
+            replace: 'user-name: "${MEDIA_SERVER_USER}" # for Jellyfin/Emby'
+            count: 1
+          - find: 'history-length: "10"'
+            replace: 'history-length: "${MSH_HISTORY_LENGTH}"'
+            count: 1
+          - find: "small-column: false"
+            replace: "small-column: ${MSH_SMALL_COLUMN}"
+            count: 1
+          - find: "compact: true"
+            replace: "compact: ${MSH_COMPACT}"
+            count: 1
+          - find: "show-thumbnail: false"
+            replace: "show-thumbnail: ${MSH_SHOW_THUMBNAIL}"
+            count: 1
+          - find: 'thumbnail-aspect-ratio: "default"'
+            replace: 'thumbnail-aspect-ratio: "${MSH_THUMBNAIL_ASPECT_RATIO}"'
+            count: 1
+          - find: "show-user: true"
+            replace: "show-user: ${MSH_SHOW_USER}"
+            count: 1
+          - find: "time-absolute: false"
+            replace: "time-absolute: ${MSH_TIME_ABSOLUTE}"
+            count: 1
+          - find: 'time-format: "Jan 02 15:04"'
+            replace: 'time-format: "${MSH_TIME_FORMAT}"'
+            count: 1
+  media-server-playing:
+    variants:
+      - rewrite:
+          - find: 'media-server: "plex"'
+            replace: 'media-server: "${MEDIA_SERVER_TYPE}"'
+            count: 1
+          - find: "base-url: ${PLEX_URL}"
+            replace: "base-url: ${MEDIA_SERVER_URL}"
+            count: 1
+          - find: "api-key: ${PLEX_TOKEN}"
+            replace: "api-key: ${MEDIA_SERVER_TOKEN}"
+            count: 1
+          - find: "small-column: false"
+            replace: "small-column: ${MSP_SMALL_COLUMN}"
+            count: 1
+          - find: "compact: true"
+            replace: "compact: ${MSP_COMPACT}"
+            count: 1
+          - find: 'play-state: "indicator"'
+            replace: 'play-state: "${MSP_PLAY_STATE}"'
+            count: 1
+          - find: "show-thumbnail: false"
+            replace: "show-thumbnail: ${MSP_SHOW_THUMBNAIL}"
+            count: 1
+          - find: "show-paused: false"
+            replace: "show-paused: ${MSP_SHOW_PAUSED}"
+            count: 1
+          - find: "show-progress-bar: false"
+            replace: "show-progress-bar: ${MSP_SHOW_PROGRESS_BAR}"
+            count: 1
+          - find: "show-progress-info: true"
+            replace: "show-progress-info: ${MSP_SHOW_PROGRESS_INFO}"
+            count: 1
+          - find: 'time-format: "15:04"'
+            replace: 'time-format: "${MSP_TIME_FORMAT}"'
+            count: 1
+  mediatracker-upcoming-tv-shows:
+    variants:
+      - rewrite:
+          - find: "media-type: tv"
+            replace: "media-type: ${MEDIATRACKER_MEDIA_TYPE}"
+            count: 1
+          - find: "items: 10"
+            replace: "items: ${MEDIATRACKER_ITEMS}"
+            count: 1
+  minecraft-server:
+    needs: The Minecraft server must be reachable from the internet, because its status comes from the public mcstatus.io service.
+    variants:
+      - name: Server status
+  mullvad-vpn-status:
+    needs: Glance's own internet connection must go through Mullvad, because the widget checks the connection of the computer Glance runs on, not the viewer's.
+    variants:
+      - name: Connection status
+  myanimelist-widgets:
+    variants:
+      - null
+      - rewrite:
+          - find: "max_items: 8"
+            replace: "max_items: ${MAL_MAX_ITEMS}"
+            count: 1
+          - find: "collapse_after: 5"
+            replace: "collapse_after: ${MAL_COLLAPSE_AFTER}"
+            count: 1
+  ncaa-cfb-scoreboard:
+    variants:
+      - name: Scoreboard
+  nearby-aircraft:
+    variants:
+      - name: Nearby aircraft
+        rewrite:
+          - find: ${MY_LAT_MIN}
+            replace: ${AIRCRAFT_LAT_MIN}
+            count: 1
+          - find: ${MY_LON_MIN}
+            replace: ${AIRCRAFT_LON_MIN}
+            count: 1
+          - find: ${MY_LAT_MAX}
+            replace: ${AIRCRAFT_LAT_MAX}
+            count: 1
+          - find: ${MY_LON_MAX}
+            replace: ${AIRCRAFT_LON_MAX}
+            count: 1
+  nebula-videos:
+    variants:
+      - rewrite:
+          - find: |-
+              channel-ids:
+                    - video_channel:9cea6296-223e-4c7e-a245-d96db75de32f # Jet Lag: The Game
+                    - video_channel:8f3a2a56-3f9f-4ce0-b105-ede41688d84b # Half as Interesting
+                    - video_channel:fe4d9c1c-017b-494c-9afc-e79e6859b211 # Wendover Productions
+            replace: 'channel-ids: "${NEBULA_CHANNEL_IDS}"'
+            count: 1
+          - find: "max_items: 12"
+            replace: "max_items: ${NEBULA_MAX_ITEMS}"
+            count: 1
+          - find: "{{ end }`"
+            replace: "{{ end }}"
+            count: 1
+      - rewrite:
+          - find: |-
+              channel-ids:
+                      - video_channel:9cea6296-223e-4c7e-a245-d96db75de32f # Jet Lag: The Game
+                      - video_channel:8f3a2a56-3f9f-4ce0-b105-ede41688d84b # Half as Interesting
+                      - video_channel:fe4d9c1c-017b-494c-9afc-e79e6859b211 # Wendover Productions
+            replace: 'channel-ids: "${NEBULA_CHANNEL_IDS}"'
+            count: 1
+          - find: "max_items: 12"
+            replace: "max_items: ${NEBULA_MAX_ITEMS}"
+            count: 1
+          - find: "collapse_after: 5"
+            replace: "collapse_after: ${NEBULA_COLLAPSE_AFTER}"
+            count: 1
+  netbird-devices:
+    variants:
+      - name: Devices
+        rewrite:
+          - find: "url: https://api.netbird.io/api/peers"
+            replace: "url: ${NETBIRD_API_URL}/api/peers"
+            count: 1
+  netbird-peers-count:
+    variants:
+      - rewrite:
+          - find: "url: https://api.netbird.io/api/peers"
+            replace: "url: ${NETBIRD_API_URL}/api/peers"
+            count: 1
+  nextcloud-deck:
+    variants:
+      - rewrite:
+          - find: "board-id: 2"
+            replace: "board-id: ${NEXTCLOUD_DECK_BOARD_ID}"
+            count: 1
+          - find: "show-labels: true"
+            replace: "show-labels: ${NEXTCLOUD_DECK_SHOW_LABELS}"
+            count: 1
+          - find: "collapse-after: 3"
+            replace: "collapse-after: ${NEXTCLOUD_DECK_COLLAPSE_AFTER}"
+            count: 1
+          - find: '| withHeader "Authorization" "Basic ${NEXTCLOUD_AUTH}"'
+            replace: '| withBasicAuth "${NEXTCLOUD_USER}" "${NEXTCLOUD_PASSWORD}"'
+            count: 1
+  nextdns-stats:
+    variants:
+      - name: Analytics
+  nfl-scoreboard:
+    variants:
+      - name: Scoreboard
+  nginx-proxy-manager:
+    variants:
+      - rewrite:
+          - find: 'domain-name: ".example.com"'
+            replace: 'domain-name: "${NGINX_DOMAIN_NAME}"'
+            count: 1
+          - find: "collapse-after: 6"
+            replace: "collapse-after: ${NGINX_COLLAPSE_AFTER}"
+            count: 1
+          - find: "show-icons: true"
+            replace: "show-icons: ${NGINX_SHOW_ICONS}"
+            count: 1
+          - find: "tooltip-enabled: true"
+            replace: "tooltip-enabled: ${NGINX_TOOLTIP_ENABLED}"
+            count: 1
+  nhl-scores:
+    variants:
+      - name: Today's games
+        rewrite:
+          - find: '{{ $myTeam := "ALL" }}'
+            replace: '{{ $myTeam := "${NHL_MY_TEAM}" }}'
+            count: 1
+          - find: "{{ $toolTipEnabled := true }}"
+            replace: "{{ $toolTipEnabled := ${NHL_TOOLTIP_ENABLED} }}"
+            count: 1
+  nzbget-status:
+    variants:
+      - name: Status
+        rewrite:
+          - find: "url: ${NZBGET_BASE_URL}/jsonrpc/status"
+            replace: |-
+              url: ${NZBGET_BASE_URL}/jsonrpc/status
+                basic-auth: { username: "${NZBGET_USER}", password: "${NZBGET_PASSWORD}" }
+            count: 1
+          - find: (concat $apiBaseUrl "/jsonrpc/listgroups") | getResponse
+            replace: (concat $apiBaseUrl "/jsonrpc/listgroups") | withBasicAuth "${NZBGET_USER}" "${NZBGET_PASSWORD}" | getResponse
+            count: 1
+          - find: "queue-enabled: true"
+            replace: "queue-enabled: ${NZBGET_QUEUE_ENABLED}"
+            count: 1
+          - find: "queue-items: 3"
+            replace: "queue-items: ${NZBGET_QUEUE_ITEMS}"
+            count: 1
+          - find: "slow-speed: 0"
+            replace: "slow-speed: ${NZBGET_SLOW_SPEED}"
+            count: 1
+  outagedeck-service-status:
+    variants:
+      - rewrite:
+          - find: providers/github?utm_source
+            replace: providers/${OUTAGEDECK_PROVIDER}?utm_source
+            count: 1
+          - find: api/v1/providers/github
+            replace: api/v1/providers/${OUTAGEDECK_PROVIDER}
+            count: 1
+  overseerr-requests-stats:
+    variants:
+      - rewrite:
+          - find: "small-column: true"
+            replace: "small-column: ${OVERSEERR_SMALL_COLUMN}"
+            count: 1
+          - find: "compact: false"
+            replace: "compact: ${OVERSEERR_COMPACT}"
+            count: 1
+  overseerr-trending-discovery:
+    variants:
+      - name: Trending
+        rewrite:
+          - find: ${OVERSEERR_URL}/discover/trending
+            replace: ${OVERSEERR_URL}/discover/${OVERSEERR_DISCOVER}
+            count: 1
+          - find: /api/v1/discover/trending
+            replace: /api/v1/discover/${OVERSEERR_DISCOVER}
+            count: 1
+          - find: 'language: "en"'
+            replace: 'language: "${OVERSEERR_LANGUAGE}"'
+            count: 1
+          - find: "show-media-type: true"
+            replace: "show-media-type: ${OVERSEERR_SHOW_MEDIA_TYPE}"
+            count: 1
+          - find: "show-media-desc: true"
+            replace: "show-media-desc: ${OVERSEERR_SHOW_MEDIA_DESC}"
+            count: 1
+          - find: ${OVERSEERR_URL}
+            replace: ${OVERSEERR_API_URL}
+            count: 3
+  overseerr-users-requests:
+    variants:
+      - rewrite:
+          - find: "max-users: 10"
+            replace: "max-users: ${OVERSEERR_MAX_USERS}"
+            count: 1
+          - find: "collapse-after: 5"
+            replace: "collapse-after: ${OVERSEERR_COLLAPSE_AFTER}"
+            count: 1
+  paperlessngx-stats:
+    variants:
+      - name: Statistics
+  papra-stats:
+    variants:
+      - rewrite:
+          - find: ${API_KEY}
+            replace: ${PAPRA_API_KEY}
+            count: 3
+          - find: ${ORGANISATION_ID}
+            replace: ${PAPRA_ORGANISATION_ID}
+            count: 2
+  peanut-ups-status:
+    variants:
+      - rewrite:
+          - find: |2-
+              
+                  Authorization: "Basic ${PEANUT_AUTH}"
+            replace: |2-
+              
+                basic-auth: { username: "${PEANUT_USER}", password: "${PEANUT_PASSWORD}" }
+            count: 1
+  plex-stats:
+    variants:
+      - rewrite:
+          - find: /library/sections/1/all
+            replace: /library/sections/${PLEX_MOVIES_SECTION}/all
+            count: 1
+          - find: /library/sections/2/all
+            replace: /library/sections/${PLEX_SHOWS_SECTION}/all
+            count: 1
+  portainer-dashboard:
+    variants:
+      - name: Environment
+  prowlarr-indexers:
+    variants:
+      - name: Indexers
+  proxmox-backup-server-stats:
+    variants:
+      - rewrite:
+          - find: "| getResponse }}"
+            replace: "| withAllowInsecure true | getResponse }}"
+            count: 4
+  proxmox-detailed-resources:
+    variants:
+      - rewrite:
+          - find: "ram_graph: true"
+            replace: "ram_graph: ${PROXMOX_RAM_GRAPH}"
+            count: 1
+          - find: "cpu_graph: true"
+            replace: "cpu_graph: ${PROXMOX_CPU_GRAPH}"
+            count: 1
+          - find: "disk_graph: true"
+            replace: "disk_graph: ${PROXMOX_DISK_GRAPH}"
+            count: 1
+  proxmox-ve-nodes:
+    variants:
+      - name: Nodes
+        rewrite:
+          - find: "uptime-mode: duration"
+            replace: "uptime-mode: ${PROXMOXVE_UPTIME_MODE}"
+            count: 1
+          - find: "collapse-after: 5"
+            replace: "collapseAfter: ${PROXMOXVE_COLLAPSE_AFTER}"
+            count: 1
+  proxmox-ve-stats:
+    variants:
+      - name: Stats
+  qbittorrent-stats:
+    needs: qBittorrent must let Glance in without a login (Tools → Options → Web UI → "Bypass authentication for clients in whitelisted IP subnets", with the address or subnet Glance's requests come from; for Glance in Docker, often the Docker network's subnet).
+    variants:
+      - name: Transfers
+        rewrite:
+          - find: 'view: "detailed"'
+            replace: 'view: "${QBITTORRENT_VIEW}"'
+            count: 1
+          - find: 'mode: "upload"'
+            replace: 'mode: "${QBITTORRENT_MODE}"'
+            count: 1
+  raindrop-bookmarks:
+    variants:
+      - rewrite:
+          - find: '{{ $autoOpen := "first" }}'
+            replace: '{{ $autoOpen := "${RAINDROP_AUTO_OPEN}" }}'
+            count: 1
+          - find: "{{ $showCover := true }}"
+            replace: "{{ $showCover := ${RAINDROP_SHOW_COVER} }}"
+            count: 1
+  raindrop-latest-links:
+    variants:
+      - name: Latest links
+        rewrite:
+          - find: "\n  "
+            replace: "\n    "
+            count: 33
+          - find: |2-
+              
+                  title: RAINDROP LATEST LINKS
+                  cache: 1h
+                  url:
+            replace: |2-
+              
+                title: RAINDROP LATEST LINKS
+                cache: 1h
+                url:
+            count: 1
+          - find: |2
+              
+                  headers:
+            replace: |2
+              
+                headers:
+            count: 1
+          - find: |2
+              
+                  template: |
+            replace: |2
+              
+                template: |
+            count: 1
+          - find: raindrops/1?
+            replace: raindrops/${RAINDROP_COLLECTION_ID}?
+            count: 1
+          - find: perpage=10
+            replace: perpage=${RAINDROP_LINK_COUNT}
+            count: 1
+      - name: Dashboard
+        rewrite:
+          - find: '{{ $view_type := "cards" }}'
+            replace: '{{ $view_type := "${RAINDROP_VIEW}" }}'
+            count: 1
+          - find: "{{ $show_tags := true }}"
+            replace: '{{ $show_tags := eq "${RAINDROP_SHOW_TAGS}" "true" }}'
+            count: 1
+          - find: "{{ $show_conten_types := false }}"
+            replace: '{{ $show_conten_types := eq "${RAINDROP_SHOW_CONTENT_TYPES}" "true" }}'
+            count: 1
+      - name: Token check
+        rewrite:
+          - find: "\n  "
+            replace: "\n    "
+            count: 36
+          - find: |2-
+              
+                  title: Raindrop Auth Test
+                  cache: 1h
+                  url:
+            replace: |2-
+              
+                title: Raindrop Auth Test
+                cache: 1h
+                url:
+            count: 1
+          - find: |2
+              
+                  headers:
+            replace: |2
+              
+                headers:
+            count: 1
+          - find: |2
+              
+                  template: |
+            replace: |2
+              
+                template: |
+            count: 1
+  random-bible-verse:
+    variants:
+      - rewrite:
+          - find: data/web/random
+            replace: data/${BIBLE_TRANSLATION}/random
+            count: 1
+  scrutiny:
+    variants:
+      - rewrite:
+          - find: "filter_archived: true"
+            replace: "filter_archived: ${SCRUTINY_FILTER_ARCHIVED}"
+            count: 1
+          - find: 'sort_by: "device.device_name"'
+            replace: 'sort_by: "${SCRUTINY_SORT_BY}"'
+            count: 1
+          - find: 'sort_order: "asc"'
+            replace: 'sort_order: "${SCRUTINY_SORT_ORDER}"'
+            count: 1
+  seerr-requests:
+    variants:
+      - rewrite:
+          - find: "# link-url: https://seerr.example.com"
+            replace: "link-url: ${SEERR_LINK_URL}"
+            count: 1
+          - find: "filter: pending"
+            replace: "filter: ${SEERR_FILTER}"
+            count: 1
+          - find: requests?filter=pending
+            replace: requests?filter=${SEERR_FILTER}
+            count: 1
+          - find: "sort: added"
+            replace: "sort: ${SEERR_SORT}"
+            count: 1
+          - find: "max-requests: 10"
+            replace: "max-requests: ${SEERR_MAX_REQUESTS}"
+            count: 1
+          - find: "collapse-after: 4"
+            replace: "collapse-after: ${SEERR_COLLAPSE_AFTER}"
+            count: 1
+          - find: "show-posters: true"
+            replace: "show-posters: ${SEERR_SHOW_POSTERS}"
+            count: 1
+          - find: 'ha-webhook-url: ""'
+            replace: 'ha-webhook-url: "${SEERR_HA_WEBHOOK_URL}"'
+            count: 1
+  should-i-deploy-today:
+    variants:
+      - rewrite:
+          - find: tz=Asia%2FHo_Chi_Minh
+            replace: tz=${SHOULDIDEPLOY_TIMEZONE}
+            count: 1
+  speedtest-tracker:
+    variants:
+      - rewrite:
+          - find: "showPercentageDiff: true"
+            replace: "showPercentageDiff: ${SPEEDTEST_SHOW_PERCENTAGE_DIFF}"
+            count: 1
+  spotify-now-playing:
+    variants:
+      - refuse: Needs a script hosted on Val Town and a Spotify sign-in done by hand with curl, which the editor can't do.
+  spotify-player:
+    variants:
+      - refuse: Needs a Spotify sign-in done by hand with curl (for its refresh token), which the editor can't do.
+  st-louis-fed-us-mortgage-rates:
+    variants:
+      - rewrite:
+          - find: MORTGAGE30US
+            replace: ${FRED_SERIES_ID}
+            count: 2
+  steam-recently-played-games:
+    variants:
+      - name: Recently played games
+  steam-specials:
+    variants:
+      - rewrite:
+          - find: ?cc=us
+            replace: ?cc=${STEAM_STORE_COUNTRY}
+            count: 1
+          - find: printf "$%.2f"
+            replace: printf "${STEAM_CURRENCY_SYMBOL}%.2f"
+            count: 1
+  steam-top-sellers:
+    variants:
+      - name: Top sellers
+        rewrite:
+          - find: ?cc=us
+            replace: ?cc=${STEAM_STORE_COUNTRY}
+            count: 1
+          - find: printf "$%.2f"
+            replace: printf "${STEAM_CURRENCY_SYMBOL}%.2f"
+            count: 1
+  steam-user:
+    variants:
+      - name: Steam user
+  steam-user-list:
+    variants:
+      - rewrite:
+          - find: ${USER_ID1},${USER_ID2},${USER_ID3}
+            replace: ${STEAM_USER_IDS}
+            count: 1
+          - find: data-collapse-after="5"
+            replace: data-collapse-after="${STEAM_USERS_COLLAPSE_AFTER}"
+            count: 1
+  sunrise-sunset:
+    variants:
+      - rewrite:
+          - find: '{{ $timeLayout := "3:04 PM" }}'
+            replace: '{{ $timeLayout := "${SUNRISE_TIME_FORMAT}" }}'
+            count: 1
+  syncthing:
+    variants:
+      - rewrite:
+          - find: "{ X-API-Key: ${SYNCTHING_API_KEY} }"
+            replace: '{ X-API-Key: "${SYNCTHING_API_KEY}" }'
+            count: 2
+          - find: 'folder: "<FOLDER_1_ID>"'
+            replace: 'folder: "${SYNCTHING_FOLDER_1_ID}"'
+            count: 1
+          - find: <FOLDER_1_ID>
+            replace: folder-1
+            count: 2
+          - find: 'folder: "<FOLDER_2_ID>"'
+            replace: 'folder: "${SYNCTHING_FOLDER_2_ID}"'
+            count: 1
+          - find: <FOLDER_2_ID>
+            replace: folder-2
+            count: 2
+          - find: 'name: "Backup Folder 1"'
+            replace: 'name: "${SYNCTHING_FOLDER_1_NAME}"'
+            count: 1
+          - find: 'name: "Backup Folder 2"'
+            replace: 'name: "${SYNCTHING_FOLDER_2_NAME}"'
+            count: 1
+  synology-disk-station:
+    variants:
+      - name: Synology Disk Station
+        rewrite:
+          - find: 'nas-ip: "[IP]"'
+            replace: 'nas-ip: "${SYNOLOGY_HOST}"'
+            count: 1
+          - find: 'nas-port: "[Port]"'
+            replace: 'nas-port: "${SYNOLOGY_PORT}"'
+            count: 1
+          - find: 'username: "[username]"'
+            replace: 'username: "${SYNOLOGY_USERNAME}"'
+            count: 1
+          - find: 'password: "[password]"'
+            replace: 'password: "${SYNOLOGY_PASSWORD}"'
+            count: 1
+  tailscale-devices:
+    variants:
+      - rewrite:
+          - find: "# collapseAfter: 4"
+            replace: "collapseAfter: ${TAILSCALE_COLLAPSE_AFTER}"
+            count: 1
+          - find: "# disableOfflineIndicator: true"
+            replace: "disableOfflineIndicator: ${TAILSCALE_HIDE_OFFLINE_DOT}"
+            count: 1
+          - find: "# disableUpdateIndicator: true"
+            replace: "disableUpdateIndicator: ${TAILSCALE_HIDE_UPDATE_DOT}"
+            count: 1
+          - find: "# prioritiseTags: true"
+            replace: "prioritiseTags: ${TAILSCALE_PRIORITISE_TAGS}"
+            count: 1
+  tautulli-stats:
+    variants:
+      - rewrite:
+          - find: ${SERVER_ID}
+            replace: ${TAUTULLI_PLEX_SERVER_ID}
+            count: 1
+          - find: 'size: "small"'
+            replace: 'size: "${TAUTULLI_SIZE}"'
+            count: 1
+          - find: "collapse: 5"
+            replace: "collapse: ${TAUTULLI_COLLAPSE}"
+            count: 1
+      - rewrite:
+          - find: ${SERVER_ID}
+            replace: ${TAUTULLI_PLEX_SERVER_ID}
+            count: 1
+      - rewrite:
+          - find: ${SERVER_ID}
+            replace: ${TAUTULLI_PLEX_SERVER_ID}
+            count: 1
+          - find: |2
+              
+                template: |
+            replace: |2
+              
+                options:
+                  size: "${TAUTULLI_SIZE}"
+                  collapse: ${TAUTULLI_COLLAPSE}
+                template: |
+            count: 1
+      - rewrite:
+          - find: ${SERVER_ID}
+            replace: ${TAUTULLI_PLEX_SERVER_ID}
+            count: 1
+          - find: "time_range: 90"
+            replace: "time_range: ${TAUTULLI_TIME_RANGE}"
+            count: 1
+          - find: 'size: "small"'
+            replace: 'size: "${TAUTULLI_SIZE}"'
+            count: 1
+          - find: "collapse: 5"
+            replace: "collapse: ${TAUTULLI_COLLAPSE}"
+            count: 1
+      - rewrite:
+          - find: |2
+                  {{ $serverID := "${SERVER_ID}" }}
+            replace: ""
+            count: 1
+          - find: "time_range: 90"
+            replace: "time_range: ${TAUTULLI_TIME_RANGE}"
+            count: 1
+          - find: 'size: "small"'
+            replace: 'size: "${TAUTULLI_SIZE}"'
+            count: 1
+          - find: "collapse: 5"
+            replace: "collapse: ${TAUTULLI_COLLAPSE}"
+            count: 1
+      - rewrite:
+          - find: ${SERVER_ID}
+            replace: ${TAUTULLI_PLEX_SERVER_ID}
+            count: 1
+          - find: "time_range: 90"
+            replace: "time_range: ${TAUTULLI_TIME_RANGE}"
+            count: 1
+          - find: 'size: "small"'
+            replace: 'size: "${TAUTULLI_SIZE}"'
+            count: 1
+          - find: "collapse: 5"
+            replace: "collapse: ${TAUTULLI_COLLAPSE}"
+            count: 1
+      - rewrite:
+          - find: "time_range: 90"
+            replace: "time_range: ${TAUTULLI_TIME_RANGE}"
+            count: 1
+          - find: 'size: "small"'
+            replace: 'size: "${TAUTULLI_SIZE}"'
+            count: 1
+          - find: "collapse: 5"
+            replace: "collapse: ${TAUTULLI_COLLAPSE}"
+            count: 1
+  technitium-dns-stats:
+    variants:
+      - name: DNS stats
+        rewrite:
+          - find: "\n  "
+            replace: "\n    "
+            count: 92
+          - find: |-
+              - type: custom-api
+                  title: Technitium DNS Stats
+                  cache: 1h
+                  subrequests:
+                      update-check:
+                          url: http://${TECHNITIUM_IP_PORT}/api/user/checkForUpdate?token=${TECHNITIUM_TOKEN}
+                  url: http://${TECHNITIUM_IP_PORT}/api/dashboard/stats/get?token=${TECHNITIUM_TOKEN}&type=${TECHNITIUM_STATS_TIMEFRAME}&utc=true
+                  method: GET
+                  template: |
+            replace: |-
+              - type: custom-api
+                title: Technitium DNS Stats
+                cache: 1h
+                subrequests:
+                    update-check:
+                        url: http://${TECHNITIUM_IP_PORT}/api/user/checkForUpdate?token=${TECHNITIUM_TOKEN}
+                url: http://${TECHNITIUM_IP_PORT}/api/dashboard/stats/get?token=${TECHNITIUM_TOKEN}&type=${TECHNITIUM_STATS_TIMEFRAME}&utc=true
+                method: GET
+                template: |
+            count: 1
+          - find: "{{ $updateCheck.response.updateVersion }}"
+            replace: '{{ $updateCheck.JSON.String "response.updateVersion" }}'
+            count: 1
+  termix:
+    needs: The online/offline dots of Termix Hosts show only while someone is signed in to Termix in a browser; otherwise they stay grey.
+    variants:
+      - rewrite:
+          - find: "# allow-insecure: true  # uncomment if using a self-signed TLS certificate"
+            replace: "allow-insecure: ${TERMIX_ALLOW_INSECURE}"
+            count: 1
+      - rewrite:
+          - find: "# allow-insecure: true  # uncomment if using a self-signed TLS certificate"
+            replace: "allow-insecure: ${TERMIX_ALLOW_INSECURE}"
+            count: 1
+          - find: "# allow-insecure: true"
+            replace: "allow-insecure: ${TERMIX_ALLOW_INSECURE}"
+            count: 1
+  time-bar:
+    needs: Glance's container needs its time zone set (TZ, like Europe/Berlin), or the bars follow UTC.
+  todoist-tasks:
+    variants:
+      - name: Tasks
+        rewrite:
+          - find: "url: https://api.todoist.com/rest/v2/tasks?filter=today"
+            replace: |-
+              url: https://api.todoist.com/rest/v2/tasks
+                parameters:
+                  filter: "${TODOIST_FILTER}"
+            count: 1
+  trakt:
+    needs: The Trakt profile must be public.
+    variants:
+      - name: Watch history
+        rewrite:
+          - find: "{{ $collapseAfter := 3 }}"
+            replace: "{{ $collapseAfter := ${TRAKT_COLLAPSE_AFTER} }}"
+            count: 1
+          - find: "{{ $showEpisodeNumber := true }}"
+            replace: "{{ $showEpisodeNumber := ${TRAKT_SHOW_EPISODE_NUMBER} }}"
+            count: 1
+          - find: "{{ $showMovieYear := false }}"
+            replace: "{{ $showMovieYear := ${TRAKT_SHOW_MOVIE_YEAR} }}"
+            count: 1
+          - find: "{{ $showTVYear := false }}"
+            replace: "{{ $showTVYear := ${TRAKT_SHOW_TV_YEAR} }}"
+            count: 1
+  transitland:
+    variants:
+      - name: Departures
+        rewrite:
+          - find: "{{ $perRouteCap := 2 }}"
+            replace: "{{ $perRouteCap := ${TRANSITLAND_PER_ROUTE_CAP} }}"
+            count: 1
+  trending-bluesky-news:
+    variants:
+      - name: Trending news
+        rewrite:
+          - find: feed=at://did:plc:kkf4naxqmweop7dv4l2iqqf5/app.bsky.feed.generator/news-2-0
+            replace: feed=${BLUESKY_FEED_URI}
+            count: 1
+  trending-github-repositories:
+    variants:
+      - name: Trending repositories
+        rewrite:
+          - find: "url: 'https://api.ossinsight.io/v1/trends/repos/?period=${PERIOD}&language=${LANGUAGE}'"
+            replace: |-
+              url: 'https://api.ossinsight.io/v1/trends/repos/'
+                parameters:
+                  period: "${TRENDING_REPOS_PERIOD}"
+                  language: "${TRENDING_REPOS_LANGUAGE}"
+            count: 1
+  trending-mastodon-links:
+    variants:
+      - name: Trending links
+  truenas-scale-pools:
+    variants:
+      - name: Pools
+        rewrite:
+          - find: ${TRUENAS_HOST}
+            replace: ${TRUENAS_URL}
+            count: 2
+  tsumego-daily:
+    variants:
+      - rewrite:
+          - find: '{{ $targetCategory := "medium" }}'
+            replace: '{{ $targetCategory := "${TSUMEGO_CATEGORY}" }}'
+            count: 1
+  ufc-fight-tracker:
+    variants:
+      - name: Fight tracker
+  UKBinCollection:
+    needs: The UK Bin Collection API server (from the UKBinCollectionData project) must be running where Glance can reach it.
+    variants:
+      - rewrite:
+          - find: '"Grey bin, small electrical items and food bin"'
+            replace: '"${UKBIN_RUBBISH_BIN_NAME}"'
+            count: 3
+          - find: '"Food bin, green bin, textiles and garden waste bin"'
+            replace: '"${UKBIN_GARDEN_BIN_NAME}"'
+            count: 2
+  unraid-widget:
+    variants:
+      - name: Server overview
+  uptime-kuma:
+    needs: Uptime Kuma needs a status page that lists the monitors to show.
+    variants:
+      - name: Status page
+  vikunja-taskboard:
+    variants:
+      - name: Tasks
+        rewrite:
+          - find: /api/v1/tasks/all?sort_by=due_date&order_by=asc&per_page=${NUMBER_OF_TASKS}&filter=((due_date>now-1d%26%26due_date<now%2B10d%26%26project!=3)||(due_date>now%26%26priority>3))%26%26done=false
+            replace: |-
+              /api/v1/tasks/all
+                parameters:
+                  sort_by: due_date
+                  order_by: asc
+                  per_page: ${VIKUNJA_NUMBER_OF_TASKS}
+                  filter: "${VIKUNJA_FILTER}"
+            count: 1
+  wanikani-reviews:
+    variants:
+      - name: Reviews
+        rewrite:
+          - find: "lessons: false"
+            replace: "lessons: ${WANIKANI_SHOW_LESSONS}"
+            count: 1
+          - find: "future: true"
+            replace: "future: ${WANIKANI_SHOW_FORECAST}"
+            count: 1
+  weather-seven-day:
+    variants:
+      - rewrite:
+          - find: "location: ${WEATHER_LOCATION}"
+            replace: |-
+              location: ${WEATHER_LOCATION}
+                  temp_unit: ${WEATHER7_TEMP_UNIT}
+            count: 1
+          - find: timezone=America/New_York
+            replace: timezone=${WEATHER7_TIMEZONE}
+            count: 1
+  wg-easy-clients:
+    variants:
+      - rewrite:
+          - find: "url: https://${WG_EASY_URL}/api/client"
+            replace: "url: ${WG_EASY_URL}/api/client"
+            count: 1
+          - find: |2
+                  Authorization: Basic ${WG_EASY_KEY}
+                  Accept: application/json
+            replace: |2
+                  Accept: application/json
+                basic-auth:
+                  username: "${WG_EASY_USER}"
+                  password: "${WG_EASY_PASSWORD}"
+            count: 1
+  wikipedia:
+    variants:
+      - rewrite:
+          - find: ${LANAGUAGE}
+            replace: ${WIKIPEDIA_LANGUAGE}
+            count: 1
+          - find: ${USERAGENT}
+            replace: ${WIKIPEDIA_USER_AGENT}
+            count: 1
+      - rewrite:
+          - find: ${LANGUAGE}
+            replace: ${WIKIPEDIA_LANGUAGE}
+            count: 1
+          - find: ${USERAGENT}
+            replace: ${WIKIPEDIA_USER_AGENT}
+            count: 1
+      - rewrite:
+          - find: ${LANGUAGE}
+            replace: ${WIKIPEDIA_LANGUAGE}
+            count: 1
+          - find: ${USERAGENT}
+            replace: ${WIKIPEDIA_USER_AGENT}
+            count: 1
+      - rewrite:
+          - find: ${LANGUAGE}
+            replace: ${WIKIPEDIA_LANGUAGE}
+            count: 1
+          - find: ${USERAGENT}
+            replace: ${WIKIPEDIA_USER_AGENT}
+            count: 1
+          - find: '"tfa.content_urls.desktop.page" }}>read more'
+            replace: '"tfa.content_urls.desktop.page" }}">read more'
+            count: 1
+      - rewrite:
+          - find: ${LANGUAGE}
+            replace: ${WIKIPEDIA_LANGUAGE}
+            count: 1
+          - find: '"${USERAGENT}$"'
+            replace: '"${WIKIPEDIA_USER_AGENT}"'
+            count: 1
+  wikipedia-on-this-day:
+    variants:
+      - name: On this day
+        rewrite:
+          - find: https://en.wikipedia.org/api
+            replace: https://${WIKIPEDIA_LANGUAGE}.wikipedia.org/api
+            count: 1
+          - find: feed/onthisday/events/
+            replace: feed/onthisday/${WIKIPEDIA_OTD_TYPE}/
+            count: 1
+          - find: $resp.JSON.Array "events"
+            replace: $resp.JSON.Array "${WIKIPEDIA_OTD_TYPE}"
+            count: 1
+  wud-monitor:
+    needs: To list stopped containers too, What's Up Docker needs WUD_WATCHER_LOCAL_WATCHALL=true in its own environment.
+    variants:
+      - name: Version 2.1
+        rewrite:
+          - find: "{{ $showInfo := true }}"
+            replace: "{{ $showInfo := ${WUD_SHOW_INFO} }}"
+            count: 1
+          - find: "{{ $showList := true }}"
+            replace: "{{ $showList := ${WUD_SHOW_LIST} }}"
+            count: 1
+          - find: "{{ $showAll := false }}"
+            replace: "{{ $showAll := ${WUD_SHOW_ALL} }}"
+            count: 1
+          - find: "{{ $showUpdateKind := true }}"
+            replace: "{{ $showUpdateKind := ${WUD_SHOW_UPDATE_KIND} }}"
+            count: 1
+          - find: "{{ $showUpdateTypes := false }}"
+            replace: "{{ $showUpdateTypes := ${WUD_SHOW_UPDATE_TYPES} }}"
+            count: 1
+          - find: "{{ $showLocalVersion := true }}"
+            replace: "{{ $showLocalVersion := ${WUD_SHOW_LOCAL_VERSION} }}"
+            count: 1
+          - find: "{{ $hasUpdates := false }}"
+            replace: "{{ $hasUpdates := ${WUD_HIDE_UP_TO_DATE} }}"
+            count: 1
+          - find: '{{ $isSha256 := eq (slice $imageDigest 0 7) "sha256:" }}'
+            replace: '{{ $isSha256 := and (ge (len $imageDigest) 11) (eq (slice $imageDigest 0 7) "sha256:") }}'
+            count: 1
+          - find: |-
+              {{ else }}
+                                          {{ $isSha256 := eq (slice $localValue 0 7) "sha256:" }}
+            replace: |-
+              {{ else }}
+                                          {{ $isSha256 := and (ge (len $localValue) 11) (eq (slice $localValue 0 7) "sha256:") }}
+            count: 1
+      - name: Version 1.1 (old)
+        rewrite:
+          - find: "{{ $showAll := false }}"
+            replace: "{{ $showAll := ${WUD_SHOW_ALL} }}"
+            count: 1
+          - find: "{{ $hasUpdates := false }}"
+            replace: "{{ $hasUpdates := ${WUD_HIDE_UP_TO_DATE} }}"
+            count: 1
+  youtube-embedded-player:
+    variants:
+      - rewrite:
+          - find: "u: LinusTechTips"
+            replace: 'u: "${YT_CHANNEL_USERNAME}"'
+            count: 1
+          - find: "{{ $closeOutsideIframe := false }}"
+            replace: "{{ $closeOutsideIframe := ${YT_CLOSE_OUTSIDE} }}"
+            count: 1
+          - find: '{{ $youtubeEmbedInstance := "https://www.youtube-nocookie.com/embed/" }}'
+            replace: '{{ $youtubeEmbedInstance := "${YT_EMBED_INSTANCE}" }}'
+            count: 1
+      - rewrite:
+          - find: "user: yourusername"
+            replace: 'user: "${FRESHRSS_USER}"'
+            count: 1
+          - find: "t: seeBelowOnHowToGenerateOne"
+            replace: 't: "${FRESHRSS_QUERY_TOKEN}"'
+            count: 1
+          - find: "{{ $closeOutsideIframe := false }}"
+            replace: "{{ $closeOutsideIframe := ${YT_CLOSE_OUTSIDE} }}"
+            count: 1
+          - find: '{{ $youtubeEmbedInstance := "https://www.youtube-nocookie.com/embed/" }}'
+            replace: '{{ $youtubeEmbedInstance := "${YT_EMBED_INSTANCE}" }}'
+            count: 1
+          - find: .JSON.String "origin.title"
+            replace: .String "origin.title"
+            count: 1
+          - find: .JSON.String "origin.htmlUrl"
+            replace: .String "origin.htmlUrl"
+            count: 1
+          - find: |2
+                      <div class="card widget-content-frame thumbnail-parent">
+            replace: |2
+                      <div class="card widget-content-frame thumbnail-parent">
+                        <div onclick="
+                          const classPrefix = 'popup-youtube-';
+                          const embedClass = classPrefix + 'embed';
+                          const dimBgClass = classPrefix + 'dim';
+                          const closeBtnClass = classPrefix + 'close';
+                          const popupEmbedExistingDiv = document.querySelector('.' + embedClass);
+                          if (!popupEmbedExistingDiv) {
+                            const dimBackground = document.createElement('div');
+                            dimBackground.className = dimBgClass;
+                            dimBackground.style = 'position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--color-widget-background-highlight); opacity: 0.7;';
+                            document.body.appendChild(dimBackground);
+                            
+                            const popupEmbedDiv = document.createElement('div');
+                            popupEmbedDiv.className = embedClass;
+                            popupEmbedDiv.style = 'position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); width: {{ $popupWidth }}; height: {{ $popupHeight }}; z-index: 11;';
+
+                            const popupIframe = document.createElement('iframe');
+                            popupIframe.className = classPrefix + 'iframe';
+                            popupIframe.src = {{ $youtubeEmbedUrl }};
+                            popupIframe.loading = 'lazy';
+                            popupIframe.allowFullscreen = true;
+                            popupIframe.allow = {{ $iframeAllow }};
+                            popupIframe.style ='outline: 2px solid var(--color-primary); outline-offset: -0.1rem; border-radius: 20px; width: 100%; height: 100%; border: none; background-color: var(--color-popover-background);';
+                            
+                            popupEmbedDiv.appendChild(popupIframe);
+                            document.body.appendChild(popupEmbedDiv);
+
+                            const closeBtn = document.createElement('span');
+                            closeBtn.className = closeBtnClass;
+                            closeBtn.innerHTML = '&times';
+                            closeBtn.style = 'cursor: pointer; font-size: 3rem; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; position: absolute; top: 3rem; right: 3rem;';
+                            document.body.appendChild(closeBtn);
+                            document.body.style.overflowY = 'hidden';
+                            
+                            const closePopup = () => {
+                              popupEmbedDiv.remove();
+                              dimBackground.remove();
+                              closeBtn.remove();
+                              document.body.style.overflowY = 'scroll';
+                            }
+
+                            {{ if $closeOutsideIframe }} dimBackground.onclick = closePopup; {{ end }}
+                            closeBtn.onclick = closePopup;
+                          } else {
+                            document.querySelector('.' + dimBgClass).remove();
+                            document.querySelector('.' + closeBtnClass).remove();
+                            document.body.style.overflowY = 'scroll';
+                            popupEmbedExistingDiv.remove();
+                          }
+                        " style="cursor: pointer;">
+                          <span>
+                            {{ if ne $thumbnail "" }}
+                            <img class="video-thumbnail thumbnail" loading="lazy" src="{{ $thumbnail }}" alt="">
+                            {{ else }}
+                            <svg class="video-thumbnail thumbnail" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="var(--color-text-subdue)">
+                              <path stroke-linecap="round" stroke-linejoin="round" d="m2.25 15.75 5.159-5.159a2.25 2.25 0 0 1 3.182 0l5.159 5.159m-1.5-1.5 1.409-1.409a2.25 2.25 0 0 1 3.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 0 0 1.5-1.5V6a1.5 1.5 0 0 0-1.5-1.5H3.75A1.5 1.5 0 0 0 2.25 6v12a1.5 1.5 0 0 0 1.5 1.5Zm10.5-11.25h.008v.008h-.008V8.25Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Z" />
+                            </svg>
+                            {{ end }}
+                          </span>
+                        </div>
+                        <div class="margin-bottom-widget padding-inline-widget flex flex-column grow">
+                          <div class="margin-top-10 margin-bottom-auto">
+                            <a href="{{ $youtubeUrl }}#" class="color-primary-if-not-visited text-truncate-2-lines" target="_blank" rel="noreferrer">
+                              {{ $title }}
+                            </a>
+                          </div>
+                          <ul class="list-horizontal-text flex-nowrap margin-top-7">
+                            <li class="shrink-0" {{ $timestamp | toRelativeTime }}></li>
+                            <li class="min-width-0">
+                              <a href="{{ $authorUrl }}" class="color-primary-if-not-visited text-truncate-2-lines" target="_blank" rel="noreferrer">
+                                {{ $author }}
+                              </a>
+                            </li>
+                          </ul>
+                        </div>
+                      </div>
+                      {{ end }}
+                    {{ end }}
+                  </div>
+            count: 1

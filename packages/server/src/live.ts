@@ -67,7 +67,30 @@ export async function pastStamp(stamp: string | null): Promise<void> {
   if (ms > 0 && ms <= 1000) await new Promise((r) => setTimeout(r, ms + 20));
 }
 
+/** Wait until the clock reaches the next second, so a load after a write has a later stamp than any load before it. */
+export async function nextSecond(): Promise<void> {
+  await new Promise((r) => setTimeout(r, 1000 - (Date.now() % 1000) + 20));
+}
+
 export type ReloadResult = "reloaded" | "not-confirmed" | "not-checked";
+
+/**
+ * Glance didn't answer before the write: it's restarting (a changed `.env` restarts it, ADR-0029) or down. Wait for one
+ * that loaded at or after `since` (unix seconds, after `nextSecond`): it has the new file. "not-checked" if it never
+ * answers, "not-confirmed" if it answers with an older load only.
+ */
+export async function waitForLoadSince(glanceUrl: string, since: number, timeoutMs = 10_000, intervalMs = 300): Promise<ReloadResult> {
+  const until = Date.now() + timeoutMs;
+  let answered = false;
+  while (Date.now() < until) {
+    await new Promise((r) => setTimeout(r, intervalMs));
+    const now = await reloadStamp(glanceUrl);
+    if (now === null) continue;
+    answered = true;
+    if (Number(now) >= since) return "reloaded";
+  }
+  return answered ? "not-confirmed" : "not-checked";
+}
 
 /** Poll until the stamp differs from `before`. Glance restarts its HTTP server on reload, so errors are expected briefly. */
 export async function waitForReload(glanceUrl: string, before: string | null, timeoutMs = 10_000, intervalMs = 300): Promise<ReloadResult> {
