@@ -1,10 +1,11 @@
 # Handoff
 
 The single place to see where the project stands. Updated at the end of every work session and every PR.
-Last updated: 2026-10-26 (ADR-0032: a community widget tried against its service; after v1.3.0).
+Last updated: 2026-10-26 (v1.4.0 released: ADR-0032, a community widget tried against its service).
 
 ## Current state
-- **Released:** **v1.3.0** is `:latest` (`ghcr.io/gcarstoiu/glance-editor`, public). Earlier: v1.0.0, v1.0.1, v1.1.0, v1.2.0
+- **Released:** **v1.4.0** is `:latest` (`ghcr.io/gcarstoiu/glance-editor`, public). Earlier: v1.0.0, v1.0.1, v1.1.0, v1.2.0,
+  v1.3.0
   (and test releases v1.0.0-rc.1 to rc.6, kept as pre-releases). Every release page shows its CHANGELOG section;
   every published image passed `test/all-in-one.sh` (including a real HTTPS weather fetch inside the container).
 - **v1.0.0 caveat:** PR #18 was merged before its last two commits were pushed, so v1.0.0 lacked "another server's
@@ -43,7 +44,7 @@ Last updated: 2026-10-26 (ADR-0032: a community widget tried against its service
   159 of 165 can be added (6 refused with the reason). Live check: `test/community-live.sh`.
 - ADR-0031 drag and drop: links and groups between groups and Bookmarks widgets, widgets into and out of groups and
   split columns, pages, slides; a finger on the grip drags too; Move to… for touch and keyboard.
-- ADR-0032 (not released yet): a community widget's settings try it against its service, as Glance does, and say why
+- ADR-0032 (v1.4.0): a community widget's settings try it against its service, as Glance does, and say why
   it failed in plain words; Uptime Kuma's address and slug are cut out of pasted page addresses; a value a widget needs
   can't be stored empty.
 - Favicon in the editor's tab; CA certificates in the image (v1.0.1).
@@ -232,12 +233,11 @@ Nothing below may be built on until you decide. ★ = affects user experience.
 ## Next steps
 1. You: submit `gcarstoiu/unraid-templates` at https://ca.unraid.net/submit/new; paste any Validate/Scan findings to
    Claude.
-2. You: on Unraid, Docker → Check for Updates → apply the update (v1.3.0); try a community widget's fields, More
+2. You: on Unraid, Docker → Check for Updates → apply the update (v1.4.0); try a community widget's fields, More
    options and its settings panel, and drag a bookmark link to another group; report what you see.
-3. You: the Uptime Kuma widget on v1.3.0: in its settings, the address only `http://<server>:3001` (nothing after the
-   port), the slug only the status page's last part; the container log line "Invalid response JSON in custom API
-   widget url=…" shows the address Glance asked. ADR-0032 (the try in the settings) ships with the next release, once
-   you approve its notes (CHANGELOG, Unreleased).
+3. You: open the Uptime Kuma widget's settings on v1.4.0: the Service line says whether Uptime Kuma answered, or why
+   not. The address is only `http://<server>:3001` (nothing after the port), the slug only the status page's last
+   part; the container log line "Invalid response JSON in custom API widget url=…" shows the address Glance asked.
 4. You: when ready, cut over from your old Glance (`docs/runbooks/cutover.md`; rehearse the fallback first).
 5. Open decisions above (D-62, assets list, default themes) whenever convenient.
 6. Claude, when asked: record the PM's Unraid observations in ADR-0024; move the community widgets pin to a newer
@@ -246,6 +246,9 @@ Nothing below may be built on until you decide. ★ = affects user experience.
    image, review, PR); a newer Glance pin (ADR-0006) when one is released.
 
 ## Session log
+- 2026-10-26: v1.4.0 released (notes approved by the PM): `:1.4.0` and `:latest` published; `test/all-in-one.sh`
+  passed on the published image, and `/api/widget/try` inside it gave "answered", "invalid response JSON" and
+  "connection refused" for a JSON address, a web page and a closed port.
 - 2026-10-26: the PM reported "invalid response JSON" on an Uptime Kuma widget. Cause found in Glance's and Uptime
   Kuma's source and reproduced with the pinned Glance (a page address or a whole status page address in the fields);
   the PM's own values weren't looked at. ADR-0032 proposed, accepted as recommended, built on `feat/widget-check`.
