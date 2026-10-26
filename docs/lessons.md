@@ -3,6 +3,19 @@
 Things learned the hard way or by surprise. Newest first. Each entry: date, what happened, what to do.
 Auto memory is machine-local. This file is the record.
 
+### 2026-10-26: "invalid response JSON" on an Uptime Kuma widget (ADR-0032)
+- **Glance says "invalid response JSON" when an address answers with success but not with JSON** (v0.8.6
+  `widget-custom-api.go:262-276`); it logs the address and the start of the answer. Uptime Kuma, like most web apps,
+  answers its web page with 200 for any address it doesn't know, so a page address pasted as the server's address
+  gives this error instead of a 404.
+- **The live check couldn't catch it:** its stand-in answers JSON on every path. A check that only proves the config
+  loads says nothing about the service. **Do:** where a widget's service is known, test with a stand-in that answers
+  as the service's source does (web page for unknown paths); in the editor, try the widget with the real values
+  (`tryWidget`).
+- **Installing a service from npm to test against it was blocked** (it would run outside code on this machine), and
+  root had no room for its image. Reading the service's source at its current release, cited by line, was enough for
+  the stand-in.
+
 ### 2026-10-26: Things learned making every community widget settable without code (ADR-0030)
 - **Glance pastes values into the YAML text before reading it,** so a value can break the whole file: `"`, `\`, `: `,
   `{{` or a leading `%` (tested with v0.8.6 `config:validate`). **Do:** check with the real values in Glance's

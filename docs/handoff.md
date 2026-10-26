@@ -1,7 +1,7 @@
 # Handoff
 
 The single place to see where the project stands. Updated at the end of every work session and every PR.
-Last updated: 2026-10-26 (v1.3.0 released: ADR-0030 community widgets with fields, ADR-0031 drag and drop).
+Last updated: 2026-10-26 (ADR-0032: a community widget tried against its service; after v1.3.0).
 
 ## Current state
 - **Released:** **v1.3.0** is `:latest` (`ghcr.io/gcarstoiu/glance-editor`, public). Earlier: v1.0.0, v1.0.1, v1.1.0, v1.2.0
@@ -43,6 +43,9 @@ Last updated: 2026-10-26 (v1.3.0 released: ADR-0030 community widgets with field
   159 of 165 can be added (6 refused with the reason). Live check: `test/community-live.sh`.
 - ADR-0031 drag and drop: links and groups between groups and Bookmarks widgets, widgets into and out of groups and
   split columns, pages, slides; a finger on the grip drags too; Move to… for touch and keyboard.
+- ADR-0032 (not released yet): a community widget's settings try it against its service, as Glance does, and say why
+  it failed in plain words; Uptime Kuma's address and slug are cut out of pasted page addresses; a value a widget needs
+  can't be stored empty.
 - Favicon in the editor's tab; CA certificates in the image (v1.0.1).
 
 ## Resuming (for the next session)
@@ -75,6 +78,7 @@ Nothing below may be built on until you decide. ★ = affects user experience.
 ## Decided on 2026-10-26 (via chat)
 | ADR | Outcome |
 | --- | ------- |
+| [0032](adr/0032-try-a-widget-against-its-service.md) | **Try a widget against its service** automatically when its settings open and after a value is stored; pasted page addresses cut back, with a note (after the PM's "invalid response JSON" on Uptime Kuma) |
 | [0031](adr/0031-drag-and-drop-everywhere.md) | **Drag and drop:** drop on another Bookmarks card plus Move to…; drag by the grip on a phone too; widgets in and out of groups, pages and slides as well |
 | [0030](adr/0030-community-widgets-without-code.md) | **Community widgets without code:** hard-coded values become values in `.env`; optional settings under More options; values, title and cache in the widget's settings; a second copy asks for the same or its own values |
 
@@ -230,13 +234,21 @@ Nothing below may be built on until you decide. ★ = affects user experience.
    Claude.
 2. You: on Unraid, Docker → Check for Updates → apply the update (v1.3.0); try a community widget's fields, More
    options and its settings panel, and drag a bookmark link to another group; report what you see.
-3. You: when ready, cut over from your old Glance (`docs/runbooks/cutover.md`; rehearse the fallback first).
-4. Open decisions above (D-62, assets list, default themes) whenever convenient.
-5. Claude, when asked: record the PM's Unraid observations in ADR-0024; move the community widgets pin to a newer
-   commit (run `scripts/community-widgets.ts`, fix what it reports in `community-widgets.settings.yml`, run
-   `test/community-live.sh` on the image, review, PR); a newer Glance pin (ADR-0006) when one is released.
+3. You: the Uptime Kuma widget on v1.3.0: in its settings, the address only `http://<server>:3001` (nothing after the
+   port), the slug only the status page's last part; the container log line "Invalid response JSON in custom API
+   widget url=…" shows the address Glance asked. ADR-0032 (the try in the settings) ships with the next release, once
+   you approve its notes (CHANGELOG, Unreleased).
+4. You: when ready, cut over from your old Glance (`docs/runbooks/cutover.md`; rehearse the fallback first).
+5. Open decisions above (D-62, assets list, default themes) whenever convenient.
+6. Claude, when asked: record the PM's Unraid observations in ADR-0024; move the community widgets pin to a newer
+   commit (run `scripts/community-widgets.ts`, fix what it reports in `community-widgets.settings.yml`, give `origin`
+   to each address field whose service can't run under a sub-path (ADR-0032), run `test/community-live.sh` on the
+   image, review, PR); a newer Glance pin (ADR-0006) when one is released.
 
 ## Session log
+- 2026-10-26: the PM reported "invalid response JSON" on an Uptime Kuma widget. Cause found in Glance's and Uptime
+  Kuma's source and reproduced with the pinned Glance (a page address or a whole status page address in the fields);
+  the PM's own values weren't looked at. ADR-0032 proposed, accepted as recommended, built on `feat/widget-check`.
 - 2026-10-26: v1.3.0 released (notes approved by the PM): `:1.3.0` and `:latest` published, `test/all-in-one.sh` passed
   on the published image. Main's CI was cancelled once at the job's 15-minute limit (GitHub took 13 minutes to install
   Chromium) and passed on re-run.

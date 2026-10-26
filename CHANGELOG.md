@@ -4,6 +4,20 @@ All notable changes are recorded here. The format follows Keep a Changelog; vers
 (process: docs/adr/0007-versioning-and-release-notes.md, accepted).
 
 ## [Unreleased]
+### Added
+- **A community widget's settings say whether its service answers.** The editor asks the service the way Glance does,
+  when the settings open and after a value is stored, and says what went wrong in plain words: an address that leads
+  to a web page instead of data, a refused key, a port nothing listens on. Glance's own message is shown below it.
+
+### Changed
+- **Addresses pasted from the browser are cut back** where a widget needs only the server: Uptime Kuma's
+  `http://192.0.2.10:3001/dashboard` becomes `http://192.0.2.10:3001`, and its status page's whole address gives just
+  the slug. The field says what was removed.
+- A value a community widget needs can no longer be stored empty.
+
+### Fixed
+- An Uptime Kuma widget showed "invalid response JSON" when its address had a page after the port, or its slug was the
+  status page's whole address or empty. The help now says what to type, and such values are tidied or refused.
 
 ## [1.3.0] - 2026-10-26
 ### Added

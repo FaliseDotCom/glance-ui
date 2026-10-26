@@ -10,7 +10,7 @@ import {
   checkDashboard, findPlaceholders, hasErrors, parseDashboard, SCHEMA_VERSION, type ColumnT, type DashboardT, type WidgetT,
 } from "@glance-editor/model";
 import { generate, toGlanceJson } from "@glance-editor/generator";
-import { fieldHints, printConfig, validateConfig } from "@glance-editor/glance";
+import { fieldHints, oneWidgetConfig, printConfig, tryWidget as tryInGlance, validateConfig } from "@glance-editor/glance";
 import {
   glanceParse, importFile, importText, widgetFromYaml, widgetTextIn, widgetYaml, writeDraft, type ImportReport, type ImportResult,
   type WidgetYamlResult,
@@ -19,7 +19,7 @@ import { describeChanges, type Change } from "./changes.ts";
 import { listContainers, type ContainersResult } from "./docker.ts";
 import { Icons, type IconSources } from "./icons.ts";
 import { assetsWritable, copyImages, listFolder, resolveImages, storeImage, writeEditorFiles, type BuildEnv, type FolderEntry, type Problemish } from "./background.ts";
-import { iconTerm, needsEditorCss, PREVIEW_CSS, tidyValue, typeLabel, valueNames, widgetName } from "@glance-editor/editing";
+import { asksAService, iconTerm, needsEditorCss, PREVIEW_CSS, tidyValue, typeLabel, valueNames, widgetName } from "@glance-editor/editing";
 import { envMap, envNames, envValue, setEnvValues, VALUE_NAME } from "./values.ts";
 import { valueSpec, type ValueSpec } from "./community.ts";
 import { Pixabay } from "./pixabay.ts";
@@ -146,6 +146,12 @@ export type SaveResult =
   | { status: "conflict"; outsideVersion: number }
   | { status: "saved"; version: number; reload: ReloadResult; warnings: string[]; draft: DashboardT }
   | { status: "error"; message: string };
+
+/**
+ * ADR-0032: a widget tried against its service. nothing: it asks no address for anything (or outside the container);
+ * not-tried: why not; answered: Glance shows it without an error; failed: the error Glance shows.
+ */
+export type TryResult = { state: "nothing" } | { state: "not-tried"; reason: string } | { state: "answered" } | { state: "failed"; error: string };
 
 export type PreviewCheck = { ok: true; problems: [] } | { ok: false; problems: Problem[] };
 
@@ -427,7 +433,10 @@ export class Editor {
     const before = await readFile(path, "utf8").catch(() => "");
     // ADR-0030: stored as tidied for its field (an address gets http://, say), and only if Glance can still load the
     // dashboard with it, and the widget being added.
-    const tidy = Object.fromEntries(Object.entries(changes).map(([n, v]) => [n, v === null ? null : tidyValue(valueSpec(n)?.kind, v)]));
+    const tidy = Object.fromEntries(Object.entries(changes).map(([n, v]) => [n, v === null ? null : tidyValue(valueSpec(n), v)]));
+    // ADR-0032: a value a community widget needs can't be stored empty (it would ask its service for nothing).
+    const empty = Object.keys(tidy).filter((n) => tidy[n] === "" && valueSpec(n) && !valueSpec(n)!.optional).map((n) => valueSpec(n)!.label);
+    if (empty.length) throw new Error(`${empty.join(", ")} can't be empty: the widget needs ${empty.length === 1 ? "it" : "them"}.`);
     await this.checkValues(before, tidy, opts.widget);
     const after = setEnvValues(before, tidy);
     if (after !== before) {
@@ -467,11 +476,31 @@ export class Editor {
       }
     }
     if (widget !== undefined) {
-      const config = `pages:\n  - name: Check\n    columns:\n      - size: full\n        widgets:\n${widget.split("\n").map((l, i) => (l ? `          ${i === 0 ? "- " : "  "}${l}` : l)).join("\n")}`;
+      const config = oneWidgetConfig(widget);
       const d = importText(config).dashboard;
       const v = await validateConfig(config, { hints: fieldHints(config, valueSpec, d ? toGlanceJson(d).placeholderHints : undefined), glanceBin: this.cfg.glanceBin, env: pick(values, new Set(valueNames(widget))) });
       if (!v.ok) throw new Error(`With these values Glance can't load this widget: ${glanceReason(v.output)}`);
     }
+  }
+
+  /**
+   * ADR-0032: try a widget against its service, as the dashboard would: the pinned Glance loads just this widget with
+   * the values in `.env` (in its environment only) and the error it shows, if any, comes back. Only a widget that asks
+   * an address for something; one with values only in the all-in-one container (elsewhere Glance doesn't read the
+   * editor's values). The editor never sees the values of the container's own settings.
+   */
+  async tryWidget(text: string): Promise<TryResult> {
+    const names = valueNames(text);
+    if (!asksAService(text) || (names.length && this.cfg.glanceEnvNames === undefined)) return { state: "nothing" };
+    const label = (n: string) => valueSpec(n)?.label ?? `\${${n}}`;
+    const container = names.filter((n) => this.cfg.glanceEnvNames?.includes(n));
+    if (container.length) return { state: "not-tried", reason: `${container.map(label).join(", ")} ${container.length === 1 ? "comes" : "come"} from the container's settings, which the editor can't read.` };
+    const env = envMap(await readFile(this.envPath(), "utf8").catch(() => ""));
+    const missing = names.filter((n) => env[n] === undefined);
+    if (missing.length) return { state: "not-tried", reason: `${missing.map(label).join(", ")} ${missing.length === 1 ? "has" : "have"} no value yet.` };
+    const r = await tryInGlance(text, { glanceBin: this.cfg.glanceBin, env: pick(env, new Set(names)) });
+    if (!r.ok) return { state: "not-tried", reason: `Glance can't load this widget here: ${glanceReason(r.output)}` };
+    return r.error === null ? { state: "answered" } : { state: "failed", error: r.error };
   }
 
   /** The `.env` values the dashboard uses, for checking a draft as Glance will run it (ADR-0030); none outside the container. */

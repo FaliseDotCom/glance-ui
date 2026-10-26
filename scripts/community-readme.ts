@@ -113,6 +113,10 @@ export interface ValueSpec {
   default?: string;
   choices?: string[];
   optional?: boolean;
+  /** ADR-0032 (url, host): the server only; a page's address pasted from the browser is cut back to it. */
+  origin?: boolean;
+  /** ADR-0032: a pattern whose first group is the value, when an address holding it is pasted. */
+  extract?: string;
 }
 const KINDS = new Set(["url", "host", "secret", "text", "number", "choice", "boolean", "list", "date"]);
 
@@ -126,6 +130,12 @@ export function specProblems(name: string, f: ValueSpec | undefined): string[] {
   if (f.kind === "choice" && !f.choices?.length) out.push(`\${${name}}: a choice without choices`);
   if (f.optional && f.default === undefined) out.push(`\${${name}}: optional without a default`);
   if (!f.optional && f.example === undefined && f.default === undefined) out.push(`\${${name}}: no example`);
+  if (f.origin && f.kind !== "url" && f.kind !== "host") out.push(`\${${name}}: origin on a ${f.kind}`);
+  if (f.extract !== undefined) {
+    let groups = -1;
+    try { groups = new RegExp(`${f.extract}|`).exec("")!.length - 1; } catch { /* not a pattern */ }
+    if (groups !== 1) out.push(`\${${name}}: extract needs a pattern with one group`);
+  }
   return out;
 }
 

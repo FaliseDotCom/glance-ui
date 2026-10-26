@@ -1,11 +1,14 @@
 <!-- ADR-0030: the settings of a widget kept as YAML with no form behind it (a community widget): its title and cache,
      written into its YAML (only those lines change), and its values, stored in .env at once (as on the Values screen,
-     checked with Glance first). -->
+     checked with Glance first). ADR-0032: below them, whether its service answered, tried by the pinned Glance when the
+     settings open and after each value is stored. -->
 <script lang="ts">
-  import { plural, setYamlKey, valueNames, type WidgetRef } from "@glance-editor/editing";
+  import { untrack } from "svelte";
+  import { asksAService, glanceErrorReason, plural, setYamlKey, valueNames, type WidgetRef } from "@glance-editor/editing";
   import type { WidgetT } from "@glance-editor/model";
-  import { api, type ValueInfo } from "../client/api.ts";
+  import { api, type TryResult, type ValueInfo } from "../client/api.ts";
   import type { App } from "../client/app.svelte.ts";
+  import Icon from "./Icon.svelte";
   import ValueRow from "./ValueRow.svelte";
 
   let { app, wref, w }: { app: App; wref: WidgetRef; w: WidgetT } = $props();
@@ -51,12 +54,34 @@
       await app.reload(); // Review's "no value" warnings follow .env
       const label = infos?.find((x) => x.name === name)?.field?.label ?? name;
       app.say(`Stored ${label}. Glance restarts with it in a few seconds.`);
+      void tryIt();
     } catch (e) {
       refused = { name, message: (e as Error).message };
     } finally {
       busy = null;
     }
   }
+
+  // ADR-0032: its service, asked as Glance asks it. Only the latest try counts.
+  const asks = $derived(asksAService(text));
+  let tried = $state<TryResult | null>(null);
+  let trying = $state(false);
+  let run = 0;
+  async function tryIt() {
+    const mine = ++run;
+    trying = true;
+    const r = await api.tryWidget(text).catch((e: Error): TryResult => ({ state: "not-tried", reason: e.message }));
+    if (mine !== run) return;
+    tried = r;
+    trying = false;
+  }
+  $effect(() => {
+    void w._id;
+    untrack(() => {
+      tried = null;
+      if (asks) void tryIt();
+    });
+  });
 </script>
 
 <div class="field">
@@ -89,4 +114,21 @@
       {/each}
     </div>
   {/if}
+{/if}
+
+{#if asks && tried?.state !== "nothing"}
+  <div class="rule"><span class="lbl">Service</span></div>
+  <div role="status">
+    {#if trying}
+      <p class="note pulse">Asking its service, as Glance does…</p>
+    {:else if tried?.state === "answered"}
+      <p class="note row" style="gap: 6px; align-items: flex-start"><span style="color: var(--accent); flex: none; margin-top: 2px"><Icon name="check" size={18} /></span>The service answered: Glance shows this widget without an error.</p>
+    {:else if tried?.state === "failed"}
+      <p class="errtxt row" style="gap: 6px; align-items: flex-start; margin: 0"><span style="flex: none; margin-top: 1px"><Icon name="alert" size={18} /></span>{glanceErrorReason(tried.error) ?? "Glance shows an error for this widget."}</p>
+      <p class="help" style="margin: 6px 0 0; overflow-wrap: anywhere">Glance says: <span class="mono">{tried.error}</span></p>
+    {:else if tried?.state === "not-tried"}
+      <p class="note">Not tried: {tried.reason}</p>
+    {/if}
+  </div>
+  <button type="button" class="btn" style="align-self: flex-start; margin-top: 8px" disabled={trying} onclick={tryIt}>Try again</button>
 {/if}

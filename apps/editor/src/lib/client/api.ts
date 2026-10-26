@@ -1,8 +1,8 @@
 // The editor's JSON API (docs/api.md). Mutations send JSON from this origin, as ADR-0004 requires.
 import type { DashboardT, WidgetT } from "@glance-editor/model";
-import type { CommunityWidget, CommunityWidgetView, ValueInfo, ValueSpec, Change, ContainersResult, DownloadResult, FolderEntry, PixabayHit, DraftState, IconHit, LibraryStatus, SiteIcon, WebResult, WebSearch, GlanceStatus, ImportCheck, PreviewCheck, PreviewResult, Problem, SaveResult, UploadCheck, VersionSummary } from "@glance-editor/server";
+import type { CommunityWidget, CommunityWidgetView, TryResult, ValueInfo, ValueSpec, Change, ContainersResult, DownloadResult, FolderEntry, PixabayHit, DraftState, IconHit, LibraryStatus, SiteIcon, WebResult, WebSearch, GlanceStatus, ImportCheck, PreviewCheck, PreviewResult, Problem, SaveResult, UploadCheck, VersionSummary } from "@glance-editor/server";
 
-export type { PixabayHit, CommunityWidget, CommunityWidgetView, ValueInfo, ValueSpec };
+export type { PixabayHit, CommunityWidget, CommunityWidgetView, TryResult, ValueInfo, ValueSpec };
 export type ValuesList = { applies: boolean; values: ValueInfo[] };
 export type CommunityList = { source: string; license: string; commit: string; glance: string; widgets: (Omit<CommunityWidget, "variants"> & { variants: Omit<CommunityWidget["variants"][number], "yaml">[] })[] };
 export type { Change, ContainersResult, DownloadResult, DraftState, IconHit, LibraryStatus, SiteIcon, WebResult, WebSearch, GlanceStatus, ImportCheck, PreviewCheck, PreviewResult, Problem, SaveResult, UploadCheck, VersionSummary };
@@ -46,6 +46,8 @@ export const api = {
   value: (name: string) => call<{ value: string | null }>("GET", `/api/values/${encodeURIComponent(name)}`),
   /** ADR-0030: stored only if Glance can still load the dashboard (and `widget`, one being added) with them. */
   setValues: (set: Record<string, string | null>, widget?: string) => call<ValuesList>("POST", "/api/values", widget === undefined ? { set } : { set, widget }),
+  /** ADR-0032: a widget (its YAML) tried against its service by the pinned Glance, with the values in .env. */
+  tryWidget: (text: string) => call<TryResult>("POST", "/api/widget/try", { text }),
   /** ADR-0028: the community widgets bundled with this release (without YAML), and one with its variants' YAML. */
   community: () => call<CommunityList>("GET", "/api/community"),
   communityWidget: (dir: string) => call<CommunityWidgetView>("GET", `/api/community/${encodeURIComponent(dir)}`),
