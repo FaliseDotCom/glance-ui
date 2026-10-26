@@ -4,6 +4,8 @@ All notable changes are recorded here. The format follows Keep a Changelog; vers
 (process: docs/adr/0007-versioning-and-release-notes.md, accepted).
 
 ## [Unreleased]
+
+## [1.4.0] - 2026-10-26
 ### Added
 - **A community widget's settings say whether its service answers.** The editor asks the service the way Glance does,
   when the settings open and after a value is stored, and says what went wrong in plain words: an address that leads
