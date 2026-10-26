@@ -17,6 +17,8 @@ Auto memory is machine-local. This file is the record.
 - **A text stand-in inside `{{ }}` breaks template parsing.** **Do:** pick stand-ins by the field's kind (`fieldHints`).
 - **`reload()` replaced edits the client hadn't sent yet** (the draft goes to the server 250 ms after the last edit), so
   a value stored right after an edit lost the edit. **Do:** settle pending edits before reading the server's state.
+- **The UI tests' teardown deleted a test folder while the editor was still shutting down** (CI: ENOTEMPTY). **Do:**
+  wait for each process to exit, then remove with retries (`test/e2e/fixtures.ts`).
 - **A test that only runs the README's YAML through `config:validate` misses most problems.** Setting each widget up
   through the UI in a container (`test/community-live.sh`) found the address-format and value problems.
 

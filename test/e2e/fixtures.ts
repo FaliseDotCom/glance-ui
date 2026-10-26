@@ -225,7 +225,10 @@ export const test = base.extend<{ opts: EditorOptions; editor: Editor }>({
         readOnly: (on) => chmodSync(configDir, on ? 0o555 : 0o755),
       });
     } finally {
-      for (const c of children) c.kill();
+      // Wait for each process to exit before its folder is removed: one still shutting down can write into it (CI:
+      // ENOTEMPTY from rmSync, 2026-10-26).
+      await Promise.all(children.map((c) => (c.exitCode !== null || c.signalCode !== null ? null
+        : new Promise((done) => { c.once("exit", done); c.kill(); setTimeout(done, 5_000); }))));
       docker?.server.closeAllConnections();
       docker?.server.close();
       remote?.server.closeAllConnections();
@@ -233,7 +236,7 @@ export const test = base.extend<{ opts: EditorOptions; editor: Editor }>({
       await icons?.close();
       await pixabay?.close();
       try { chmodSync(configDir, 0o755); } catch { /* already gone */ }
-      rmSync(dir, { recursive: true, force: true });
+      rmSync(dir, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
     }
   },
 });
