@@ -1,11 +1,11 @@
 # Handoff
 
 The single place to see where the project stands. Updated at the end of every work session and every PR.
-Last updated: 2026-10-27 (ADR-0033: community widgets marked early alpha, at the PM's request).
+Last updated: 2026-10-27 (v1.4.1 released: ADR-0033, community widgets marked early alpha).
 
 ## Current state
-- **Released:** **v1.4.0** is `:latest` (`ghcr.io/gcarstoiu/glance-editor`, public). Earlier: v1.0.0, v1.0.1, v1.1.0, v1.2.0,
-  v1.3.0
+- **Released:** **v1.4.1** is `:latest` (`ghcr.io/gcarstoiu/glance-editor`, public). Earlier: v1.0.0, v1.0.1, v1.1.0, v1.2.0,
+  v1.3.0, v1.4.0
   (and test releases v1.0.0-rc.1 to rc.6, kept as pre-releases). Every release page shows its CHANGELOG section;
   every published image passed `test/all-in-one.sh` (including a real HTTPS weather fetch inside the container).
 - **v1.0.0 caveat:** PR #18 was merged before its last two commits were pushed, so v1.0.0 lacked "another server's
@@ -16,7 +16,7 @@ Last updated: 2026-10-27 (ADR-0033: community widgets marked early alpha, at the
   switch Repository to `:latest` and update; not confirmed yet which version runs there now.
 - **Community Apps:** the public repository **`gcarstoiu/unraid-templates`** (created by Claude at the PM's request,
   2026-10-15) holds `ca_profile.xml`, `templates/glance-editor.xml` (follows `:latest`), `icon.png`, `README.md`,
-  `LICENSE` (GPL-3.0), rendered by `scripts/render-community-apps.sh` from v1.1.0. **The PM submits it** at
+  `LICENSE` (GPL-3.0), rendered by `scripts/render-community-apps.sh` from v1.4.1 (updated 2026-10-27 through its PR #1). **The PM submits it** at
   https://ca.unraid.net/submit/new (Validate, Scan, Submit); not done yet as far as Claude knows. Possible Scan finding:
   the category value `Productivity: Tools:` is unverified. Re-render and push only when the template itself changes.
 - **Merging:** the PM allows Claude to merge PRs once CI is green unless something needs the PM's decision. Release
@@ -44,7 +44,7 @@ Last updated: 2026-10-27 (ADR-0033: community widgets marked early alpha, at the
   159 of 165 can be added (6 refused with the reason). Live check: `test/community-live.sh`.
 - ADR-0031 drag and drop: links and groups between groups and Bookmarks widgets, widgets into and out of groups and
   split columns, pages, slides; a finger on the grip drags too; Move to… for touch and keyboard.
-- ADR-0033: community widgets marked early alpha in Add widget → Community, a community widget's settings, the Unraid
+- ADR-0033 (v1.4.1): community widgets marked early alpha in Add widget → Community, a community widget's settings, the Unraid
   template's overview and the README.
 - ADR-0032 (v1.4.0): a community widget's settings try it against its service, as Glance does, and say why
   it failed in plain words; Uptime Kuma's address and slug are cut out of pasted page addresses; a value a widget needs
@@ -240,9 +240,9 @@ Nothing below may be built on until you decide. ★ = affects user experience.
 ## Next steps
 1. You: submit `gcarstoiu/unraid-templates` at https://ca.unraid.net/submit/new; paste any Validate/Scan findings to
    Claude.
-2. You: on Unraid, Docker → Check for Updates → apply the update (v1.4.0); try a community widget's fields, More
+2. You: on Unraid, Docker → Check for Updates → apply the update (v1.4.1); try a community widget's fields, More
    options and its settings panel, and drag a bookmark link to another group; report what you see.
-3. You: open the Uptime Kuma widget's settings on v1.4.0: the Service line says whether Uptime Kuma answered, or why
+3. You: open the Uptime Kuma widget's settings (v1.4.0 and later): the Service line says whether Uptime Kuma answered, or why
    not. The address is only `http://<server>:3001` (nothing after the port), the slug only the status page's last
    part; the container log line "Invalid response JSON in custom API widget url=…" shows the address Glance asked.
 4. You: when ready, cut over from your old Glance (`docs/runbooks/cutover.md`; rehearse the fallback first).
@@ -253,6 +253,9 @@ Nothing below may be built on until you decide. ★ = affects user experience.
    image, review, PR); a newer Glance pin (ADR-0006) when one is released.
 
 ## Session log
+- 2026-10-27: v1.4.1 released at the PM's request (community widgets marked early alpha): `:1.4.1` and `:latest`
+  published; `test/all-in-one.sh` passed on the published image, and both notes are in its editor. The Community Apps
+  repository's template re-rendered from v1.4.1 (its PR #1, merged).
 - 2026-10-27: the PM asked whether the Docker proxy differs on a Synology ("connection refused"). Answered in chat: the
   pinned proxy's port published on 127.0.0.1 only refuses other machines (tested); without IPv6 it can't open its port
   (`DISABLE_IPV6=1`). The README has no how-to for a proxy on another server yet (offered, not asked for).
