@@ -9,7 +9,7 @@
   <Privileged>false</Privileged>
   <Support>https://github.com/{{REPO}}/issues</Support>
   <Project>https://github.com/{{REPO}}</Project>
-  <Overview>Your Glance dashboard and a no-code editor for it, in one container. Build pages, columns and widgets, pick a theme, icons and a background image, all in the browser, without writing YAML. See your changes in Preview before you save; every save is checked by Glance first and kept in History, so you can go back to any earlier version. Includes Glance (github.com/glanceapp/glance) at the version the editor is tested with. Open the editor from WebUI; your dashboard is on the Dashboard port. No login: keep it on your LAN.</Overview>
+  <Overview>Your Glance dashboard and a no-code editor for it, in one container. Build pages, columns and widgets, pick a theme, icons and a background image, all in the browser, without writing YAML. Widgets shared by Glance users can be added from Community too; that part is in early alpha, and not every one works out of the box without code. See your changes in Preview before you save; every save is checked by Glance first and kept in History, so you can go back to any earlier version. Includes Glance (github.com/glanceapp/glance) at the version the editor is tested with. Open the editor from WebUI; your dashboard is on the Dashboard port. No login: keep it on your LAN.</Overview>
   <Category>Productivity: Tools:</Category>
   <WebUI>http://[IP]:[PORT:3000]/</WebUI>
   <TemplateURL>https://github.com/{{REPO}}/releases/latest/download/glance-editor.xml</TemplateURL>

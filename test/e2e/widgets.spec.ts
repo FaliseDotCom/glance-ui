@@ -410,6 +410,8 @@ test.describe("Community widgets (ADR-0028)", () => {
     const sheet = page.getByRole("dialog", { name: "Add widget" });
     await sheet.getByRole("button", { name: "Community", exact: true }).click();
     await expect(sheet.getByText(/Made by Glance users and shared under CC0\. Each one was checked with Glance v0\.8\.6/)).toBeVisible();
+    // ADR-0033: marked early alpha above the list.
+    await expect(sheet.getByRole("note").filter({ hasText: "Community widgets are in early alpha." })).toContainText("Not every one works out of the box without code");
     await expect(sheet.getByRole("link", { name: "glanceapp/community-widgets" })).toHaveAttribute("href", "https://github.com/glanceapp/community-widgets");
     await expectAccessible(page, "community list");
     await expectTargets(page, "community list");
@@ -544,6 +546,10 @@ test.describe("Community widgets without YAML (ADR-0030)", () => {
     // Its settings: no form behind it, so no Discard; title and cache written into its YAML; its values.
     const ins = inspector(page);
     await expect(ins.getByText("This widget is kept as YAML. Its title, cache and values are here; everything else is in the YAML tab.")).toBeVisible();
+    const alpha = ins.getByRole("note").filter({ hasText: "Community widgets are in early alpha:" });
+    await expect(alpha).toContainText("this one may need a change in its YAML");
+    await alpha.scrollIntoViewIfNeeded();
+    await shot(page, "community-alpha-settings", { fullPage: false });
     await expect(ins.getByRole("button", { name: "Discard YAML override" })).toHaveCount(0);
     await ins.getByLabel("Title", { exact: true }).fill("My shows");
     await ins.getByLabel("Cache", { exact: true }).fill("30m");

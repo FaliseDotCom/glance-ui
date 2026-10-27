@@ -149,7 +149,8 @@
             <button type="button" class="btn" onclick={() => (app.insTab = "yaml")}>Open YAML</button></div>
         {:else}
           {#if yamlOnly}
-            <div class="notice">This widget is kept as YAML. Its title, cache and values are here; everything else is in the YAML tab.</div>
+            <div class="notice" role="note"><span><strong>Community widgets are in early alpha:</strong> this one may need a change in its YAML, or in its service's settings, before it works.</span>
+              <span>This widget is kept as YAML. Its title, cache and values are here; everything else is in the YAML tab.</span></div>
             <YamlWidgetSettings {app} {wref} {w} />
           {:else if override}
             <div class="notice">This widget is edited as YAML, so the form is read-only. Discarding the override returns it to the form values.
