@@ -204,6 +204,8 @@
     {/if}
   {/if}
 {:else}
+  <!-- ADR-0033: the PM asked for this note (2026-10-27). -->
+  <div class="notice" role="note"><span><strong>Community widgets are in early alpha.</strong> Not every one works out of the box without code: some need a change in their YAML, or in their service's settings, before they show their data.</span></div>
   <label class="sr" for="cwq">Search community widgets</label>
   <input id="cwq" class="input" placeholder="Search community widgets" bind:value={query} autocomplete="off" />
   <div class="row wrap between" style="gap: 6px">

@@ -1,7 +1,7 @@
 # Handoff
 
 The single place to see where the project stands. Updated at the end of every work session and every PR.
-Last updated: 2026-10-26 (v1.4.0 released: ADR-0032, a community widget tried against its service).
+Last updated: 2026-10-27 (ADR-0033: community widgets marked early alpha, at the PM's request).
 
 ## Current state
 - **Released:** **v1.4.0** is `:latest` (`ghcr.io/gcarstoiu/glance-editor`, public). Earlier: v1.0.0, v1.0.1, v1.1.0, v1.2.0,
@@ -44,6 +44,8 @@ Last updated: 2026-10-26 (v1.4.0 released: ADR-0032, a community widget tried ag
   159 of 165 can be added (6 refused with the reason). Live check: `test/community-live.sh`.
 - ADR-0031 drag and drop: links and groups between groups and Bookmarks widgets, widgets into and out of groups and
   split columns, pages, slides; a finger on the grip drags too; Move to… for touch and keyboard.
+- ADR-0033: community widgets marked early alpha in Add widget → Community, a community widget's settings, the Unraid
+  template's overview and the README.
 - ADR-0032 (v1.4.0): a community widget's settings try it against its service, as Glance does, and say why
   it failed in plain words; Uptime Kuma's address and slug are cut out of pasted page addresses; a value a widget needs
   can't be stored empty.
@@ -75,6 +77,11 @@ Nothing below may be built on until you decide. ★ = affects user experience.
 - ★ **ADR-0025 leftover:** no assets file list in the editor yet (say if wanted).
 - ★ **ADR-0026 leftover:** Glance's two default themes stay in the dashboard's theme picker (not answered;
   recommended; hiding them needs CSS).
+
+## Decided on 2026-10-27 (via chat)
+| ADR | Outcome |
+| --- | ------- |
+| [0033](adr/0033-community-widgets-early-alpha.md) | **Community widgets marked early alpha** in the editor and the app's overview; released at once (the PM asked to push and release) |
 
 ## Decided on 2026-10-26 (via chat)
 | ADR | Outcome |
@@ -246,6 +253,10 @@ Nothing below may be built on until you decide. ★ = affects user experience.
    image, review, PR); a newer Glance pin (ADR-0006) when one is released.
 
 ## Session log
+- 2026-10-27: the PM asked whether the Docker proxy differs on a Synology ("connection refused"). Answered in chat: the
+  pinned proxy's port published on 127.0.0.1 only refuses other machines (tested); without IPv6 it can't open its port
+  (`DISABLE_IPV6=1`). The README has no how-to for a proxy on another server yet (offered, not asked for).
+- 2026-10-27: ADR-0033 (community widgets marked early alpha), asked for by the PM, built on `feat/community-alpha-note`.
 - 2026-10-26: v1.4.0 released (notes approved by the PM): `:1.4.0` and `:latest` published; `test/all-in-one.sh`
   passed on the published image, and `/api/widget/try` inside it gave "answered", "invalid response JSON" and
   "connection refused" for a JSON address, a web page and a closed port.
