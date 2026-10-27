@@ -4,6 +4,8 @@ All notable changes are recorded here. The format follows Keep a Changelog; vers
 (process: docs/adr/0007-versioning-and-release-notes.md, accepted).
 
 ## [Unreleased]
+
+## [1.4.1] - 2026-10-27
 ### Changed
 - **Community widgets are marked early alpha.** Add widget → Community and a community widget's settings say so, and
   so does the Unraid template's overview: not every community widget works out of the box without code; some need a
