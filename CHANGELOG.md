@@ -4,6 +4,8 @@ All notable changes are recorded here. The format follows Keep a Changelog; vers
 (process: docs/adr/0007-versioning-and-release-notes.md, accepted).
 
 ## [Unreleased]
+
+## [1.5.0] - 2026-10-28
 ### Added
 - **Compact widgets.** A new switch on the Theme screen puts each widget's title inside its box, so widgets in a
   column are as far apart as the columns. Off by default. Widgets without a box (search, videos, cards, groups) keep
