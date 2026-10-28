@@ -1,11 +1,11 @@
 # Handoff
 
 The single place to see where the project stands. Updated at the end of every work session and every PR.
-Last updated: 2026-10-28 (ADR-0034, compact widgets, built on `feat/compact-widgets`; to be released as v1.5.0).
+Last updated: 2026-10-28 (v1.5.0 released: ADR-0034, compact widgets).
 
 ## Current state
-- **Released:** **v1.4.1** is `:latest` (`ghcr.io/gcarstoiu/glance-editor`, public). Earlier: v1.0.0, v1.0.1, v1.1.0, v1.2.0,
-  v1.3.0, v1.4.0
+- **Released:** **v1.5.0** is `:latest` (`ghcr.io/gcarstoiu/glance-editor`, public). Earlier: v1.0.0, v1.0.1, v1.1.0, v1.2.0,
+  v1.3.0, v1.4.0, v1.4.1
   (and test releases v1.0.0-rc.1 to rc.6, kept as pre-releases). Every release page shows its CHANGELOG section;
   every published image passed `test/all-in-one.sh` (including a real HTTPS weather fetch inside the container).
 - **v1.0.0 caveat:** PR #18 was merged before its last two commits were pushed, so v1.0.0 lacked "another server's
@@ -44,7 +44,7 @@ Last updated: 2026-10-28 (ADR-0034, compact widgets, built on `feat/compact-widg
   159 of 165 can be added (6 refused with the reason). Live check: `test/community-live.sh`.
 - ADR-0031 drag and drop: links and groups between groups and Bookmarks widgets, widgets into and out of groups and
   split columns, pages, slides; a finger on the grip drags too; Move to… for touch and keyboard.
-- ADR-0034: compact widgets, a switch on the Theme screen (off by default): each title inside its box, so stacked
+- ADR-0034 (v1.5.0): compact widgets, a switch on the Theme screen (off by default): each title inside its box, so stacked
   widgets are as far apart as columns; widgets without a box keep their titles above.
 - ADR-0033 (v1.4.1): community widgets marked early alpha in Add widget → Community, a community widget's settings, the Unraid
   template's overview and the README.
@@ -247,8 +247,9 @@ Nothing below may be built on until you decide. ★ = affects user experience.
 ## Next steps
 1. You: submit `gcarstoiu/unraid-templates` at https://ca.unraid.net/submit/new; paste any Validate/Scan findings to
    Claude.
-2. You: on Unraid, Docker → Check for Updates → apply the update (v1.4.1); try a community widget's fields, More
-   options and its settings panel, and drag a bookmark link to another group; report what you see.
+2. You: on Unraid, Docker → Check for Updates → apply the update (v1.5.0); Theme → Dashboard look → Compact widgets,
+   Save, and look at the dashboard; try a community widget's fields, More options and its settings panel, and drag a
+   bookmark link to another group; report what you see.
 3. You: open the Uptime Kuma widget's settings (v1.4.0 and later): the Service line says whether Uptime Kuma answered, or why
    not. The address is only `http://<server>:3001` (nothing after the port), the slug only the status page's last
    part; the container log line "Invalid response JSON in custom API widget url=…" shows the address Glance asked.
@@ -260,6 +261,9 @@ Nothing below may be built on until you decide. ★ = affects user experience.
    image, review, PR); a newer Glance pin (ADR-0006) when one is released.
 
 ## Session log
+- 2026-10-28: v1.5.0 released at the PM's request (compact widgets, PR #38; release PR #39): `:1.5.0` and `:latest`
+  published from main; `test/all-in-one.sh` passed on the published image, and the switch and its CSS are in it. The
+  Community Apps template is unchanged (it follows `:latest`).
 - 2026-10-28: the PM asked for less space between stacked widgets, as much as between columns. Measured on the pinned
   Glance with a mock dashboard (54 px box to box against 23 px between columns); two options shown; ADR-0034 (B)
   accepted and built on `feat/compact-widgets`.
