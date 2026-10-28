@@ -110,6 +110,33 @@ export const NO_LINES_CSS = `.list.list-with-separator > *:not(:first-child),
 }
 `;
 
+/**
+ * ADR-0034: compact widgets. A widget's title goes inside the top of its box, so stacked boxes are --widget-gap apart,
+ * as columns are. Only widgets with a box: Glance draws no box for frameless ones (search, videos, cards, iframe, split
+ * column, group), whose titles stay above. Glance's markup and variables: v0.8.6 widget-base.html, widgets.css 57-75
+ * (read 2026-10-28). Glance pads a title 1 px more than its box's text, for the box's border; inside, it needs no more.
+ * A browser without :has() keeps Glance's look.
+ */
+export const COMPACT_CSS = `@supports selector(:has(*)) {
+  .widget-header:has(+ .widget-content:not(.widget-content-frameless)) {
+    margin-bottom: 0;
+    padding: var(--widget-content-vertical-padding) var(--widget-content-horizontal-padding) 0.4rem;
+    background: var(--color-widget-background);
+    border: 1px solid var(--color-widget-content-border);
+    border-bottom: none;
+    border-radius: var(--border-radius) var(--border-radius) 0 0;
+  }
+  .widget-header + .widget-content:not(.widget-content-frameless) {
+    padding-top: 0.4rem;
+    border-top: none;
+    border-radius: 0 0 var(--border-radius) var(--border-radius);
+  }
+}
+`;
+
+/** Does a look setting need the editor's CSS file (hidden lines, compact widgets)? */
+const lookNeedsCss = (ed: EditorSectionT): boolean => !!ed["hide-lines"] || !!ed["compact-widgets"];
+
 /** The editor's whole CSS file: the user's own file first, then the background, then the look settings. Pure. */
 export function editorCss(ed: EditorSectionT, files: readonly string[]): string {
   const parts = ["/* Written by Glance Editor (design D-52, ADR-0026). It is rewritten on every save: change it on the Theme screen. */\n"];
@@ -117,6 +144,7 @@ export function editorCss(ed: EditorSectionT, files: readonly string[]): string 
   if (own) parts.push(`@import url(${q(own)});\n`);
   if (ed.background) parts.push(backgroundCss(ed.background, files));
   if (ed["hide-lines"]) parts.push(NO_LINES_CSS);
+  if (ed["compact-widgets"]) parts.push(COMPACT_CSS);
   return parts.join("");
 }
 
@@ -355,7 +383,7 @@ export async function writeEditorFiles(ed: EditorSectionT, env: BuildEnv, cssNam
     await writeFile(join(dir, `.${name}.tmp`), text);
     await rename(join(dir, `.${name}.tmp`), join(dir, name));
   };
-  if (bg || ed["hide-lines"]) await put(cssName, editorCss(ed, files));
+  if (bg || lookNeedsCss(ed)) await put(cssName, editorCss(ed, files));
   if (bg?.mode === "slideshow" && bg.order === "shuffle") await put("slideshow.js", SLIDESHOW_JS);
   if (ed["edit-link"]) await put("edit-link.js", EDIT_LINK_JS);
   return [];

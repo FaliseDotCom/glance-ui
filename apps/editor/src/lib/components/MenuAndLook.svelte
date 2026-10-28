@@ -1,4 +1,5 @@
-<!-- ADR-0026: the dashboard's look and menu, on the Theme screen. Lines between items (Glance's look, or none), which
+<!-- ADR-0026: the dashboard's look and menu, on the Theme screen. Lines between items (Glance's look, or none), compact
+     widgets (ADR-0034), which
      of the themes in Glance's docs the dashboard's theme picker offers, and an Edit link to the editor in the
      dashboard's menu. Hidden lines and the Edit link are files the editor writes into Glance's assets folder on Save. -->
 <script lang="ts">
@@ -14,9 +15,10 @@
   const hideLines = $derived(ed?.["hide-lines"] === true);
   const editLink = $derived(ed?.["edit-link"]);
   const own = $derived((app.draft?.theme?.presets ?? []).filter((p) => !MENU_THEMES.some((t) => presetKey(t) === p.key)));
-  const needsFiles = $derived(hideLines || !!editLink);
+  const compact = $derived(ed?.["compact-widgets"] === true);
+  const needsFiles = $derived(hideLines || compact || !!editLink);
 
-  // Hidden lines and the Edit link need Glance to serve the editor's files from its assets folder.
+  // Hidden lines, compact widgets and the Edit link need Glance to serve the editor's files from its assets folder.
   const assetsPath = $derived(app.draft?.server?.["assets-path"]);
   let info = $state<IconInfo | null>(null);
   $effect(() => {
@@ -41,6 +43,9 @@
 <Toggle id="lines" label="Lines between items (containers, monitors, bookmarks, markets, and between bookmark groups)" on={!hideLines}
   ontoggle={() => app.mutate((d) => setEditorOption(d, "hide-lines", !hideLines))} />
 <p class="help" style="margin: 0">On is Glance's own look. Off removes the lines with the editor's CSS file; the spacing stays.</p>
+<Toggle id="compact" label="Compact widgets (titles inside their boxes)" on={compact}
+  ontoggle={() => app.mutate((d) => setEditorOption(d, "compact-widgets", !compact))} />
+<p class="help" style="margin: 0">Off is Glance's own look. On puts each widget's title inside its box, so widgets in a column are as far apart as the columns are. Search, videos, cards, iframes and groups have no box of their own and keep their titles above.</p>
 
 <div class="rule"><span class="lbl">Dashboard menu</span></div>
 <span class="flabel" style="margin: 0">Themes in the menu</span>

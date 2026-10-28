@@ -193,6 +193,8 @@ export const EditorSection = z.strictObject({
   background: Background.optional(),
   /** ADR-0026: hide the lines Glance draws between list items and between bookmark groups. */
   "hide-lines": z.boolean().optional(),
+  /** ADR-0034: each widget's title inside its box, so stacked widgets are as far apart as columns. */
+  "compact-widgets": z.boolean().optional(),
   /** ADR-0026: the editor's address; when set, an Edit link to it is added to the dashboard's menu. */
   "edit-link": str.optional(),
   /** The user's own custom CSS file, which the editor's CSS file imports (D-52). Older files keep it in background. */

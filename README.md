@@ -59,7 +59,8 @@ Install it once, and it's all there.
 - **Background.** One image or a slideshow, from your device, a folder on the server, or Pixabay (with your key).
   Settings: fit, dim, blur, see-through widgets, and for a whole image a blurred fill or top alignment.
 - **Dashboard menu and look.** An optional **Edit** link in the dashboard's menu opens the editor on the page you're
-  looking at. Optionally hide the thin lines between list items.
+  looking at. Optionally hide the thin lines between list items, or make widgets compact: each title inside its box,
+  and widgets in a column as far apart as the columns.
 - **Preview** the draft on the private Glance, at desktop or phone width, before anything goes live.
 - **Explicit Save with checks.** Review shows every change. Then the draft is checked by the editor's rules and by
   Glance's own validator, and `glance.yml` is written only if both pass. Glance reloads, and the editor confirms it.

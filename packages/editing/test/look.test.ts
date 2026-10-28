@@ -18,6 +18,20 @@ describe("look and menu settings", () => {
     expect(d["glance-editor"]).toBeUndefined();
   });
 
+  it("ADR-0034: compact widgets need the editor's CSS file too, alone or with hidden lines", () => {
+    const d = dash();
+    setEditorOption(d, "compact-widgets", true);
+    expect(d.theme?.["custom-css-file"]).toBe(BACKGROUND_CSS);
+    expect(d["glance-editor"]).toEqual({ "compact-widgets": true });
+    setEditorOption(d, "hide-lines", true);
+    setEditorOption(d, "compact-widgets", false);
+    expect(d.theme?.["custom-css-file"]).toBe(BACKGROUND_CSS);
+    expect(d["glance-editor"]).toEqual({ "hide-lines": true });
+    setEditorOption(d, "hide-lines", false);
+    expect(d.theme).toBeUndefined();
+    expect(d["glance-editor"]).toBeUndefined();
+  });
+
   it("the CSS file stays while either a background or hidden lines needs it", () => {
     const d = dash();
     setEditorOption(d, "hide-lines", true);

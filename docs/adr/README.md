@@ -52,3 +52,4 @@ One file per decision: `NNNN-short-title.md`, copied from [0000-template.md](000
 | [0031](0031-drag-and-drop-everywhere.md) | Drag and drop for bookmarks, and simpler moving everywhere | accepted (PM, 2026-10-26) | **yes** |
 | [0032](0032-try-a-widget-against-its-service.md) | Try a widget against its service, and tidy pasted page addresses | accepted (PM, 2026-10-26) | **yes** |
 | [0033](0033-community-widgets-early-alpha.md) | Community widgets marked early alpha | accepted (PM, 2026-10-27) | **yes** |
+| [0034](0034-compact-widgets.md) | Compact widgets: titles inside their boxes | accepted (PM, 2026-10-28) | **yes** |

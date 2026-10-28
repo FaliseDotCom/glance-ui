@@ -1,7 +1,9 @@
 // ADR-0026: the dashboard's look and menu, set on the Theme screen, checked on the real Glance after Save, at desktop
 // width and at 390 px: no lines between items, themes of Glance's docs in the theme picker, an Edit link that opens
 // the editor on the page being shown.
-import type { Page } from "@playwright/test";
+import { existsSync } from "node:fs";
+import { join } from "node:path";
+import type { Frame, Page } from "@playwright/test";
 import { expect, expectAccessible, expectTargets, fixture, isPhone, test } from "./fixtures.ts";
 import { shot } from "./shots.ts";
 
@@ -114,5 +116,103 @@ test.describe("Dashboard look and menu (ADR-0026)", () => {
     expect(editor.live()).not.toMatch(/^glance-editor:/m);
     expect(editor.live()).not.toContain("edit-link.js");
     expect(editor.live()).not.toContain("custom-css-file");
+  });
+});
+
+/**
+ * ADR-0034, on the real Glance: the space between columns, between stacked widgets that both have a box (from one box
+ * to the next, the title counted in the box when it sits inside it), where those titles sit, and where the search
+ * widget's title sits (it has no box). Only what is shown: a phone shows one column at a time.
+ */
+const spacing = (p: Page | Frame) => p.evaluate(() => {
+  const r = (e: Element) => e.getBoundingClientRect();
+  const css = (e: Element) => getComputedStyle(e);
+  const shown = (e: Element) => r(e).height > 0 && r(e).right > 0 && r(e).left < innerWidth;
+  const boxed = (w: Element) => w.querySelector(":scope > .widget-header + .widget-content:not(.widget-content-frameless)");
+  const inside = (w: Element) => {
+    const h = w.querySelector(":scope > .widget-header")!, c = w.querySelector(":scope > .widget-content")!;
+    return css(h).borderTopWidth === "1px" && css(h).backgroundColor === css(c).backgroundColor && Math.round(r(h).bottom) === Math.round(r(c).top);
+  };
+  const top = (w: Element) => r(inside(w) ? w.querySelector(":scope > .widget-header")! : w.querySelector(":scope > .widget-content")!).top;
+  const textLeft = (e: Element) => r(e).left + parseFloat(css(e).borderLeftWidth) + parseFloat(css(e).paddingLeft);
+  const cols = [...document.querySelectorAll(".page-columns > .page-column")].filter(shown).map(r);
+  const stacked = [];
+  for (const col of document.querySelectorAll(".page-columns > .page-column")) {
+    const ws = [...col.querySelectorAll(":scope > .widget")].filter(shown);
+    for (let i = 1; i < ws.length; i++) {
+      if (!boxed(ws[i - 1]) || !boxed(ws[i])) continue;
+      const h = ws[i].querySelector(":scope > .widget-header")!, c = ws[i].querySelector(":scope > .widget-content")!;
+      stacked.push({ boxes: Math.round(top(ws[i]) - r(ws[i - 1].querySelector(":scope > .widget-content")!).bottom), inside: inside(ws[i]), aligned: Math.round(textLeft(h)) === Math.round(textLeft(c)) });
+    }
+  }
+  const search = document.querySelector(".widget-type-search > .widget-header");
+  return {
+    gap: parseFloat(css(document.documentElement).getPropertyValue("--widget-gap")),
+    columns: cols.slice(1).map((c, i) => Math.round(c.left - cols[i].right)),
+    stacked,
+    searchTitleAbove: !!search && css(search).borderTopWidth === "0px",
+  };
+});
+
+/** Glance's page and group entrance animations have ended. */
+const settled = (p: Page | Frame) => p.evaluate(() => Promise.all(document.getAnimations().map((a) => a.finished)));
+
+test.describe("Compact widgets (ADR-0034)", () => {
+  test.use({ opts: { seed: fixture("compact.yml"), glance: true, assets: true, preview: true, docker: [{ name: "jellyfin" }, { name: "paperless" }] } });
+
+  test("off by default; on, titles move inside their boxes and stacked widgets are as far apart as columns", async ({ page, editor }) => {
+    const dash = await page.context().newPage();
+    const glance = `http://127.0.0.1:${editor.glancePort}`;
+    await glancePage(dash, `${glance}/`);
+    await dash.locator(".widget-type-docker-containers .list-with-separator").waitFor();
+    await settled(dash);
+    const before = await spacing(dash);
+    expect(before.stacked.length).toBeGreaterThan(0);
+    for (const s of before.stacked) {
+      expect(s.inside).toBe(false); // Glance's own look first: the title above the box, the space before it as wide as a column gap
+      expect(s.boxes).toBeGreaterThan(before.gap * 2);
+    }
+    if (!isPhone(page)) expect(before.columns).toEqual([before.gap]);
+
+    await importSeed(page, editor.url);
+    await openTheme(page);
+    const toggle = page.getByRole("button", { name: /^Compact widgets/ });
+    await expect(toggle).toHaveAttribute("aria-pressed", "false");
+    await toggle.click();
+    await expect(toggle).toHaveAttribute("aria-pressed", "true");
+    await toggle.scrollIntoViewIfNeeded();
+    await expectAccessible(page, "compact widgets");
+    await expectTargets(page, "compact widgets");
+    await shot(page, "compact-widgets-switch", { fullPage: false });
+    await save(page);
+    await expect(page.getByRole("heading", { name: "Version 1 is live" })).toBeVisible();
+    expect(editor.live()).toContain("compact-widgets: true");
+
+    await glancePage(dash, `${glance}/`);
+    await dash.locator(".widget-type-docker-containers .list-with-separator").waitFor();
+    await settled(dash);
+    const after = await spacing(dash);
+    expect(after.stacked.length).toBe(before.stacked.length);
+    for (const s of after.stacked) expect(s).toEqual({ boxes: after.gap, inside: true, aligned: true });
+    if (!isPhone(page)) expect(after.columns).toEqual([after.gap]);
+    expect(after.searchTitleAbove).toBe(true); // no box of its own
+    await shot(dash, "glance-compact");
+    await dash.close();
+  });
+
+  test("Preview shows it before Save, from its own CSS file", async ({ page, editor }) => {
+    await importSeed(page, editor.url);
+    await openTheme(page);
+    await page.getByRole("button", { name: /^Compact widgets/ }).click();
+    await page.getByRole("button", { name: "Preview", exact: true }).click();
+    await expect(page.getByRole("dialog", { name: "Preview of the draft" }).getByText("Built from the current draft")).toBeVisible();
+    await page.frameLocator("#pvframe").locator(".content-ready").first().waitFor({ state: "attached" }); // a phone shows one column
+    const frame = (await (await page.locator("#pvframe").elementHandle())!.contentFrame())!;
+    await settled(frame);
+    const pv = await spacing(frame);
+    expect(pv.stacked.length).toBeGreaterThan(0);
+    for (const s of pv.stacked) expect(s).toEqual({ boxes: pv.gap, inside: true, aligned: true });
+    expect(existsSync(join(editor.assetsDir!, "glance-editor", "preview.css"))).toBe(true);
+    expect(existsSync(join(editor.assetsDir!, "glance-editor", "background.css"))).toBe(false); // nothing live yet
   });
 });
