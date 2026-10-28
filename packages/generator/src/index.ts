@@ -306,7 +306,7 @@ class Converter {
         if (ed.background.images) bg.images = ed.background.images.map((i) => this.pick(i, ["file", "folder", "pixabay", "name", "categories", "count", "swap"]));
         section.background = bg;
       }
-      Object.assign(section, this.pick(ed, ["hide-lines", "edit-link", "import-css"], { "hide-lines": this.b }));
+      Object.assign(section, this.pick(ed, ["hide-lines", "compact-widgets", "edit-link", "import-css"], { "hide-lines": this.b, "compact-widgets": this.b }));
       if (ed.extra) for (const [k, v] of Object.entries(ed.extra)) if (!(k in section)) section[k] = v;
       out["glance-editor"] = section;
     }

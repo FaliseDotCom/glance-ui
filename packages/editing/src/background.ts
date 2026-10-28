@@ -30,8 +30,9 @@ export const BACKGROUND_DEFAULTS = {
 
 export const background = (d: DashboardT): BackgroundT | undefined => d["glance-editor"]?.background;
 
-/** Does the dashboard need the editor's CSS file (a background, or a look setting such as hidden lines)? */
-export const needsEditorCss = (d: DashboardT): boolean => !!background(d) || d["glance-editor"]?.["hide-lines"] === true;
+/** Does the dashboard need the editor's CSS file (a background, or a look setting: hidden lines, compact widgets)? */
+export const needsEditorCss = (d: DashboardT): boolean =>
+  !!background(d) || d["glance-editor"]?.["hide-lines"] === true || d["glance-editor"]?.["compact-widgets"] === true;
 
 /** The user's own custom CSS file, which the editor's file imports. Older files keep it under `background`. */
 export const importedCss = (d: DashboardT): string | undefined => d["glance-editor"]?.["import-css"] ?? background(d)?.["import-css"];
@@ -94,8 +95,8 @@ export function setBackgroundMode(d: DashboardT, mode: BackgroundT["mode"] | nul
   syncBackground(d);
 }
 
-/** ADR-0026: the editor's look and menu settings, kept in step with its CSS file and scripts. */
-export function setEditorOption(d: DashboardT, key: "hide-lines" | "edit-link", value: boolean | string | undefined): void {
+/** ADR-0026, ADR-0034: the editor's look and menu settings, kept in step with its CSS file and scripts. */
+export function setEditorOption(d: DashboardT, key: "hide-lines" | "compact-widgets" | "edit-link", value: boolean | string | undefined): void {
   const ed = { ...d["glance-editor"] } as Record<string, unknown>;
   if (value === undefined || value === false || value === "") delete ed[key];
   else ed[key] = value;

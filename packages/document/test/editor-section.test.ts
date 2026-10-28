@@ -47,6 +47,20 @@ describe("glance-editor section", () => {
     expect(removed.text).toBe(BASE);
   });
 
+  it("keeps the look settings (ADR-0026, ADR-0034) through import and in-place writes", () => {
+    const text = `${BASE}glance-editor:\n  hide-lines: true\n  compact-widgets: true\n`;
+    const r = importText(text);
+    expect(r.report?.unknownKeys ?? []).toEqual(importText(BASE).report?.unknownKeys ?? []);
+    expect(r.dashboard!["glance-editor"]).toEqual({ "hide-lines": true, "compact-widgets": true });
+    const m = clone(r.dashboard!) as DashboardT;
+    expect(writeDraft(text, m).text).toBe(text);
+    delete m["glance-editor"]!["compact-widgets"];
+    expect(writeDraft(text, m).text).toBe(text.replace("  compact-widgets: true\n", ""));
+    const added = clone(importText(BASE).dashboard!) as DashboardT;
+    added["glance-editor"] = { "compact-widgets": true };
+    expect(writeDraft(BASE, added).text).toContain("glance-editor:\n  compact-widgets: true\n");
+  });
+
   it("is accepted by Glance's validator (Glance ignores the key)", async () => {
     const text = `pages:\n  - name: P\n    columns:\n      - size: full\n        widgets: []\n${WITH.slice(WITH.indexOf("glance-editor:"))}`;
     const r = await validateConfig(text);

@@ -4,7 +4,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import type { BackgroundT } from "@glance-editor/model";
-import { backgroundCss, EDIT_LINK_JS, editorCss, listFolder, NO_LINES_CSS, resolveImages, storeImage, writeEditorFiles } from "../src/background.ts";
+import { backgroundCss, COMPACT_CSS, EDIT_LINK_JS, editorCss, listFolder, NO_LINES_CSS, resolveImages, storeImage, writeEditorFiles } from "../src/background.ts";
 import { solidPng } from "../../../test/support/png.ts";
 
 const tmp = () => mkdtempSync(join(tmpdir(), "glance-editor-bg-"));
@@ -65,6 +65,17 @@ describe("backgroundCss", () => {
     expect(editorCss({ "hide-lines": true }, [])).not.toContain("body::before");
     expect(editorCss({ background: { mode: "image" } }, ["glance-editor/backgrounds/a.png"])).not.toContain("border-top: none");
     expect(EDIT_LINK_JS).toContain("if (!editor) return;");
+  });
+
+  it("ADR-0034: compact widgets, alone or after hidden lines; the CSS file is written for them alone", async () => {
+    expect(editorCss({ "compact-widgets": true }, [])).toContain(COMPACT_CSS);
+    expect(editorCss({ "compact-widgets": true }, [])).not.toContain("border-top: none;\n}\n.dynamic-columns");
+    const both = editorCss({ "hide-lines": true, "compact-widgets": true }, []);
+    expect(both.indexOf(NO_LINES_CSS)).toBeLessThan(both.indexOf(COMPACT_CSS));
+    expect(editorCss({ "hide-lines": true }, [])).not.toContain(COMPACT_CSS);
+    const assets = tmp();
+    expect(await writeEditorFiles({ "compact-widgets": true }, { assetsDir: assets, roots: [] }, "preview.css")).toEqual([]);
+    expect(readFileSync(join(assets, "glance-editor", "preview.css"), "utf8")).toContain(COMPACT_CSS);
   });
 });
 

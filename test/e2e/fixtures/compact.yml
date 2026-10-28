@@ -1,0 +1,42 @@
+# Test dashboard for compact widgets (ADR-0034): stacked widgets with a box, and widgets without one (search, a group).
+server:
+  host: 127.0.0.1
+  port: {{GLANCE_PORT}}
+  assets-path: {{ASSETS_DIR}}
+
+pages:
+  - name: Home
+    columns:
+      - size: small
+        widgets:
+          - type: to-do
+            title: Errands
+          - type: bookmarks
+            title: Links
+            groups:
+              - links:
+                  - title: One
+                    url: https://example.com/1
+                  - title: Two
+                    url: https://example.com/2
+      - size: full
+        widgets:
+          - type: search
+          - type: docker-containers
+            sock-path: {{DOCKER_URL}}
+          - type: bookmarks
+            groups:
+              - title: Media
+                links:
+                  - title: Three
+                    url: https://example.com/3
+              - title: Tools
+                links:
+                  - title: Four
+                    url: https://example.com/4
+          - type: group
+            widgets:
+              - type: to-do
+                title: Shopping
+              - type: to-do
+                title: Chores

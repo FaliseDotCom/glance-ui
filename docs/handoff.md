@@ -1,7 +1,7 @@
 # Handoff
 
 The single place to see where the project stands. Updated at the end of every work session and every PR.
-Last updated: 2026-10-27 (v1.4.1 released: ADR-0033, community widgets marked early alpha).
+Last updated: 2026-10-28 (ADR-0034, compact widgets, built on `feat/compact-widgets`; to be released as v1.5.0).
 
 ## Current state
 - **Released:** **v1.4.1** is `:latest` (`ghcr.io/gcarstoiu/glance-editor`, public). Earlier: v1.0.0, v1.0.1, v1.1.0, v1.2.0,
@@ -44,6 +44,8 @@ Last updated: 2026-10-27 (v1.4.1 released: ADR-0033, community widgets marked ea
   159 of 165 can be added (6 refused with the reason). Live check: `test/community-live.sh`.
 - ADR-0031 drag and drop: links and groups between groups and Bookmarks widgets, widgets into and out of groups and
   split columns, pages, slides; a finger on the grip drags too; Move to… for touch and keyboard.
+- ADR-0034: compact widgets, a switch on the Theme screen (off by default): each title inside its box, so stacked
+  widgets are as far apart as columns; widgets without a box keep their titles above.
 - ADR-0033 (v1.4.1): community widgets marked early alpha in Add widget → Community, a community widget's settings, the Unraid
   template's overview and the README.
 - ADR-0032 (v1.4.0): a community widget's settings try it against its service, as Glance does, and say why
@@ -77,6 +79,11 @@ Nothing below may be built on until you decide. ★ = affects user experience.
 - ★ **ADR-0025 leftover:** no assets file list in the editor yet (say if wanted).
 - ★ **ADR-0026 leftover:** Glance's two default themes stay in the dashboard's theme picker (not answered;
   recommended; hiding them needs CSS).
+
+## Decided on 2026-10-28 (via chat)
+| ADR | Outcome |
+| --- | ------- |
+| [0034](adr/0034-compact-widgets.md) | **Compact widgets:** titles inside their boxes (option B of two, shown with mock screenshots), a switch off by default, released at once |
 
 ## Decided on 2026-10-27 (via chat)
 | ADR | Outcome |
@@ -253,6 +260,9 @@ Nothing below may be built on until you decide. ★ = affects user experience.
    image, review, PR); a newer Glance pin (ADR-0006) when one is released.
 
 ## Session log
+- 2026-10-28: the PM asked for less space between stacked widgets, as much as between columns. Measured on the pinned
+  Glance with a mock dashboard (54 px box to box against 23 px between columns); two options shown; ADR-0034 (B)
+  accepted and built on `feat/compact-widgets`.
 - 2026-10-27: v1.4.1 released at the PM's request (community widgets marked early alpha): `:1.4.1` and `:latest`
   published; `test/all-in-one.sh` passed on the published image, and both notes are in its editor. The Community Apps
   repository's template re-rendered from v1.4.1 (its PR #1, merged).

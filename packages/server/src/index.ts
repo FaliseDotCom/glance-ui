@@ -6,7 +6,7 @@ export { openDb, backup, RETENTION, DB_VERSION } from "./db.ts";
 export { sha256, reloadStamp, waitForReload, writeLiveAtomically, type ReloadResult } from "./live.ts";
 export { listContainers, dockerBase, type ContainersResult, type DockerContainer } from "./docker.ts";
 export { Icons, ICON_SOURCES, normalizeIndex, matchScore, suggestScore, sniff, unsafeSvg, iconLinks, type IconHit, type IconSources, type LibraryStatus, type WebResult, type WebSearch, type SiteIcon, type DownloadResult } from "./icons.ts";
-export { backgroundCss, editorCss, NO_LINES_CSS, EDIT_LINK_JS, writeEditorFiles, SLIDESHOW_JS, storeImage, listFolder, insideRoots, IMAGE_EXTS, type FolderEntry } from "./background.ts";
+export { backgroundCss, COMPACT_CSS, editorCss, NO_LINES_CSS, EDIT_LINK_JS, writeEditorFiles, SLIDESHOW_JS, storeImage, listFolder, insideRoots, IMAGE_EXTS, type FolderEntry } from "./background.ts";
 export { Pixabay, PIXABAY_CHIPS, PIXABAY_API, type PixabayHit, type PixabayError } from "./pixabay.ts";
 export { readZip, safePath, ZIP_LIMITS, type ZipFile, type ZipLimits } from "./zip.ts";
 export { findConfig, findAssets, assetLinks, type UploadFound } from "./upload.ts";
